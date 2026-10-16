@@ -1,0 +1,147 @@
+{
+ "matches": 20,
+ "metrics": [
+  {
+   "metric": "passes",
+   "mean": 614.775,
+   "range": [
+    330,
+    700
+   ],
+   "within_range": 0.97,
+   "pass": true
+  },
+  {
+   "metric": "pass_accuracy",
+   "mean": 0.801,
+   "range": [
+    0.72,
+    0.9
+   ],
+   "within_range": 1.0,
+   "pass": true
+  },
+  {
+   "metric": "shots",
+   "mean": 15.325,
+   "range": [
+    7,
+    19
+   ],
+   "within_range": 0.93,
+   "pass": true
+  },
+  {
+   "metric": "shots_on_target_share",
+   "mean": 0.442,
+   "range": [
+    0.25,
+    0.5
+   ],
+   "within_range": 0.62,
+   "pass": true
+  },
+  {
+   "metric": "xg",
+   "mean": 1.499,
+   "range": [
+    0.6,
+    2.2
+   ],
+   "within_range": 0.9,
+   "pass": true
+  },
+  {
+   "metric": "goals",
+   "mean": 1.55,
+   "range": [
+    0.5,
+    2.5
+   ],
+   "within_range": 0.5,
+   "pass": true
+  },
+  {
+   "metric": "xg_per_shot",
+   "mean": 0.097,
+   "range": [
+    0.07,
+    0.16
+   ],
+   "within_range": 0.85,
+   "pass": true
+  },
+  {
+   "metric": "fouls",
+   "mean": 14.15,
+   "range": [
+    7,
+    16
+   ],
+   "within_range": 0.72,
+   "pass": true
+  },
+  {
+   "metric": "corners",
+   "mean": 5.525,
+   "range": [
+    3,
+    8
+   ],
+   "within_range": 0.78,
+   "pass": true
+  },
+  {
+   "metric": "yellow_cards",
+   "mean": 1.525,
+   "range": [
+    0,
+    4
+   ],
+   "within_range": 1.0,
+   "pass": true
+  },
+  {
+   "metric": "tackles",
+   "mean": 24.225,
+   "range": [
+    8,
+    25
+   ],
+   "within_range": 0.68,
+   "pass": true
+  },
+  {
+   "metric": "interceptions",
+   "mean": 14.25,
+   "range": [
+    5,
+    20
+   ],
+   "within_range": 0.95,
+   "pass": true
+  },
+  {
+   "metric": "outfield_distance_km",
+   "mean": 12.045,
+   "range": [
+    9.0,
+    12.5
+   ],
+   "within_range": 0.9,
+   "pass": true
+  },
+  {
+   "metric": "top_speed_kmh",
+   "mean": 32.42,
+   "range": [
+    29.0,
+    37.5
+   ],
+   "within_range": 1.0,
+   "pass": true
+  }
+ ],
+ "passed": 14,
+ "total": 14
+}

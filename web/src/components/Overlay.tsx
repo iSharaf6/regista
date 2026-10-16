@@ -1,0 +1,262 @@
+import { forwardRef, useEffect, useState } from "react";
+import { type Feed, isLive } from "../lib/feed";
+import type { Cue, MatchInfo, Snapshot } from "../lib/types";
+
+const KICKER: Record<string, string> = {
+  goal: "Goal", red_card: "Red card", big_chance: "Big chance", thunderbolt: "Shot speed", master_pass: "Pass quality",
+  press_shift: "Tactical shift", control_chaos: "Control vs chaos", rhythm: "Game rhythm", momentum_swing: "Momentum",
+  half_time: "Half time", full_time: "Full time", milestone: "Milestone", speed: "Top speed",
+};
+
+function active(cues: Cue[], t: number) {
+  const now = performance.now();
+  return cues.filter((c) => !["score_bug", "momentum"].includes(c.kind) && isLive(c, t, now));
+}
+
+function newest(cues: Cue[], slot: string) {
+  const xs = cues.filter((c) => c.slot === slot);
+  return xs.length ? xs.reduce((a, b) => (b.priority > a.priority + 20 || (b.t_in >= a.t_in && b.priority >= a.priority - 20) ? b : a)) : null;
+}
+
+export const Overlay = forwardRef<HTMLDivElement, { feed: Feed; receipts: boolean; rtl: boolean; showMomentum?: boolean }>(
+  function Overlay({ feed, receipts, rtl, showMomentum = true }, ref) {
+    const [t, setT] = useState(0);
+    useEffect(() => {
+      const id = window.setInterval(() => setT(feed.clock.current), 200);
+      return () => window.clearInterval(id);
+    }, [feed.clock]);
+    const live = active(feed.cues, t);
+    const bug = feed.cues.find((c) => c.kind === "score_bug");
+    const ur = live.filter((c) => c.slot === "upper_right").sort((a, b) => b.t_in - a.t_in).slice(0, 2);
+    const side = newest(live, "side_panel");
+    const lower = newest(live, "lower_third");
+    const ticker = newest(live, "ticker");
+    const follow = live.filter((c) => c.slot === "follow");
+    const dir = rtl ? "rtl" : "ltr";
+    return (
+      <div className="overlay" ref={ref}>
+        <div className="slot-ul">
+          {feed.match && <ScoreBug match={feed.match} snap={feed.snap} cue={bug} />}
+          {showMomentum && feed.match && feed.snap && <WinProb match={feed.match} snap={feed.snap} />}
+        </div>
+        <div className="slot-ur">
+          {ur.map((c) => <Card key={c.id} cue={c} receipts={receipts} dir={dir} match={feed.match} />)}
+        </div>
+        {side && <div className="slot-side"><Card cue={side} receipts={receipts} dir={dir} match={feed.match} /></div>}
+        {lower && <div className="slot-lower"><Lower cue={lower} receipts={receipts} dir={dir} match={feed.match} /></div>}
+        {ticker && (
+          <div className="slot-ticker" key={ticker.id}>
+            <div className="ticker" dir={dir} style={accent(ticker)}>
+              <b>{KICKER[ticker.payload.moment_kind] ?? ticker.kind}</b>
+              <span className={rtl ? "rtl" : ""}>{ticker.body || ticker.title}</span>
+            </div>
+          </div>
+        )}
+        {follow.map((c) => (
+          <div className="follow" data-follow={c.follow ?? ""} key={c.id}>
+            {c.kind === "speed_flash" ? (
+              <div className="speedflash mono">{Number(c.payload.facts?.speed_kmh ?? c.payload.speed_kmh ?? 0).toFixed(1)} km/h</div>
+            ) : (
+              <div className="ptag" style={accent(c)}>
+                <span className="num">{c.payload.number}</span>
+                {c.payload.short_name ?? c.title}
+                {c.payload.show_speed && <span className="spd">{Math.round(c.payload.speed_kmh)} km/h</span>}
+                {c.payload.show_distance && !c.payload.show_speed && <span className="spd">{Number(c.payload.distance_km).toFixed(1)} km</span>}
+              </div>
+            )}
+          </div>
+        ))}
+      </div>
+    );
+  },
+);
+
+function accent(c: Cue): React.CSSProperties {
+  const col = c.payload?.colors?.primary;
+  return col ? ({ "--accent": col } as React.CSSProperties) : {};
+}
+
+function ScoreBug({ match, snap, cue }: { match: MatchInfo; snap: Snapshot | null; cue?: Cue }) {
+  const score = snap?.score ?? cue?.payload.score ?? {};
+  return (
+    <div className="scorebug" aria-label="Score">
+      <div className="team"><span className="chip" style={{ background: match.home.primary }} />{match.home.abbr}</div>
+      <div className="score">{score[match.home.id] ?? 0}–{score[match.away.id] ?? 0}</div>
+      <div className="team">{match.away.abbr}<span className="chip" style={{ background: match.away.primary }} /></div>
+      <div className="clock">{snap?.clock ?? "0'"}</div>
+    </div>
+  );
+}
+
+function WinProb({ match, snap }: { match: MatchInfo; snap: Snapshot }) {
+  const wp = snap.win_probability;
+  return (
+    <div className="momentum g-glass">
+      <div className="lbl"><span>Win probability</span><span className="mono">{Math.round(wp.home * 100)} · {Math.round(wp.draw * 100)} · {Math.round(wp.away * 100)}</span></div>
+      <div className="wpbar">
+        <div style={{ flexGrow: wp.home, background: match.home.primary }} />
+        <div style={{ flexGrow: wp.draw, background: "#ddcbe0" }} />
+        <div style={{ flexGrow: wp.away, background: match.away.primary }} />
+      </div>
+    </div>
+  );
+}
+
+function Receipt({ cue }: { cue: Cue }) {
+  const p = cue.provenance;
+  const v = cue.payload.verdict;
+  return (
+    <div className="receipt">
+      {p.verified
+        ? <span className="ok">✓ {v?.numbers_checked ? `VERIFIED ${v.numbers_supported}/${v.numbers_checked}` : p.agent === "Producer" && !cue.moment_id ? "COMPUTED FROM FEED" : "GROUNDED"}</span>
+        : <span className="fb">UNVERIFIED</span>}
+      <span>{p.agent}</span>
+      <span>{p.model}</span>
+      {p.attempts > 1 && <span className="fb">{p.attempts} drafts</span>}
+      {p.fallback && <span className="fb">FALLBACK</span>}
+      {p.latency_ms > 0 && <span>{Math.round(p.latency_ms)} ms</span>}
+      {cue.evidence.length > 0 && <span>{cue.evidence.slice(0, 2).join(" ")}</span>}
+    </div>
+  );
+}
+
+function Lower({ cue, receipts, dir, match }: { cue: Cue; receipts: boolean; dir: string; match: MatchInfo | null }) {
+  const team = cue.payload.team === match?.home.id ? match?.home : cue.payload.team === match?.away.id ? match?.away : null;
+  const rtl = dir === "rtl";
+  return (
+    <div className="lower" key={cue.id} style={accent(cue)} dir={dir}>
+      <div className="tag">{team?.abbr ?? "LIVE"}</div>
+      <div className={`content ${rtl ? "rtl" : ""}`}>
+        <div className="caption">{cue.title}</div>
+        {cue.body && <div className="line">{cue.body}</div>}
+        {cue.payload.explainer && <div className="why">{cue.payload.explainer}</div>}
+        {receipts && <Receipt cue={cue} />}
+      </div>
+    </div>
+  );
+}
+
+function Card({ cue, receipts, dir, match }: { cue: Cue; receipts: boolean; dir: string; match: MatchInfo | null }) {
+  const p = cue.payload;
+  const f = p.facts ?? {};
+  const rtl = dir === "rtl";
+  const kicker = KICKER[p.moment_kind] ?? (cue.kind === "pass_card" ? "Pass quality" : cue.kind.replace("_", " "));
+  if (cue.kind === "shot_card" && !p.moment_kind) {
+    return (
+      <div className="gcard g-glass" style={accent(cue)}>
+        <div className="kicker">Shot · {String(p.outcome).replace("_", " ")}</div>
+        <div className="title">{cue.title}</div>
+        <div className="metrics">
+          <div className="metric"><b>{Number(p.xg).toFixed(2)}</b><span>xG</span></div>
+          <div className="metric"><b>{Math.round(p.shot_speed_kmh)}</b><span>km/h</span></div>
+          <div className="metric"><b>{Math.round(p.distance_m)}</b><span>m</span></div>
+        </div>
+        <div className="meter" title="chance quality"><i style={{ width: `${Math.min(100, p.xg * 100)}%` }} /></div>
+      </div>
+    );
+  }
+  if (cue.kind === "player_focus") {
+    const v = p.player;
+    return (
+      <div className="gcard g-glass">
+        <div className="kicker">Player cam</div>
+        <div className="title">{v.name}</div>
+        <div className="metrics">
+          <div className="metric"><b>{v.rating}</b><span>rating</span></div>
+          <div className="metric"><b>{v.distance_km}</b><span>km</span></div>
+          <div className="metric"><b>{v.top_speed_kmh}</b><span>top km/h</span></div>
+          <div className="metric"><b>{v.passes}</b><span>passes</span></div>
+          <div className="metric"><b>{v.pass_accuracy}%</b><span>accuracy</span></div>
+          <div className="metric"><b>{v.avg_pass_difficulty}</b><span>avg difficulty</span></div>
+        </div>
+      </div>
+    );
+  }
+  return (
+    <div className="gcard g-glass" style={accent(cue)} dir={dir} key={cue.id}>
+      <div className="kicker">{kicker}</div>
+      <div className={`title ${rtl ? "rtl" : ""}`}>{cue.title}</div>
+      {cue.body && <div className={`body ${rtl ? "rtl" : ""}`}>{cue.body}</div>}
+      {cue.kind === "pass_card" && f.passer_accuracy !== undefined && !p.moment_kind && (
+        <div className="body mono" style={{ fontSize: "0.78em" }}>{Math.round(f.ball_speed_kmh)} km/h · passer {f.passer_accuracy}% accurate</div>
+      )}
+      {cue.kind === "pass_card" && (
+        <>
+          <div className="metrics">
+            <div className="metric"><b>{Math.round(f.difficulty)}</b><span>difficulty</span></div>
+            <div className="metric"><b>{Math.round(f.length_m)}</b><span>metres</span></div>
+            <div className="metric"><b>{f.opponents_bypassed}</b><span>bypassed</span></div>
+          </div>
+          <div className="meter"><i style={{ width: `${f.difficulty}%` }} /></div>
+        </>
+      )}
+      {(p.moment_kind === "big_chance" || p.moment_kind === "thunderbolt") && (
+        <div className="metrics">
+          <div className="metric"><b>{Number(f.xg ?? 0).toFixed(2)}</b><span>xG</span></div>
+          <div className="metric"><b>{Math.round(f.shot_speed_kmh ?? 0)}</b><span>km/h</span></div>
+          <div className="metric"><b>{Math.round(f.distance_m ?? 0)}</b><span>m</span></div>
+        </div>
+      )}
+      {p.moment_kind === "press_shift" && <PressViz f={f} />}
+      {p.moment_kind === "control_chaos" && <FactorViz factors={f.factors ?? []} />}
+      {p.moment_kind === "momentum_swing" && <Spark series={(f.series ?? []).map((s: any) => s.value)} color={match?.home.primary} />}
+      {p.explainer && <div className={`body ${rtl ? "rtl" : ""}`} style={{ opacity: 0.85 }}>{p.explainer}</div>}
+      {receipts && <Receipt cue={cue} />}
+    </div>
+  );
+}
+
+function PressViz({ f }: { f: any }) {
+  const nb = f.players_near_ball_before ?? 0;
+  const na = f.players_near_ball_after ?? 0;
+  const lb = f.line_height_before_m ?? 0;
+  const la = f.line_height_after_m ?? 0;
+  const maxN = Math.max(nb, na, 0.1);
+  const maxL = Math.max(lb, la, 1);
+  return (
+    <div className="beforeafter">
+      <span className="muted">Near ball</span>
+      <div style={{ display: "grid", gap: "0.2em" }}>
+        <div className="b" style={{ width: `${(nb / maxN) * 100}%` }} />
+        <div className="a" style={{ width: `${(na / maxN) * 100}%` }} />
+      </div>
+      <span className="mono">{nb.toFixed(1)}→{na.toFixed(1)}</span>
+      <span className="muted">Line (m)</span>
+      <div style={{ display: "grid", gap: "0.2em" }}>
+        <div className="b" style={{ width: `${(lb / maxL) * 100}%` }} />
+        <div className="a" style={{ width: `${(la / maxL) * 100}%` }} />
+      </div>
+      <span className="mono">{Math.round(lb)}→{Math.round(la)}</span>
+    </div>
+  );
+}
+
+function FactorViz({ factors }: { factors: any[] }) {
+  return (
+    <div>
+      {factors.slice(0, 3).map((x) => {
+        const z = Math.max(-3, Math.min(3, x.z));
+        const left = z >= 0 ? 50 : 50 + (z / 3) * 50;
+        const width = Math.abs(z / 3) * 50;
+        return (
+          <div className="factor" key={x.label}>
+            <span>{x.label}</span><span className="mono">{x.detail}</span>
+            <div className="bar"><i style={{ left: `${left}%`, width: `${width}%`, background: x.pushes === "control" ? "var(--ok)" : "var(--warn)" }} /></div>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+export function Spark({ series, color, height = 34 }: { series: number[]; color?: string; height?: number }) {
+  if (series.length < 2) return null;
+  const w = 220;
+  const pts = series.map((v, i) => `${(i / (series.length - 1)) * w},${height / 2 - (v / 100) * (height / 2 - 2)}`).join(" ");
+  return (
+    <svg viewBox={`0 0 ${w} ${height}`} style={{ width: "100%", height: "2.4em", marginTop: "0.4em" }} aria-hidden>
+      <line x1="0" x2={w} y1={height / 2} y2={height / 2} stroke="rgba(31,0,36,0.35)" strokeDasharray="4 3" />
+      <polyline points={pts} fill="none" stroke={color ?? "#1f0024"} strokeWidth="3" strokeLinejoin="miter" />
+    </svg>
+  );
+}

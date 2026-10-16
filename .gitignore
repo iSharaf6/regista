@@ -1,0 +1,26 @@
+# python
+.venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+.ruff_cache/
+*.egg-info/
+
+# node
+node_modules/
+web/dist/
+
+# generated data
+data/
+
+# local
+.env
+.azure/
+.DS_Store
+*.log
+
+# tool caches
+.impeccable/
+
+# local tool config
+.claude/

@@ -1,0 +1,310 @@
+{
+ "model": "foundry:gpt-4.1-mini",
+ "moments": 12,
+ "languages": [
+  "en",
+  "es",
+  "ar"
+ ],
+ "first_draft_verified": 0.83,
+ "verified_without_fallback": 1.0,
+ "jobs_with_fallback": 0,
+ "mean_attempts": 1.17,
+ "story_latency_ms": {
+  "p50": 4990.5,
+  "p95": 8102
+ },
+ "wall_s": 54.6,
+ "rejection_reasons": {
+  "rejected drafts": 2
+ },
+ "agents": {
+  "Analyst": {
+   "calls": 12,
+   "p50_ms": 0.0,
+   "p95_ms": 0.0,
+   "errors": 0,
+   "fallbacks": 0,
+   "rejections": 0
+  },
+  "Narrator": {
+   "calls": 13,
+   "p50_ms": 3086.8,
+   "p95_ms": 5093.5,
+   "errors": 0,
+   "fallbacks": 0,
+   "rejections": 0
+  },
+  "Localizer": {
+   "calls": 25,
+   "p50_ms": 4571.7,
+   "p95_ms": 5623.9,
+   "errors": 0,
+   "fallbacks": 0,
+   "rejections": 0
+  },
+  "Verifier": {
+   "calls": 14,
+   "p50_ms": 6.8,
+   "p95_ms": 7.7,
+   "errors": 0,
+   "fallbacks": 0,
+   "rejections": 2
+  },
+  "Producer": {
+   "calls": 12,
+   "p50_ms": 0.0,
+   "p95_ms": 0.0,
+   "errors": 0,
+   "fallbacks": 0,
+   "rejections": 0
+  },
+  "Pundit": {
+   "calls": 4,
+   "p50_ms": 4095.4,
+   "p95_ms": 4456.5,
+   "errors": 0,
+   "fallbacks": 0,
+   "rejections": 0
+  },
+  "Recap": {
+   "calls": 2,
+   "p50_ms": 6693.0,
+   "p95_ms": 5837.3,
+   "errors": 0,
+   "fallbacks": 0,
+   "rejections": 0
+  }
+ },
+ "pundit": [
+  {
+   "lang": "en",
+   "question": "Why are Northbridge winning the ball so high since the hour?",
+   "answer": "Northbridge is winning the ball high since the hour because they have pushed their defensive line significantly higher (around 39.6m) and increased players near the ball in the opponent's buildup. This shift, starting close to the 60th minute, has increased their pressures and high regains, disrupting Port Calder's buildup deep in their own half. Their aggressive pressing style here contrasts with Port Calder’s lower line and fewer pressures, explaining Northbridge’s higher ball-winning success.",
+   "tools": [
+    "get_tactical_picture"
+   ],
+   "model": "foundry:gpt-4.1-mini",
+   "ms": 4714
+  },
+  {
+   "lang": "es",
+   "question": "¿Quién es el mejor jugador del partido?",
+   "answer": "El mejor jugador del partido es Teo Valdane, un delantero que lleva dos goles y ha corrido más de 11 kilómetros, además de alcanzar una velocidad top de 31.4 km/h. Está teniendo un impacto enorme en el juego.",
+   "tools": [
+    "get_top_players"
+   ],
+   "model": "foundry:gpt-4.1-mini",
+   "ms": 4456
+  },
+  {
+   "lang": "ar",
+   "question": "ما هي احتمالات فوز كل فريق؟",
+   "answer": "مباراة انتهت والفوز كان من نصيب فريق Northbridge Rovers باحتمالية نجاح 100% بعد فوزه 2-1 على Port Calder FC.",
+   "tools": [
+    "get_match_status"
+   ],
+   "model": "foundry:gpt-4.1-mini",
+   "ms": 3143
+  },
+  {
+   "lang": "fr",
+   "question": "Qui contrôle le match en ce moment, et pourquoi ?",
+   "answer": "En ce moment, c'est Port Calder FC qui contrôle le match avec 64 % de possession, moins de pertes de balle et un jeu plus stable malgré une passe réussie un peu juste à 79 %. Ils imposent un jeu plus posé avec plus de passes par possession, tandis que Northbridge Rovers presse haut mais est moins efficace dans les duels. C’est ce contrôle du ballon et cette maîtrise des phases qui donnent l’avantage en termes de rythme et de domination.",
+   "tools": [
+    "get_tactical_picture"
+   ],
+   "model": "foundry:gpt-4.1-mini",
+   "ms": 3734
+  }
+ ],
+ "pundit_used_tools": 1.0,
+ "recaps": [
+  {
+   "lang": "en",
+   "source": "foundry:gpt-4.1-mini",
+   "verified": true,
+   "issues": [],
+   "headline": "Valdane's Brace Secures Northbridge's 2-1 Victory Over Port Calder",
+   "ms": 5843
+  },
+  {
+   "lang": "ar",
+   "source": "foundry:gpt-4.1-mini",
+   "verified": true,
+   "issues": [],
+   "headline": "نورثبريدج تفوز 2-1 على بورت كالدر في مباراة مشوقة بقيادة فالدان",
+   "ms": 7554
+  }
+ ],
+ "jobs": [
+  {
+   "moment": "master_pass",
+   "clock": "3'",
+   "first_draft_ok": true,
+   "attempts": 1,
+   "fallback_langs": [],
+   "verified_without_fallback": true,
+   "ms": 5684,
+   "sample_en": {
+    "caption": "Masterclass Pass by Reid",
+    "line": "Reid delivers a 54-meter pass at 79 km/h, bypassing 7 opponents with perfect accuracy on just his second pass.",
+    "explainer": "This pass’s difficulty rating of 81/100 highlights its complexity, combining length, pressure, and precision to break the defensive line effectively."
+   }
+  },
+  {
+   "moment": "master_pass",
+   "clock": "3'",
+   "first_draft_ok": true,
+   "attempts": 1,
+   "fallback_langs": [],
+   "verified_without_fallback": true,
+   "ms": 5811,
+   "sample_en": {
+    "caption": "Masterful Long Pass",
+    "line": "Fontes delivers a 47-meter pass at 78 km/h, bypassing 9 opponents with perfect accuracy, showcasing exceptional difficulty (59/100).",
+    "explainer": "The pass's difficulty rating factors in its length, pressure on Fontes, and forward progress. Bypassing 9 opponents highlights its tactical impact in breaking defensive lines."
+   }
+  },
+  {
+   "moment": "master_pass",
+   "clock": "7'",
+   "first_draft_ok": true,
+   "attempts": 1,
+   "fallback_langs": [],
+   "verified_without_fallback": true,
+   "ms": 7075,
+   "sample_en": {
+    "caption": "Benali’s 52m Master Pass",
+    "line": "Benali completes a 52-meter pass at 85 km/h, bypassing 9 opponents with 67% accuracy on his 3rd pass.",
+    "explainer": "The pass’s difficulty rating of 46/100 reflects the challenge of its length and precision. Bypassing 9 defenders highlights its tactical impact in breaking Port Calder’s lines."
+   }
+  },
+  {
+   "moment": "master_pass",
+   "clock": "10'",
+   "first_draft_ok": true,
+   "attempts": 1,
+   "fallback_langs": [],
+   "verified_without_fallback": true,
+   "ms": 4588,
+   "sample_en": {
+    "caption": "Masterful 53m Pass by Osei",
+    "line": "Osei executes a difficult 80/100 long pass spanning 53 meters at 69 km/h, bypassing 7 opponents with 83% accuracy to Pellegrini.",
+    "explainer": "The pass’s high difficulty rating reflects its length, pressure, and loft. Bypassing 7 defenders disrupts Northbridge’s defense, creating a valuable attacking opportunity for Port Calder."
+   }
+  },
+  {
+   "moment": "master_pass",
+   "clock": "12'",
+   "first_draft_ok": true,
+   "attempts": 1,
+   "fallback_langs": [],
+   "verified_without_fallback": true,
+   "ms": 4753,
+   "sample_en": {
+    "caption": "High-Difficulty Master Pass",
+    "line": "Benali completes a 50m pass to Valdane with 83% accuracy, bypassing 6 opponents at 80 km/h ball speed, showcasing exceptional vision and technique.",
+    "explainer": "The pass difficulty rated 78/100 reflects the challenge of a long, lofted through ball under pressure. Bypassing 6 defenders at high speed and maintaining 83% accuracy highlights Benali’s elite passing ability and tactical awareness."
+   }
+  },
+  {
+   "moment": "master_pass",
+   "clock": "15'",
+   "first_draft_ok": true,
+   "attempts": 1,
+   "fallback_langs": [],
+   "verified_without_fallback": true,
+   "ms": 4770,
+   "sample_en": {
+    "caption": "Masterful 52m Pass by Erdem",
+    "line": "Erdem completes a 52-meter pass at 82 km/h, bypassing 9 opponents with 100% accuracy on his 4th pass.",
+    "explainer": "This pass’s difficulty rating of 64/100 highlights the technical challenge of such a long, fast, and precise ball that slices through the opposition’s defensive lines, showcasing Erdem’s exceptional vision and execution."
+   }
+  },
+  {
+   "moment": "master_pass",
+   "clock": "18'",
+   "first_draft_ok": true,
+   "attempts": 1,
+   "fallback_langs": [],
+   "verified_without_fallback": true,
+   "ms": 4291,
+   "sample_en": {
+    "caption": "High-Difficulty Master Pass",
+    "line": "Reid completes a 51-meter pass at 66 km/h, bypassing 9 opponents with 80% accuracy after 5 passes.",
+    "explainer": "This pass’s difficulty rating of 64/100 reflects its long distance, pressure on Reid, and aerial delivery. Bypassing 9 opponents disrupts the defense and creates attacking opportunities."
+   }
+  },
+  {
+   "moment": "goal",
+   "clock": "20'",
+   "first_draft_ok": false,
+   "attempts": 2,
+   "fallback_langs": [],
+   "verified_without_fallback": true,
+   "ms": 12098,
+   "sample_en": {
+    "caption": "Key Goal Shift",
+    "line": "Valdane’s header from 13m with 56 km/h speed increased Northbridge’s win probability by 34 points, despite a low xG of 0.04.",
+    "explainer": "The goal’s low expected goal value (0.04) shows it was a tough chance, made harder by the 32° angle and header finish. Yet, it swung Northbridge’s win probability from 41 to 75, giving them a strong tactical edge early on."
+   }
+  },
+  {
+   "moment": "momentum_swing",
+   "clock": "23'",
+   "first_draft_ok": false,
+   "attempts": 2,
+   "fallback_langs": [],
+   "verified_without_fallback": true,
+   "ms": 8102,
+   "sample_en": {
+    "caption": "Northbridge Momentum Surge",
+    "line": "At 23', Northbridge's momentum value hits 52.1, marking a significant shift from earlier negative values below -27.9.",
+    "explainer": "Momentum is measured by threat EWMA, ranging from -100 (away dominance) to +100 (home dominance). Northbridge's rise to 52.1 indicates they have taken control after a period of Port Calder dominance."
+   }
+  },
+  {
+   "moment": "master_pass",
+   "clock": "26'",
+   "first_draft_ok": true,
+   "attempts": 1,
+   "fallback_langs": [],
+   "verified_without_fallback": true,
+   "ms": 4261,
+   "sample_en": {
+    "caption": "High-difficulty master pass",
+    "line": "Morel delivers a 31-meter through ball at 56 km/h, bypassing 5 opponents with 64% accuracy under pressure.",
+    "explainer": "The pass difficulty rating of 75/100 reflects the challenge of playing a long through ball into a crowded penalty area while under pressure. Bypassing 5 defenders highlights its tactical value in breaking defensive lines."
+   }
+  },
+  {
+   "moment": "master_pass",
+   "clock": "30'",
+   "first_draft_ok": true,
+   "attempts": 1,
+   "fallback_langs": [],
+   "verified_without_fallback": true,
+   "ms": 4589,
+   "sample_en": {
+    "caption": "High-Difficulty Master Pass",
+    "line": "Morel's 38-meter pass at 69 km/h bypassed 6 defenders with 64% accuracy, showcasing exceptional vision and technical skill under pressure.",
+    "explainer": "A pass difficulty rating of 72/100 reflects the challenge of delivering a 38-meter lofted through ball into a crowded penalty area. Bypassing six opponents highlights its tactical impact, breaking defensive lines to create attacking opportunities."
+   }
+  },
+  {
+   "moment": "master_pass",
+   "clock": "32'",
+   "first_draft_ok": true,
+   "attempts": 1,
+   "fallback_langs": [],
+   "verified_without_fallback": true,
+   "ms": 5211,
+   "sample_en": {
+    "caption": "Masterful Long Pass",
+    "line": "Quintero delivers a 32-meter through ball bypassing 5 defenders at 52 km/h with 81% accuracy to Pellegrini.",
+    "explainer": "The pass's difficulty rating of 73/100 reflects its length, pressure, and precision. Bypassing 5 opponents at this speed and accuracy disrupts defensive lines and creates key attacking opportunities."
+   }
+  }
+ ]
+}

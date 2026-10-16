@@ -1,0 +1,52 @@
+import { useState } from "react";
+import type { Profile } from "../lib/types";
+
+/** Copy-ready endpoints for real productions, built for the viewer profile chosen in Fan Studio. */
+export function UseLive({ profile }: { profile: Profile }) {
+  const origin = typeof location !== "undefined" ? location.origin : "";
+  const q = new URLSearchParams({ mode: profile.mode, lang: profile.language });
+  if (profile.favorite_team) q.set("team", profile.favorite_team);
+  if (profile.favorite_player) q.set("player", profile.favorite_player);
+  if (profile.focus_metric && profile.focus_metric !== "none") q.set("focus", profile.focus_metric);
+  const items: { label: string; hint: string; url: string; open?: boolean }[] = [
+    { label: "Overlay", hint: "OBS / vMix browser source, transparent", url: `${origin}/#/overlay?${q}`, open: true },
+    { label: "On-air JSON", hint: "vMix Data Sources, CasparCG, any poller", url: `${origin}/api/onair?${q}`, open: true },
+    { label: "MCP", hint: "GitHub Copilot or any MCP client", url: `${origin}/mcp` },
+    { label: "Live feed", hint: "push your own tracking and events", url: `${origin}/docs#/live%20feed`, open: true },
+  ];
+  return (
+    <div className="card">
+      <header><h3>Use it live</h3></header>
+      <div className="body stack">
+        <div className="muted" style={{ fontSize: 13.5 }}>
+          Plug Regista into a real production. These links follow your Fan Studio profile.
+        </div>
+        {items.map((it) => <Endpoint key={it.label} {...it} />)}
+        <a href={`${origin}/docs`} target="_blank" rel="noreferrer">Full REST reference ↗</a>
+      </div>
+    </div>
+  );
+}
+
+function Endpoint({ label, hint, url, open }: { label: string; hint: string; url: string; open?: boolean }) {
+  const [copied, setCopied] = useState(false);
+  const copy = async () => {
+    try {
+      await navigator.clipboard.writeText(url);
+      setCopied(true);
+      window.setTimeout(() => setCopied(false), 1400);
+    } catch { /* clipboard blocked: the link stays selectable */ }
+  };
+  return (
+    <div className="endpoint">
+      <div className="row" style={{ justifyContent: "space-between" }}>
+        <span><span className="kind">{label}</span> <span className="muted" style={{ fontSize: 12.5 }}>{hint}</span></span>
+        <span className="row" style={{ gap: 6 }}>
+          {open && <a className="btn small" href={url} target="_blank" rel="noreferrer">Open</a>}
+          <button className="btn small yellow" onClick={copy} aria-label={`Copy ${label} link`}>{copied ? "Copied" : "Copy"}</button>
+        </span>
+      </div>
+      <code className="url">{url}</code>
+    </div>
+  );
+}
