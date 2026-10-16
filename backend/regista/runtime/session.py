@@ -117,6 +117,7 @@ class MatchSession:
         self.cues: list[Cue] = []
         self.story: dict[str, dict[str, Any]] = {}
         self.recaps: dict[tuple[str, str, str], dict[str, Any]] = {}
+        self._ht_base: dict[str, Any] | None = None  # the match as it stood at the half-time whistle
         while not self.queue.empty():  # stale story jobs belong to the previous timeline
             self.queue.get_nowait()
         for v in self.viewers.values():
@@ -380,6 +381,8 @@ class MatchSession:
             self._on_moment(m, live)
 
     def _on_moment(self, m: Moment, live: bool) -> None:
+        if m.kind == "half_time":
+            self._ht_base = recap_payload(self.state, list(self.moments), self.names_dict, "en", "casual", "half_time")
         i18n = {lang: {p: narrate(m.as_dict(), self.names, lang, p, self.state.home, self.state.away) for p in PERSONAS}
                 for lang in LANGS}
         prov = Provenance(agent="Producer", model="deterministic-templates", verified=True)
@@ -462,13 +465,21 @@ class MatchSession:
 
     # ------------------------------------------------------------------ recap & Q&A
     async def recap(self, lang: str, persona: str, period: str | None = None) -> dict[str, Any]:
+        # default to what is true now: full time, half time (only during the break) or a live report
         period = period or ("full_time" if self.state.status == "full_time" else
-                            "half_time" if any(m.kind == "half_time" for m in self.moments) else "live")
+                            "half_time" if self.state.status == "half_time" else "live")
+        if period == "half_time" and self._ht_base is None:
+            period = "live"  # no half time yet: report the match so far instead of inventing one
+        if period == "full_time" and self.state.status != "full_time":
+            period = "live"
         key = (period, lang, persona)
         if key in self.recaps and period != "live":
             return self.recaps[key]
-        payload = recap_payload(self.state, self.moments, self.names_dict, lang, persona,
-                                "half_time" if period == "live" else period)
+        if period == "half_time":
+            payload = {**self._ht_base, "language": lang, "persona": persona}  # type: ignore[dict-item]
+        else:
+            payload = recap_payload(self.state, self.moments, self.names_dict, lang, persona,
+                                    "half_time" if period == "live" else period)
         payload["live"] = period == "live"
         t0 = time.perf_counter()
         source = "deterministic"

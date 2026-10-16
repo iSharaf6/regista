@@ -115,3 +115,20 @@ def test_abandoned_live_feed_returns_to_the_demo(match):
         await s._housekeeping()
         assert s.mode == "replay" and s.playing
     asyncio.run(run())
+
+
+def test_half_time_recap_stays_true_later_in_the_match():
+    async def run():
+        s = api.MatchSession()
+        s.seek(64)
+        live = await s.recap("en", "analyst")
+        assert live["period"] == "live" and live["recap"]["headline"]
+        ht = await s.recap("en", "analyst", "half_time")
+        assert ht["period"] == "half_time" and ht["verdict"]["ok"]
+        ht_clock = s._ht_base["clock"]
+        assert ht_clock.startswith("45") and all(m["t"] <= s._ht_base["moments"][-1]["t"] for m in s._ht_base["moments"])
+        assert not any(m["kind"] == "press_shift" for m in s._ht_base["moments"])  # the 63' press shift is not in it
+        assert "since 60'" not in ht["recap"]["tactical_story"]
+        # asking for full time before it happens gives a live report, not a fake final
+        assert (await s.recap("en", "casual", "full_time"))["period"] == "live"
+    asyncio.run(run())

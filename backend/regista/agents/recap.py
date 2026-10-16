@@ -88,7 +88,7 @@ def recap_payload(state: MatchState, moments: list[Moment], names: dict[str, dic
         "teams": {t: state.team_view(t) for t in (state.home, state.away)},
         "top_players": state.top_players(n=5),
         "moments": [m.as_dict() for m in sorted(ranked, key=lambda m: m.t)],
-        "wp_path": state.wp_series,
+        "wp_path": list(state.wp_series),  # a copy: a stored report must not keep growing
     }
 
 
