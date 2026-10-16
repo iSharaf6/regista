@@ -1,5 +1,9 @@
 # REGISTA · the multi-agent match director
 
+![Regista: one match, every fan, every word verified](docs/media/cover.png)
+
+**Live demo:** https://ca-registaednsnlttycm2o.calmsea-720b2319.koreacentral.azurecontainerapps.io (Microsoft Foundry gpt-4.1-mini on Azure Container Apps; the first load after a quiet spell takes about 20 s)
+
 > *Regista* (Italian): the deep-lying playmaker who orchestrates a team, and the director who calls the shots in a TV gallery.
 
 **One synthetic match feed in. A different, explainable, verified broadcast out for every fan.**

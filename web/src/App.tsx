@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { api } from "./lib/feed";
-import { defaultProfile, type Profile } from "./lib/types";
+import { defaultProfile, type Profile, profileFromQuery } from "./lib/types";
 import { Broadcast } from "./pages/Broadcast";
 import { Compare } from "./pages/Compare";
 import { ControlRoom } from "./pages/ControlRoom";
@@ -47,6 +47,12 @@ export function App() {
     setProfileState(p);
     try { localStorage.setItem("regista.profile", JSON.stringify(p)); } catch { /* ignore */ }
   };
+  // a phone link (#/?mode=new_fan&lang=es&team=NOR) sets this viewer's profile
+  const linked = path === "/" ? query.toString() : "";
+  useEffect(() => {
+    const patch = linked ? profileFromQuery(new URLSearchParams(linked)) : null;
+    if (patch) setProfile({ ...profile, ...patch });
+  }, [linked]); // eslint-disable-line react-hooks/exhaustive-deps
   useEffect(() => {
     const load = () => api("/api/health").then(setHealth).catch(() => setHealth(null));
     load();

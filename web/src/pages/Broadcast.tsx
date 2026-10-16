@@ -2,6 +2,7 @@ import { useState } from "react";
 import { FanStudio } from "../components/FanStudio";
 import { MomentsList, Receipts } from "../components/Moments";
 import { Pundit } from "../components/Pundit";
+import { SecondScreen } from "../components/SecondScreen";
 import { Stage } from "../components/Stage";
 import { Transport } from "../components/Transport";
 import { UseLive } from "../components/UseLive";
@@ -58,6 +59,7 @@ export function Broadcast({ profile, setProfile }: { profile: Profile; setProfil
             {tab === "studio" ? <FanStudio profile={profile} setProfile={setProfile} match={m} /> : <Pundit feed={feed} lang={profile.language} />}
           </div>
         </div>
+        <SecondScreen profile={profile} />
         <LiveNumbers feed={feed} />
         <UseLive profile={profile} />
       </aside>

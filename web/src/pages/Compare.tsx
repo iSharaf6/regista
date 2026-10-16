@@ -17,8 +17,9 @@ export function Compare() {
         <p>Same feed, same moments, same verified facts. The Director re-cuts the graphics, the language and the voice for each viewer.</p>
       </div>
       <div className="compare">
-        {[{ p: a, set: setA, f: fa }, { p: b, set: setB, f: fb }].map(({ p, set, f }) => (
+        {[{ p: a, set: setA, f: fa, who: "Tom", tag: "analyst · Manchester" }, { p: b, set: setB, f: fb, who: "Amira", tag: "Port Calder fan · Cairo" }].map(({ p, set, f, who, tag }) => (
           <div key={p.id}>
+            <div className="fan-chip"><b>{who}</b><span>{tag}</span></div>
             <div className="card" style={{ marginBottom: 10 }}>
               <div className="body"><FanStudio profile={p} setProfile={set} match={f.match} compact /></div>
             </div>

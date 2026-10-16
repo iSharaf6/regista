@@ -1,39 +1,74 @@
-# Demo video script: 1 minute 55 seconds
+# Demo video: "Three fans, one goal" (1:55)
 
-Rules recap: under 2 minutes, show the project running, no third-party trademarks or copyrighted music.
-Everything on screen is synthetic (fictional clubs and players). Use royalty-free music or none, and keep any
-Premier League logos out of shot.
+Most entries will open on a dashboard. This one opens on a moment and three people. Every feature we show answers a
+question one of them has, so the judges remember a story, not a feature list.
 
-**Setup before recording**
-- Record the live deployment: https://ca-registaednsnlttycm2o.calmsea-720b2319.koreacentral.azurecontainerapps.io
-  (Foundry gpt-4.1-mini, so every receipt shows the real model). Open it a minute early: the first load after a quiet
-  spell takes about 20 seconds while the container starts.
-- Browser window at 1600×900 (or 1440×900), zoom 100%. Close the "How it works" strip after the first shot.
-- Pre-open tabs: Broadcast, Two fans, Control room, Recap, Data lab; the Azure portal on resource group `rg-regista`
-  (Application Insights → Transaction search); VS Code with Copilot agent mode and the `regista` MCP server.
-- Drive the match with the transport bar: the slider jumps to a minute, 4× is the recording speed.
+**The idea in one line:** at 74 minutes Valdane scores the winner. Tom, Amira and Lucía watch the same second and
+need three different broadcasts. Regista gives each of them one, and every word of it is true.
 
-**What happens in the demo match (verified from the pipeline output)**
-| Minute | Event | What Regista says |
+**The cast** (fictional, like the whole league; lower thirds are in `docs/media/video/`)
+| | Who | What they need | Fan Studio preset |
+|---|---|---|---|
+| **Tom** | Manchester, analyst, English | the numbers behind every chance | *Tom · analyst · EN* |
+| **Amira** | Cairo, Port Calder fan, Arabic | her team just went behind | *Amira · Port Calder fan · عربي* |
+| **Lucía** | Madrid, first match ever, Spanish | has no idea what xG means | *Lucía · first match · ES* |
+
+Rules recap: under 2 minutes, show the project running, no third-party trademarks or copyrighted music (no Premier
+League logos or footage). Sound: silence under the voice-over, or crowd noise you made yourself, for example Blocky
+League's synthesised crowd.
+
+---
+
+## Script
+
+### Act 1 · The goal (0:00–0:24)
+| Time | Picture | Voice-over |
 |---|---|---|
-| 20' | Valdane 1-0 | a 0.04 xG header, "against the odds"; Northbridge win probability 41% → 75% |
-| 37' | Pellegrini 1-1 | 0.24 xG; Northbridge 77% → 37% |
-| 59' | *(ground truth)* Northbridge switch to an all-out high press | detected at **63'**, onset estimated **60'**: players within 8 m of the ball in Port Calder's build-up 0.71 → 1.35, defensive line 32 m → 37 m |
-| 69' | Red card, Fontes (Northbridge) | ten men |
-| 74' | Valdane 2-1 | Northbridge win probability 14% → 76% |
+| 0:00–0:04 | Card `01-t74.png` ("74:12 · Northbridge 1–1 Port Calder. Ten men. One chance.") | "Seventy-four minutes. One-all. Northbridge are down to ten men." |
+| 0:04–0:09 | Broadcast tab: Valdane scores, the lower third bangs in, the win-probability bar jumps | "Valdane. Three people see this goal…" |
+| 0:09–0:20 | Three quick cuts of the same goal, each with its lower third: `02-fan-tom` over Tom's analyst broadcast, `03-fan-amira` over Amira's Arabic one, `04-fan-lucia` over Lucía's Spanish one | "Tom, in Manchester, wants the numbers. Amira, in Cairo, supports the side that just went behind. And Lucía, in Madrid, is watching her first match ever." |
+| 0:20–0:24 | Card `05-problem.png` ("Every fan gets the same broadcast.") | "Today, all three get exactly the same broadcast." |
 
-**Shot list**
-| Time | Shot | Voice-over (suggested) |
+### Act 2 · Regista (0:24–1:10)
+| Time | Picture | Voice-over |
 |---|---|---|
-| 0:00–0:08 | Broadcast tab at kick-off: the voxel pitch, floodlit stands, the "How it works" strip, a name tag popping over Valdane | "Football stories don't end at the scoreline. This is Regista: one synthetic match feed in, a different, explainable broadcast out for every fan." |
-| 0:08–0:22 | Slider to 19', play at 4×. Valdane scores: lower third, the win-probability bar swings; point at the receipt row (VERIFIED, Narrator, foundry:gpt-4.1-mini, evidence ids) | "Every graphic is a timed cue. This goal moved Northbridge from 41 to 75 percent, and the receipt shows the events that prove it and which agent, on which model, wrote the line." |
-| 0:22–0:38 | Click the goal in *Key moments*: the receipts drawer with *Why it matters*, the agent trace (Analyst → Narrator → Localizer → Verifier, each on gpt-4.1-mini) and the copy in every language | "Behind it are Microsoft Agent Framework agents on Microsoft Foundry: an Analyst explains why, a Narrator writes for three audiences, a Localizer adapts it, and a deterministic Verifier checks every number before it airs." |
-| 0:38–0:54 | Two fans tab around 37': left an analyst in English, right a Port Calder fan in Arabic, right to left, with different cards | "Same second, two broadcasts. The Director agent re-cuts the graphics, the language and the voice for each viewer." |
-| 0:54–1:08 | Broadcast, slider to 62', *Tactical lens* on: the 63' tactical-shift card (0.71 → 1.35 near the ball, line 32 → 37 m) | "At the hour Northbridge changed their plan. Regista spotted it from tracking alone and placed it at 60 minutes; the simulator logged the truth, 59, so we can grade every explanation." |
-| 1:08–1:22 | Control room → *Simulate model outage*: nodes flash red, the breaker opens, cues keep airing with FALLBACK tags; then *Restore* | "Cut the model mid-match: the circuit breaker trips, grounded templates take over, and viewers never see a gap." |
-| 1:22–1:32 | Azure portal: Application Insights transaction for one story (invoke_agent Narrator → chat gpt-4.1-mini), then the resource group (Container Apps, Event Hubs, Foundry) | "It runs on Azure Container Apps with Event Hubs for ingest, and every agent step is traced in Application Insights." |
-| 1:32–1:42 | Broadcast sidebar *Use it live* (overlay, on-air JSON for vMix and CasparCG, MCP), then VS Code: Copilot asks "Why did Northbridge take control after the hour?" over MCP | "Producers drop it into OBS, vMix or CasparCG, and Copilot can question the live match over MCP." |
-| 1:42–1:55 | Recap tab (Arabic, then English), then Data lab: *Tested on Microsoft Foundry* (83% first drafts verified, 100% on air verified) | "Automated recaps in five languages, every figure verified, explanations graded against ground truth. Regista: every match, made for every fan." |
+| 0:24–0:28 | Card `06-logo.png` | "This is Regista." |
+| 0:28–0:42 | *Two fans* tab at the 74' goal: Tom on the left in English, Amira on the right in Arabic, right to left | "AI agents watch every pass, work out *why* each moment matters, and re-cut the broadcast for every viewer, live. Same second, two stories: Tom gets the numbers; Amira gets it in Arabic, from her side." |
+| 0:42–0:50 | **The phone shot:** film your hand scanning the *Watch on your phone* QR code on the laptop; on the phone, tap *Lucía · first match · ES* and the Spanish broadcast appears | "Lucía just scans the screen. Her phone becomes her own broadcast: Spanish, and football explained." |
+| 0:50–0:53 | Card `07-truth.png` ("Nothing airs until it's verified.") | "But AI makes things up." |
+| 0:53–1:10 | Tap the goal in *Key moments*: the receipts drawer (why it matters, Analyst → Narrator → Localizer → Verifier, each on gpt-4.1-mini, "39/39 figures grounded"), then the Control room *Story jobs* row with 2 drafts | "So nothing airs until a Verifier checks every number against the match data. When a draft gets one wrong, it goes back to the agent with the fact-checker's notes. Every line on screen carries its receipt." |
 
-Tips: record at 4× and cut the waits, keep the cursor still while the overlays animate, and capture the Arabic
-broadcast for a few seconds so the right-to-left layout reads.
+### Act 3 · The stress test (1:10–1:30)
+| Time | Picture | Voice-over |
+|---|---|---|
+| 1:10–1:13 | Card `08-outage.png` ("What if the AI goes down mid-match?") | "And if the AI goes down in the middle of a live match?" |
+| 1:13–1:24 | Control room → *Simulate model outage*: nodes flash red, the breaker opens; cut to the broadcast still airing with FALLBACK tags; *Restore* | "The circuit breaker trips, grounded templates take over, and not one fan sees a gap." |
+| 1:24–1:30 | Azure portal: an Application Insights transaction (invoke_agent Narrator → chat gpt-4.1-mini), then the resource group | "Microsoft Agent Framework agents on Microsoft Foundry, running on Azure, every step traced." |
+
+### Act 4 · Full time (1:30–1:55)
+| Time | Picture | Voice-over |
+|---|---|---|
+| 1:30–1:44 | Recap tab at full time: English ("Valdane's Double Secures Northbridge a 2–1 Victory…"), then switch to عربي, then ES | "At full time each of them gets the story of the match, in their own language, written by an agent and checked figure by figure." |
+| 1:44–1:49 | Data lab: *Tested on Microsoft Foundry* (83% of first drafts verified, 100% verified on air) | "Tested on a real model: every story verified before it airs." |
+| 1:49–1:55 | Card `09-end.png` | "Same match. Three fans. Three stories. All of them true." |
+
+---
+
+## How to record it (about 30 minutes)
+
+1. **Open the live site** a minute early: https://ca-registaednsnlttycm2o.calmsea-720b2319.koreacentral.azurecontainerapps.io
+   (the first load after a quiet spell takes about 20 s). Browser window 1600×900, zoom 100%.
+2. **The 74' goal, three times.** Drag the slider to 73', play at 4×, and record about 20 s around the goal:
+   - Broadcast tab with *Tom · analyst · EN* (Act 1 cut 1).
+   - *Two fans* tab: Tom and Amira side by side (Act 1 cut 2 and Act 2). Crop Amira's half for Act 1.
+   - Broadcast tab with *Lucía · first match · ES* (Act 1 cut 3).
+3. **The phone shot.** On the laptop, Broadcast tab, scroll to *Watch on your phone*. Film with a second phone, or
+   screen-record your phone and composite it next to the laptop clip: scan, tap Lucía's preset, the goal plays in Spanish.
+4. **Receipts:** click the 74' goal in *Key moments* (or the 20' one) and scroll the drawer slowly.
+5. **Outage:** Control room, *Simulate model outage*, wait 5 s, cut to Broadcast, then *Restore*.
+6. **Azure:** portal → `rg-regista` → Application Insights → *Transaction search* → open one `invoke_agent Narrator`.
+7. **Full time:** slider to 94', let the whistle go, open Recap (the full-time report holds for 45 s before the match loops).
+8. **Edit** in Clipchamp (free, from Microsoft) or any editor: drop the cards from `docs/media/video/` between clips and
+   the transparent fan lower thirds over the three goal cuts. Hard cuts, no transitions; it matches the pixel style.
+9. **Voice-over:** read it slowly; it runs about 85 seconds of speech, which leaves room for the goal and the outage to breathe.
+10. Export 1080p, check it's under **1:58**, upload to YouTube (Unlisted or Public), paste the link on the project page.

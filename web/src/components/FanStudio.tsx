@@ -2,9 +2,10 @@ import type { MatchInfo, Profile } from "../lib/types";
 import { FOCUS, LANGS, MODES } from "../lib/types";
 
 export const PRESETS: { label: string; profile: Partial<Profile> }[] = [
-  { label: "Analyst · EN", profile: { mode: "analyst", language: "en", favorite_team: null, favorite_player: null, focus_metric: "pressing" } },
-  { label: "Port Calder fan · عربي", profile: { mode: "casual", language: "ar", favorite_team: "CAL", favorite_player: null, focus_metric: "none" } },
-  { label: "New to football · ES", profile: { mode: "new_fan", language: "es", favorite_team: "NOR", favorite_player: null, focus_metric: "xg" } },
+  // the three fans of the demo story: one match, three broadcasts
+  { label: "Tom · analyst · EN", profile: { mode: "analyst", language: "en", favorite_team: null, favorite_player: null, focus_metric: "pressing" } },
+  { label: "Amira · Port Calder fan · عربي", profile: { mode: "casual", language: "ar", favorite_team: "CAL", favorite_player: null, focus_metric: "none" } },
+  { label: "Lucía · first match · ES", profile: { mode: "new_fan", language: "es", favorite_team: "NOR", favorite_player: null, focus_metric: "xg" } },
   { label: "Player cam · Arata", profile: { mode: "player_cam", language: "en", favorite_team: "NOR", favorite_player: "NOR-10", focus_metric: "pass_difficulty" } },
 ];
 

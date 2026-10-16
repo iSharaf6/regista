@@ -82,6 +82,28 @@ export const FOCUS: { id: string; label: string }[] = [
   { id: "xg", label: "xG" }, { id: "pressing", label: "Pressing" }, { id: "distance", label: "Distance" },
 ];
 
+/** A viewer profile as URL parameters, shared by the overlay, the on-air feed and the phone link. */
+export function profileQuery(p: Profile): URLSearchParams {
+  const q = new URLSearchParams({ mode: p.mode, lang: p.language });
+  if (p.favorite_team) q.set("team", p.favorite_team);
+  if (p.favorite_player) q.set("player", p.favorite_player);
+  if (p.focus_metric && p.focus_metric !== "none") q.set("focus", p.focus_metric);
+  return q;
+}
+
+/** The profile fields carried by a link such as /#/?mode=new_fan&lang=es&team=NOR (null when it carries none). */
+export function profileFromQuery(q: URLSearchParams): Partial<Profile> | null {
+  const out: Partial<Profile> = {};
+  const mode = q.get("mode");
+  const lang = q.get("lang");
+  if (mode && MODES.some((m) => m.id === mode)) out.mode = mode as Mode;
+  if (lang && LANGS.some((l) => l.id === lang)) out.language = lang as Lang;
+  if (q.has("team")) out.favorite_team = q.get("team") || null;
+  if (q.has("player")) out.favorite_player = q.get("player") || null;
+  if (q.has("focus")) out.focus_metric = q.get("focus") || "none";
+  return Object.keys(out).length ? out : null;
+}
+
 export const defaultProfile = (over: Partial<Profile> = {}): Profile => ({
   id: Math.random().toString(36).slice(2, 8), mode: "casual", language: "en", favorite_team: null, favorite_player: null,
   focus_metric: "none", spoiler_free: false, max_cues_per_minute: 6, ...over,

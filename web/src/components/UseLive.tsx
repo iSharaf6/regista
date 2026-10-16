@@ -1,13 +1,10 @@
 import { useState } from "react";
-import type { Profile } from "../lib/types";
+import { type Profile, profileQuery } from "../lib/types";
 
 /** Copy-ready endpoints for real productions, built for the viewer profile chosen in Fan Studio. */
 export function UseLive({ profile }: { profile: Profile }) {
   const origin = typeof location !== "undefined" ? location.origin : "";
-  const q = new URLSearchParams({ mode: profile.mode, lang: profile.language });
-  if (profile.favorite_team) q.set("team", profile.favorite_team);
-  if (profile.favorite_player) q.set("player", profile.favorite_player);
-  if (profile.focus_metric && profile.focus_metric !== "none") q.set("focus", profile.focus_metric);
+  const q = profileQuery(profile);
   const items: { label: string; hint: string; url: string; open?: boolean }[] = [
     { label: "Overlay", hint: "OBS / vMix browser source, transparent", url: `${origin}/#/overlay?${q}`, open: true },
     { label: "On-air JSON", hint: "vMix Data Sources, CasparCG, any poller", url: `${origin}/api/onair?${q}`, open: true },
