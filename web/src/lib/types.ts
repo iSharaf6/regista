@@ -91,16 +91,21 @@ export function profileQuery(p: Profile): URLSearchParams {
   return q;
 }
 
-/** The profile fields carried by a link such as /#/?mode=new_fan&lang=es&team=NOR (null when it carries none). */
+/** The profile fields carried by a link such as /#/?mode=new_fan&lang=es&team=NOR (null when it carries none).
+ *  Every value is whitelisted: the server drops a whole profile with one invalid field, so a mangled link
+ *  must lose only its bad keys, not reset the viewer to the defaults. */
 export function profileFromQuery(q: URLSearchParams): Partial<Profile> | null {
   const out: Partial<Profile> = {};
   const mode = q.get("mode");
   const lang = q.get("lang");
+  const team = q.get("team");
+  const player = q.get("player");
+  const focus = q.get("focus");
   if (mode && MODES.some((m) => m.id === mode)) out.mode = mode as Mode;
   if (lang && LANGS.some((l) => l.id === lang)) out.language = lang as Lang;
-  if (q.has("team")) out.favorite_team = q.get("team") || null;
-  if (q.has("player")) out.favorite_player = q.get("player") || null;
-  if (q.has("focus")) out.focus_metric = q.get("focus") || "none";
+  if (team !== null && (team === "" || /^[A-Z]{2,4}$/.test(team))) out.favorite_team = team || null;
+  if (player !== null && (player === "" || /^[A-Z]{2,4}-\d{1,3}$/.test(player))) out.favorite_player = player || null;
+  if (focus && FOCUS.some((f) => f.id === focus)) out.focus_metric = focus;
   return Object.keys(out).length ? out : null;
 }
 
