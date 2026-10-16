@@ -5,8 +5,7 @@ All times are Pacific Time. Tick these off in order.
 - [ ] **Register by Mon Oct 20, 12:00 PT.** Go to https://aka.ms/insidethegame, click *Register* and create the project page.
 - [x] **Azure deploy:** live at https://ca-registaednsnlttycm2o.calmsea-720b2319.koreacentral.azurecontainerapps.io (Foundry gpt-4.1-mini).
       To redeploy: `azd provision`, then `infra/deploy-image.sh`.
-- [ ] **Make the GitHub repo public.** Ask Claude to "create the public repo and push". It will run
-      `gh repo create regista --public --source . --push` after you confirm.
+- [x] **Public GitHub repo:** https://github.com/iSharaf6/regista
 - [ ] **Record the video (under 2 minutes)** by following `docs/demo-script.md` shot by shot. Use no copyrighted music.
       Upload it to YouTube as *Unlisted* or *Public*; a public URL is required.
 - [ ] **Fill in the project page.** Copy the sections from `docs/submission.md` and paste in three links: the repo URL, the
