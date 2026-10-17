@@ -14,7 +14,8 @@ set -euo pipefail
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 CRANE="${CRANE:-crane}"
 cd "$ROOT"
-eval "$(azd env get-values)"
+ENV_VALUES="$(azd env get-values)" || { echo "azd env get-values failed: run azd provision first" >&2; exit 1; }
+eval "$ENV_VALUES"
 : "${AZURE_CONTAINER_REGISTRY_ENDPOINT:?run azd provision first}"
 REGISTRY="$AZURE_CONTAINER_REGISTRY_ENDPOINT"
 RG="$AZURE_RESOURCE_GROUP"
