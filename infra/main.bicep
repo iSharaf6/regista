@@ -25,6 +25,11 @@ param registaExists bool = false
 @description('Region for the Container Apps environment and app (AZURE_APP_LOCATION); empty means the primary region.')
 param appLocation string = ''
 
+@description('Replicas kept warm (REGISTA_MIN_REPLICAS): 0 scales to zero when idle; 1 keeps the demo instant, billed at the idle rate.')
+@minValue(0)
+@maxValue(1)
+param minReplicas int = 0
+
 var tags = { 'azd-env-name': environmentName, app: 'regista' }
 
 resource rg 'Microsoft.Resources/resourceGroups@2024-03-01' = {
@@ -46,6 +51,7 @@ module resources 'resources.bicep' = {
     principalId: principalId
     appExists: registaExists
     appLocation: empty(appLocation) ? location : appLocation
+    minReplicas: minReplicas
   }
 }
 

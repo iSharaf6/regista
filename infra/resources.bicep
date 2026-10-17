@@ -12,6 +12,8 @@ param principalId string
 param appExists bool
 @description('Region for the Container Apps environment and app; the subscription may allow only one environment per region.')
 param appLocation string
+@description('0 scales to zero when idle; 1 keeps one replica warm (billed at the idle rate while nobody watches).')
+param minReplicas int
 
 var abbr = take('regista${token}', 20)
 var appName = 'ca-${abbr}'
@@ -183,9 +185,11 @@ resource app 'Microsoft.App/containerApps@2026-07-01' = {
       ]
       // The live match session is held in memory: one replica keeps every viewer on the same broadcast.
       // Scale-out path: move session fan-out to Event Hubs consumer groups / Web PubSub.
-      // Scale to zero when nobody is watching: each cold start autoplays the demo match from kickoff,
-      // and an open WebSocket keeps the replica alive for as long as someone is watching.
-      scale: { minReplicas: 0, maxReplicas: 1 }
+      // minReplicas 0 scales to zero when nobody is watching (each cold start autoplays from kickoff);
+      // 1 keeps the demo instant during judging. With no viewers the app pauses itself, so a warm replica
+      // stays at the idle rate and makes no model calls. Use minReplicas, not a scale rule: a replica held
+      // above the minimum by a rule is billed at the active rate.
+      scale: { minReplicas: minReplicas, maxReplicas: 1 }
     }
   }
   dependsOn: [acrPull]

@@ -6,6 +6,7 @@
     "location": { "value": "${AZURE_LOCATION}" },
     "principalId": { "value": "${AZURE_PRINCIPAL_ID}" },
     "registaExists": { "value": "${SERVICE_REGISTA_RESOURCE_EXISTS=false}" },
-    "appLocation": { "value": "${AZURE_APP_LOCATION}" }
+    "appLocation": { "value": "${AZURE_APP_LOCATION}" },
+    "minReplicas": { "value": "${REGISTA_MIN_REPLICAS=0}" }
   }
 }
