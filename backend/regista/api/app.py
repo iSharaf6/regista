@@ -17,7 +17,7 @@ from fastapi import FastAPI, Header, HTTPException, Query, Request, WebSocket, W
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, JSONResponse, PlainTextResponse
 from fastapi.staticfiles import StaticFiles
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 from .. import __version__
 from ..mcp_server import build_mcp
@@ -69,6 +69,16 @@ def require_producer(token: str | None) -> None:
     """With REGISTA_ADMIN_TOKEN set, only producers holding it may change the shared broadcast or push a feed."""
     if ADMIN_TOKEN and token != ADMIN_TOKEN:
         raise HTTPException(401, "producer token required (X-Regista-Token)")
+
+
+def web_file(root: Path, path: str) -> Path | None:
+    """The file to serve for a browser path: a real file inside the built web app, the SPA index for app routes,
+    or None for anything that resolves outside it (.., encoded .., symlinks)."""
+    base = root.resolve()
+    f = (base / path).resolve()
+    if not f.is_relative_to(base):
+        return None
+    return f if path and f.is_file() else base / "index.html"
 
 
 class RateLimit:
@@ -187,8 +197,9 @@ async def ask(body: AskBody, request: Request) -> dict[str, Any]:
 
 # ---------------------------------------------------------------------- live feeds and production tools
 class FeedBatch(BaseModel):
-    frames: list[Frame] = []
-    events: list[MatchEvent] = []
+    # bounded: ten minutes of 5 Hz tracking per request is far more than any provider needs to send at once
+    frames: list[Frame] = Field(default_factory=list, max_length=3000)
+    events: list[MatchEvent] = Field(default_factory=list, max_length=2000)
 
 
 @app.post("/api/feed/start", tags=["live feed"])
@@ -320,5 +331,7 @@ if WEB_DIST.exists():
 
     @app.get("/{path:path}", include_in_schema=False)
     def spa(path: str) -> FileResponse:
-        f = WEB_DIST / path
-        return FileResponse(f if path and f.is_file() else WEB_DIST / "index.html")
+        f = web_file(WEB_DIST, path)
+        if f is None:
+            raise HTTPException(404)
+        return FileResponse(f)

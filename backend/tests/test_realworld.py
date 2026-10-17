@@ -159,3 +159,17 @@ def test_half_time_recap_stays_true_later_in_the_match():
         # asking for full time before it happens gives a live report, not a fake final
         assert (await s.recap("en", "casual", "full_time"))["period"] == "live"
     asyncio.run(run())
+
+
+def test_web_app_never_serves_files_outside_its_folder(tmp_path):
+    root = tmp_path / "dist"
+    (root / "assets").mkdir(parents=True)
+    (root / "index.html").write_text("<html>")
+    (root / "assets" / "app.js").write_text("js")
+    (tmp_path / "secret.txt").write_text("nope")
+    (root / "escape").symlink_to(tmp_path / "secret.txt")
+    assert api.web_file(root, "assets/app.js") == (root / "assets" / "app.js").resolve()
+    assert api.web_file(root, "") == (root / "index.html").resolve()
+    assert api.web_file(root, "control") == (root / "index.html").resolve()  # SPA routes get the app
+    for bad in ["../secret.txt", "assets/../../secret.txt", "../../../../etc/passwd", "escape", "/etc/passwd"]:
+        assert api.web_file(root, bad) is None, bad
