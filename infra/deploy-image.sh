@@ -40,15 +40,18 @@ cp README.md "$WORK/app/"
 cp -R docs "$WORK/app/docs"
 cp -R web/dist "$WORK/app/web/dist"
 python3 -I - "$WORK/app" "$WORK/layer.tar" <<'PY'
-import os, sys, tarfile
+import os, sys, tarfile, time
 src, out = sys.argv[1], sys.argv[2]
+# one build time for every file: it becomes the web app's Last-Modified, and a 1970 date makes browsers treat a
+# stale index.html as fresh for years (heuristic caching), so returning visitors would never see a new build
+built = int(time.time())
 def clean(ti):
     if "__pycache__" in ti.name.split("/"):
         return None
     ti.uid = ti.gid = 0
     ti.uname = ti.gname = "root"
     ti.mode = 0o755 if ti.isdir() or ti.mode & 0o111 else 0o644
-    ti.mtime = 0
+    ti.mtime = built
     return ti
 with tarfile.open(out, "w", format=tarfile.PAX_FORMAT) as tar:
     tar.add(src, arcname="app", filter=clean)
