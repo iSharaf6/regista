@@ -50,6 +50,8 @@ export interface Snapshot {
 export interface Moment {
   id: string; t: number; clock: string; kind: string; team: string | null; players: string[]; importance: number;
   headline: string; facts: Record<string, any>; why: any[]; evidence: string[]; lane: "fast" | "story";
+  /** per fact: "observed" in the feed or "model estimate" (xG, win probability, difficulty...) */
+  fact_kinds?: Record<string, string>;
   copy?: Record<string, { caption: string; line: string; explainer: string }>; story?: Story | null;
 }
 

@@ -14,6 +14,8 @@ param appExists bool
 param appLocation string
 @description('0 scales to zero when idle; 1 keeps one replica warm (billed at the idle rate while nobody watches).')
 param minReplicas int
+@secure()
+param feedToken string
 
 var abbr = take('regista${token}', 20)
 var appName = 'ca-${abbr}'
@@ -158,6 +160,8 @@ resource app 'Microsoft.App/containerApps@2026-07-01' = {
         allowInsecure: false
       }
       registries: [{ server: registry.properties.loginServer, identity: identity.id }]
+      // only the live-feed API needs it; playback, the outage demo, recaps and Q&A stay open
+      secrets: [{ name: 'feed-token', value: feedToken }]
     }
     template: {
       containers: [
@@ -176,6 +180,7 @@ resource app 'Microsoft.App/containerApps@2026-07-01' = {
             { name: 'EVENTHUB_NAME', value: matchEvents.name }
             { name: 'APPLICATIONINSIGHTS_CONNECTION_STRING', value: appInsights.properties.ConnectionString }
             { name: 'OTEL_SERVICE_NAME', value: 'regista' }
+            { name: 'REGISTA_FEED_TOKEN', secretRef: 'feed-token' }
             { name: 'REGISTA_AUTOPLAY', value: '1' }
           ]
           probes: [

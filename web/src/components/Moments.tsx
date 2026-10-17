@@ -94,41 +94,19 @@ export function Receipts({ moment, feed, onClose, lang }: { moment: Moment; feed
           ))}
         </div>
 
+        <div className="section-title">The facts</div>
+        <FactTable facts={m.facts ?? {}} kinds={m.fact_kinds ?? {}} />
+
         {story && (
           <>
-            <div className="section-title">Agent trace</div>
-            <div className="trace">
-              {story.trace.map((s: any) => (
-                <div className="step" key={s.id}>
-                  <b>{s.agent}</b>
-                  <span className={`status ${s.status}`}>{s.status}</span>
-                  <span className="muted" style={{ fontSize: 12 }}>{s.detail || s.model}</span>
-                  <span className="mono">{s.ms.toFixed(1)} ms</span>
-                </div>
-              ))}
-            </div>
-            <div className="section-title">Verifier</div>
-            <div className="kv">
-              <span className="k">Verdict</span><span className={story.verdict?.ok ? "verified" : ""}>{story.verdict?.ok ? "✓ passed" : "✗ rejected"}{story.verdict?.via ? ` (${story.verdict.via})` : ""}</span>
-              <span className="k">Figures grounded in facts</span><span className="mono">{story.verdict?.numbers_supported}/{story.verdict?.numbers_checked}</span>
-              <span className="k">Drafts</span><span className="mono">{story.attempts}</span>
-              <span className="k">Template fallback</span><span>{story.fallback_langs?.length ? story.fallback_langs.join(", ") : "none"}</span>
-              <span className="k">End-to-end</span><span className="mono">{Math.round(story.latency_ms)} ms</span>
-            </div>
-            {story.verdict?.issues?.length > 0 && (
-              <ul className="muted" style={{ fontSize: 12 }}>{story.verdict.issues.map((i: string) => <li key={i}>{i}</li>)}</ul>
-            )}
+            <div className="section-title">Interpretation (AI, checked against the facts above)</div>
             {story.insight && (
-              <>
-                <div className="section-title">Analyst insight</div>
-                <div className="card" style={{ padding: 10 }}>
-                  <b>{story.insight.claim}</b>
-                  {story.insight.tactical_read && <div style={{ marginTop: 4 }}>{story.insight.tactical_read}</div>}
-                  <ul style={{ margin: "6px 0 0", paddingLeft: 18 }}>{(story.insight.why ?? []).map((w: string) => <li key={w}>{w}</li>)}</ul>
-                </div>
-              </>
+              <div className="card" style={{ padding: 10, marginBottom: 8 }}>
+                <b>{story.insight.claim}</b>
+                {story.insight.tactical_read && <div style={{ marginTop: 4 }}>{story.insight.tactical_read}</div>}
+                <ul style={{ margin: "6px 0 0", paddingLeft: 18 }}>{(story.insight.why ?? []).map((w: string) => <li key={w}>{w}</li>)}</ul>
+              </div>
             )}
-            <div className="section-title">On-air copy, every language and persona</div>
             <div className="tabs" role="group" aria-label="Language">{langs.map((l) => <button key={l} className={tab === l ? "on" : ""} aria-pressed={tab === l} onClick={() => setTab(l)}>{l.toUpperCase()}</button>)}</div>
             {narration[tab] && Object.entries(narration[tab]).map(([persona, c]: any) => (
               <div className={`card ${tab === "ar" ? "rtl" : ""}`} style={{ padding: 10, marginBottom: 6 }} key={persona}>
@@ -138,11 +116,60 @@ export function Receipts({ moment, feed, onClose, lang }: { moment: Moment; feed
                 <div className="muted" style={{ fontSize: 13 }}>{c.explainer}</div>
               </div>
             ))}
+
+            <div className="section-title">How it was checked</div>
+            <div className="kv">
+              <span className="k">Verdict</span><span className={story.verdict?.ok ? "verified" : ""}>{story.verdict?.ok ? "✓ passed" : "✗ rejected"}{story.verdict?.via ? ` (${story.verdict.via})` : ""}</span>
+              <span className="k">Figures grounded in the facts</span><span className="mono">{story.verdict?.numbers_supported}/{story.verdict?.numbers_checked}</span>
+              <span className="k">Drafts</span><span className="mono">{story.attempts}</span>
+              <span className="k">Template fallback</span><span>{story.fallback_langs?.length ? story.fallback_langs.join(", ") : "none"}</span>
+              <span className="k">End-to-end</span><span className="mono">{Math.round(story.latency_ms)} ms</span>
+            </div>
+            {story.verdict?.issues?.length > 0 && (
+              <ul className="muted" style={{ fontSize: 12 }}>{story.verdict.issues.map((i: string) => <li key={i}>{i}</li>)}</ul>
+            )}
+            <div className="trace" style={{ marginTop: 8 }}>
+              {story.trace.map((s: any) => (
+                <div className="step" key={s.id}>
+                  <b>{s.agent}</b>
+                  <span className={`status ${s.status}`}>{s.status}</span>
+                  <span className="muted" style={{ fontSize: 12 }}>{s.detail || s.model}</span>
+                  <span className="mono">{s.ms.toFixed(1)} ms</span>
+                </div>
+              ))}
+            </div>
           </>
         )}
-        <div className="section-title">Facts</div>
-        <pre className="mono card" style={{ padding: 10, fontSize: 11.5, whiteSpace: "pre-wrap", maxHeight: 260, overflow: "auto" }}>{JSON.stringify(m.facts, null, 1)}</pre>
       </aside>
     </>
+  );
+}
+
+const FACT_LABEL = (k: string) => k.replaceAll("_", " ").replace(/\bkmh\b/, "km/h").replace(/\bwp\b/, "win probability");
+
+function factValue(v: unknown): string {
+  if (typeof v === "number") return Number.isInteger(v) ? String(v) : v.toFixed(Math.abs(v) < 10 ? 2 : 1);
+  if (typeof v === "string" || typeof v === "boolean") return String(v);
+  const json = JSON.stringify(v);
+  return json.length > 60 ? `${json.slice(0, 57)}…` : json;
+}
+
+/** Each fact with what it is: observed in the feed, or estimated by a model. */
+function FactTable({ facts, kinds }: { facts: Record<string, unknown>; kinds: Record<string, string> }) {
+  const rows = Object.entries(facts);
+  if (!rows.length) return <div className="empty">No facts recorded for this moment.</div>;
+  return (
+    <div className="facts">
+      {rows.map(([k, v]) => {
+        const kind = kinds[k];
+        return (
+          <div className="fact" key={k}>
+            <span className="k">{FACT_LABEL(k)}</span>
+            <span className="mono">{factValue(v)}</span>
+            {kind ? <span className={`fact-kind ${kind === "observed" ? "obs" : "est"}`}>{kind}</span> : <span />}
+          </div>
+        );
+      })}
+    </div>
   );
 }

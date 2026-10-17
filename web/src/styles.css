@@ -494,3 +494,10 @@ html.overlay-mode, html.overlay-mode body { background: transparent !important; 
 .legend span { display: inline-flex; align-items: center; gap: 6px; }
 .legend i { width: 18px; height: 6px; border: 2px solid var(--ink); display: inline-block; }
 .legend i.dash { background: repeating-linear-gradient(90deg, #9a968a 0 5px, transparent 5px 9px); }
+.facts { display: grid; background: var(--field); border: 3px solid var(--ink); }
+.fact { display: grid; grid-template-columns: 1fr auto auto; gap: 10px; align-items: center; padding: 6px 10px; border-bottom: 2px solid var(--tint); font-size: 13.5px; }
+.fact:last-child { border-bottom: 0; }
+.fact .k { color: var(--ink-2); }
+.fact-kind { font-family: var(--px); font-weight: 700; font-size: 9px; letter-spacing: 0.06em; text-transform: uppercase; padding: 3px 6px 2px; border: 2px solid var(--ink); white-space: nowrap; }
+.fact-kind.obs { background: var(--hl); color: var(--ink); }
+.fact-kind.est { background: var(--cyan); color: var(--ink); }

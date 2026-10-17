@@ -30,6 +30,10 @@ param appLocation string = ''
 @maxValue(1)
 param minReplicas int = 0
 
+@secure()
+@description('Locks the live-feed API (REGISTA_FEED_TOKEN). Generated on every provision and kept only as a Container App secret; read it with az containerapp secret show.')
+param feedToken string = newGuid()
+
 var tags = { 'azd-env-name': environmentName, app: 'regista' }
 
 resource rg 'Microsoft.Resources/resourceGroups@2024-03-01' = {
@@ -52,6 +56,7 @@ module resources 'resources.bicep' = {
     appExists: registaExists
     appLocation: empty(appLocation) ? location : appLocation
     minReplicas: minReplicas
+    feedToken: feedToken
   }
 }
 
