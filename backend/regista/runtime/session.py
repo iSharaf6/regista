@@ -92,6 +92,9 @@ class MatchSession:
         self._paused_at: float | None = None
         self._last_ingest = 0.0
         self.live_idle_s = float(os.getenv("REGISTA_LIVE_IDLE_S", "120"))
+        self.empty_pause_s = float(os.getenv("REGISTA_EMPTY_PAUSE_S", "90"))
+        self._unwatched_since: float | None = None
+        self._empty_paused = False
         self.load(**DEMO)
 
     # ------------------------------------------------------------------ lifecycle
@@ -180,7 +183,7 @@ class MatchSession:
                 "t_end": float(self.res.frame_t[-1]), "params": self.params, "mode": self.mode,
                 "chaos_expires_in_s": round(max(0.0, self._chaos_until - time.monotonic()), 0) if self._chaos_until else 0,
                 "chaos": {"fail_rate": self.telemetry.chaos_fail_rate, "latency_ms": self.telemetry.chaos_latency_ms},
-                "breaker": self.rt.breaker.as_dict(), "bus": self.bus.name}
+                "breaker": self.rt.breaker.as_dict(), "bus": self.bus.name, "paused_for_empty_room": self._empty_paused}
 
     def llm_info(self) -> dict[str, Any]:
         return {"provider": self.cfg.provider, "model": self.rt.model_name, "offline": self.cfg.is_offline}
@@ -191,6 +194,7 @@ class MatchSession:
         if action == "play":
             self.playing = True
             self._paused_at = None
+            self._empty_paused = False
         elif action == "pause":
             self.playing = False
             self._paused_at = time.monotonic()
@@ -257,14 +261,24 @@ class MatchSession:
         if self.autoplay and self.mode == "live" and mono - self._last_ingest > self.live_idle_s:
             self.stop_live()  # an abandoned live feed must not park the public demo
             await self.control("play")
-        if self.autoplay and self.mode == "replay" and not self.playing:
-            ended = self._ended_at is not None and mono - self._ended_at > 45
-            idle = self._paused_at is not None and mono - self._paused_at > 300
-            if ended or idle:  # keep the public demo alive: loop after full time, resume abandoned pauses
-                if ended:
-                    await self.control("restart")
-                    self._ended_at = None
-                await self.control("play")
+        if self.autoplay and self.mode == "replay":
+            if self.viewers:
+                self._unwatched_since = None
+            elif self._unwatched_since is None:
+                self._unwatched_since = mono
+            empty = self._unwatched_since is not None and mono - self._unwatched_since > self.empty_pause_s
+            if self.playing and empty:
+                # nobody is watching: an always-on replica idles instead of spending model calls on an empty room
+                await self.control("pause")
+                self._paused_at, self._empty_paused = None, True
+            elif not self.playing and self.viewers:
+                ended = self._ended_at is not None and mono - self._ended_at > 45
+                idle = self._paused_at is not None and mono - self._paused_at > 300
+                if ended or idle or self._empty_paused:  # loop after full time, resume abandoned or empty-room pauses
+                    if ended:
+                        await self.control("restart")
+                        self._ended_at = None
+                    await self.control("play")
         for key, v in list(self.virtual.items()):
             if mono - v.last_access > 600:
                 self.virtual.pop(key, None)

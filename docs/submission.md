@@ -56,7 +56,7 @@ Container Registry + managed identity · Azure Developer CLI (Bicep) · Model Co
    then `cd web && npm install && npm run dev` and open http://localhost:5173.
 3. **With a model:** `REGISTA_LLM=foundry` with `FOUNDRY_PROJECT_ENDPOINT` and `FOUNDRY_MODEL` (Entra ID), then
    `regista llm-eval` to score the live agents.
-4. **Tests and evaluation:** `pytest -q` (25 tests) and `regista evaluate --matches 20`.
+4. **Tests and evaluation:** `pytest -q` (26 tests) and `regista evaluate --matches 20`.
 5. **Real-world integrations:** `regista publish --url https://ca-registaednsnlttycm2o.calmsea-720b2319.koreacentral.azurecontainerapps.io` streams a match through the live feed API;
    `https://ca-registaednsnlttycm2o.calmsea-720b2319.koreacentral.azurecontainerapps.io/api/onair?mode=casual&lang=es` is the vMix/CasparCG feed. See `docs/real-world.md`.
 6. **Copilot:** open the repo in VS Code with the API running, enable the `regista` MCP server and use the

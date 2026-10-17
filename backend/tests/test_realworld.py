@@ -10,6 +10,7 @@ import pytest
 
 import regista.api.app as api
 from regista.runtime.webhooks import Webhooks
+from regista.schema.profiles import FanProfile
 from regista.sim.engine import simulate
 
 
@@ -114,6 +115,32 @@ def test_abandoned_live_feed_returns_to_the_demo(match):
         s._last_ingest = time.monotonic() - s.live_idle_s - 1
         await s._housekeeping()
         assert s.mode == "replay" and s.playing
+    asyncio.run(run())
+
+
+def test_an_empty_room_pauses_the_demo_until_someone_watches():
+    """An always-on replica must idle when nobody is watching, not loop the match and spend model calls."""
+    async def run():
+        s = api.MatchSession()
+        s.autoplay = True
+        await s.control("play")
+        await s._housekeeping()
+        assert s.playing  # a short gap between viewers is not an empty room
+        s._unwatched_since = time.monotonic() - s.empty_pause_s - 1
+        await s._housekeeping()
+        assert not s.playing and s.control_state()["paused_for_empty_room"]
+        v = s.connect(FanProfile(language="ar"))
+        await s._housekeeping()
+        assert s.playing and not s.control_state()["paused_for_empty_room"]
+        # full time with nobody watching stays parked; the next viewer gets a fresh kickoff
+        s.disconnect(v.id)
+        s.seek(95)
+        s.playing, s._ended_at = False, time.monotonic() - 60
+        await s._housekeeping()
+        assert not s.playing and s.clock_t > 60
+        s.connect(FanProfile())
+        await s._housekeeping()
+        assert s.playing and s.clock_t < 60
     asyncio.run(run())
 
 
