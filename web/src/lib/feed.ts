@@ -133,7 +133,9 @@ export function useFeed(profile: Profile, opts: { ops?: boolean } = {}): Feed {
         let changed = false;
         const out: Record<string, Cue> = {};
         for (const [k, c] of Object.entries(m)) {
-          if (PERSISTENT.has(c.kind) || c.t_out > t - 0.5 || isLive(c, t)) out[k] = c; else changed = true;
+          // the player-cam card is pinned until its next refresh replaces it (one id per player)
+          if (PERSISTENT.has(c.kind) || c.kind === "player_focus" || c.t_out > t - 0.5 || isLive(c, t)) out[k] = c;
+          else changed = true;
         }
         return changed ? out : m;
       });

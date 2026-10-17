@@ -26,8 +26,8 @@ function ModelEval({ llm }: { llm: any }) {
           {recaps.length > 0 && <div className="kpi"><span>Recaps verified</span><b>{recaps.filter((r) => r.verified).length}/{recaps.length}</b></div>}
         </div>
         <div className="muted" style={{ fontSize: 13 }}>
-          {llm.moments} story-lane moments in {(llm.languages ?? []).join(", ").toUpperCase()}, every figure checked by the deterministic
-          Verifier before air. Rejected drafts go back to the agents with the fact-checker's notes.
+          {llm.moments} story-lane moments in {(llm.languages ?? []).join(", ").toUpperCase()}, the figures, players and selected football
+          claims checked by the deterministic Verifier before air. Rejected drafts go back to the agents with the fact-checker's notes.
         </div>
         {sample && (
           <div className="bubble" style={{ marginTop: 12 }}>

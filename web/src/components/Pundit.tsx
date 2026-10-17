@@ -29,15 +29,14 @@ export function Pundit({ feed, lang }: { feed: Feed; lang: Lang }) {
   return (
     <div className="stack">
       <div className="chat" aria-live="polite">
-        {msgs.length === 0 && <div className="muted" style={{ fontSize: 13 }}>Ask the match anything, in your language. Answers come from the same tools exposed over MCP.</div>}
+        {msgs.length === 0 && <div className="muted" style={{ fontSize: 13 }}>Ask the match anything, in your language. The Pundit looks the answer up in the live match data instead of guessing.</div>}
         {msgs.map((m, i) => (
           <div key={i} className={`bubble ${m.me ? "me" : ""} ${rtl ? "rtl" : ""}`}>
             {m.text}
-            {!m.me && m.tools && (
-              <div className="tools">
-                {m.tools.map((t) => <span key={t}>{t}()</span>)}
-                <span>{m.model}</span>
-                {m.ms !== undefined && <span>{m.ms} ms</span>}
+            {!m.me && m.tools && m.tools.length > 0 && (
+              <div className="tools" aria-label="Looked up">
+                <span className="from">From the match data:</span>
+                {m.tools.map((t) => <span key={t}>{t.replace(/^get_/, "").replaceAll("_", " ")}</span>)}
               </div>
             )}
           </div>

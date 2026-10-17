@@ -1,11 +1,10 @@
 import { useState } from "react";
-import { FanStudio } from "../components/FanStudio";
+import { FanStudio, PersonaChips } from "../components/FanStudio";
 import { MomentsList, Receipts } from "../components/Moments";
 import { Pundit } from "../components/Pundit";
 import { SecondScreen } from "../components/SecondScreen";
 import { Stage } from "../components/Stage";
 import { Transport } from "../components/Transport";
-import { UseLive } from "../components/UseLive";
 import { useFeed } from "../lib/feed";
 import type { Moment, Profile } from "../lib/types";
 import type { Cam } from "../components/Pitch";
@@ -24,16 +23,17 @@ export function Broadcast({ profile, setProfile }: { profile: Profile; setProfil
         <Welcome />
         <Stage feed={feed} favorite={profile.favorite_player} cam={cam} lens={lens} receipts={receipts} rtl={profile.language === "ar"}
           label={`${profile.mode.replace("_", " ")} · ${profile.language.toUpperCase()}`} />
+        <PersonaChips profile={profile} setProfile={setProfile} className="persona-bar" />
         <Transport feed={feed} />
         <div className="row" style={{ marginTop: 10, justifyContent: "space-between" }}>
           <div className="row">
             <div className="seg" aria-label="Camera">
-              <button className={cam === "broadcast" ? "on" : ""} onClick={() => setCam("broadcast")}>Broadcast cam</button>
-              <button className={cam === "tactical" ? "on" : ""} onClick={() => setCam("tactical")}>Tactical cam</button>
+              <button className={cam === "broadcast" ? "on" : ""} aria-pressed={cam === "broadcast"} onClick={() => setCam("broadcast")}>Broadcast cam</button>
+              <button className={cam === "tactical" ? "on" : ""} aria-pressed={cam === "tactical"} onClick={() => setCam("tactical")}>Tactical cam</button>
             </div>
             <div className="seg">
-              <button className={lens ? "on" : ""} onClick={() => setLens(!lens)} title="Defensive lines and the 8 m pressing radius">Tactical lens</button>
-              <button className={receipts ? "on" : ""} onClick={() => setReceipts(!receipts)} title="Show provenance and verification on air">Receipts</button>
+              <button className={lens ? "on" : ""} aria-pressed={lens} onClick={() => setLens(!lens)} title="Defensive lines and the 8 m pressing radius">Tactical lens</button>
+              <button className={receipts ? "on" : ""} aria-pressed={receipts} onClick={() => setReceipts(!receipts)} title="Show on air whether each graphic's figures were checked">Receipts</button>
             </div>
           </div>
           {m && (
@@ -43,7 +43,7 @@ export function Broadcast({ profile, setProfile }: { profile: Profile; setProfil
           )}
         </div>
         <div className="card" style={{ marginTop: 14 }}>
-          <header><h3>Key moments</h3><span className="muted" style={{ fontSize: 12 }}>click any moment for its receipts: facts, factors, agent trace, verification</span></header>
+          <header><h3>Key moments</h3><span className="muted" style={{ fontSize: 12 }}>tap any moment for the evidence behind it</span></header>
           <div className="body"><MomentsList feed={feed} onOpen={setOpen} /></div>
         </div>
       </section>
@@ -51,17 +51,18 @@ export function Broadcast({ profile, setProfile }: { profile: Profile; setProfil
         <div className="card">
           <header>
             <div className="seg">
-              <button className={tab === "studio" ? "on" : ""} onClick={() => setTab("studio")}>Fan Studio</button>
-              <button className={tab === "pundit" ? "on" : ""} onClick={() => setTab("pundit")}>Ask the Pundit</button>
+              <button className={tab === "studio" ? "on" : ""} aria-pressed={tab === "studio"} onClick={() => setTab("studio")}>Fan Studio</button>
+              <button className={tab === "pundit" ? "on" : ""} aria-pressed={tab === "pundit"} onClick={() => setTab("pundit")}>Ask the Pundit</button>
             </div>
           </header>
           <div className="body">
-            {tab === "studio" ? <FanStudio profile={profile} setProfile={setProfile} match={m} /> : <Pundit feed={feed} lang={profile.language} />}
+            {/* both stay mounted, so the Pundit conversation survives a trip to Fan Studio */}
+            <div hidden={tab !== "studio"}><FanStudio profile={profile} setProfile={setProfile} match={m} /></div>
+            <div hidden={tab !== "pundit"}><Pundit feed={feed} lang={profile.language} /></div>
           </div>
         </div>
         <SecondScreen profile={profile} />
         <LiveNumbers feed={feed} />
-        <UseLive profile={profile} />
       </aside>
       {open && <Receipts moment={open} feed={feed} onClose={() => setOpen(null)} lang={profile.language} />}
     </div>

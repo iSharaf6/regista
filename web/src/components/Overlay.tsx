@@ -10,7 +10,8 @@ const KICKER: Record<string, string> = {
 
 function active(cues: Cue[], t: number) {
   const now = performance.now();
-  return cues.filter((c) => !["score_bug", "momentum"].includes(c.kind) && isLive(c, t, now));
+  // the player-cam card stays pinned between its refreshes; the feed keeps only the latest one
+  return cues.filter((c) => !["score_bug", "momentum"].includes(c.kind) && (c.kind === "player_focus" || isLive(c, t, now)));
 }
 
 function newest(cues: Cue[], slot: string) {
@@ -18,41 +19,45 @@ function newest(cues: Cue[], slot: string) {
   return xs.length ? xs.reduce((a, b) => (b.priority > a.priority + 20 || (b.t_in >= a.t_in && b.priority >= a.priority - 20) ? b : a)) : null;
 }
 
-export const Overlay = forwardRef<HTMLDivElement, { feed: Feed; receipts: boolean; rtl: boolean; showMomentum?: boolean }>(
-  function Overlay({ feed, receipts, rtl, showMomentum = true }, ref) {
-    const [t, setT] = useState(0);
-    useEffect(() => {
-      const id = window.setInterval(() => setT(feed.clock.current), 200);
-      return () => window.clearInterval(id);
-    }, [feed.clock]);
-    const live = active(feed.cues, t);
-    const bug = feed.cues.find((c) => c.kind === "score_bug");
-    const ur = live.filter((c) => c.slot === "upper_right").sort((a, b) => b.t_in - a.t_in).slice(0, 2);
-    const side = newest(live, "side_panel");
-    const lower = newest(live, "lower_third");
-    const ticker = newest(live, "ticker");
-    const follow = live.filter((c) => c.slot === "follow");
-    const dir = rtl ? "rtl" : "ltr";
+type OnAir = ReturnType<typeof useOnAir>;
+
+/** What is on air right now, re-read five times a second against the match clock. */
+function useOnAir(feed: Feed) {
+  const [t, setT] = useState(0);
+  useEffect(() => {
+    const id = window.setInterval(() => setT(feed.clock.current), 200);
+    return () => window.clearInterval(id);
+  }, [feed.clock]);
+  const live = active(feed.cues, t);
+  return {
+    bug: feed.cues.find((c) => c.kind === "score_bug"),
+    ur: live.filter((c) => c.slot === "upper_right").sort((a, b) => b.t_in - a.t_in).slice(0, 2),
+    side: newest(live, "side_panel"),
+    lower: newest(live, "lower_third"),
+    ticker: newest(live, "ticker"),
+    follow: live.filter((c) => c.slot === "follow"),
+  };
+}
+
+interface OverlayProps {
+  feed: Feed; receipts: boolean; rtl: boolean; showMomentum?: boolean;
+  /** false on narrow screens: the cards render below the pitch (OverlayCards) instead of over it */
+  cards?: boolean;
+  /** producer receipts (agent, model, latency, evidence ids) instead of the fan's "checked" chip */
+  detail?: boolean;
+}
+
+export const Overlay = forwardRef<HTMLDivElement, OverlayProps>(
+  function Overlay({ feed, receipts, rtl, showMomentum = true, cards = true, detail = false }, ref) {
+    const air = useOnAir(feed);
     return (
       <div className="overlay" ref={ref}>
         <div className="slot-ul">
-          {feed.match && <ScoreBug match={feed.match} snap={feed.snap} cue={bug} />}
+          {feed.match && <ScoreBug match={feed.match} snap={feed.snap} cue={air.bug} />}
           {showMomentum && feed.match && feed.snap && <WinProb match={feed.match} snap={feed.snap} />}
         </div>
-        <div className="slot-ur">
-          {ur.map((c) => <Card key={c.id} cue={c} receipts={receipts} dir={dir} match={feed.match} />)}
-        </div>
-        {side && <div className="slot-side"><Card cue={side} receipts={receipts} dir={dir} match={feed.match} /></div>}
-        {lower && <div className="slot-lower"><Lower cue={lower} receipts={receipts} dir={dir} match={feed.match} /></div>}
-        {ticker && (
-          <div className="slot-ticker" key={ticker.id}>
-            <div className="ticker" dir={dir} style={accent(ticker)}>
-              <b>{KICKER[ticker.payload.moment_kind] ?? ticker.kind}</b>
-              <span className={rtl ? "rtl" : ""}>{ticker.body || ticker.title}</span>
-            </div>
-          </div>
-        )}
-        {follow.map((c) => (
+        {cards && <CueSlots air={air} match={feed.match} receipts={receipts} rtl={rtl} detail={detail} />}
+        {air.follow.map((c) => (
           <div className="follow" data-follow={c.follow ?? ""} key={c.id}>
             {c.kind === "speed_flash" ? (
               <div className="speedflash mono">{Number(c.payload.facts?.speed_kmh ?? c.payload.speed_kmh ?? 0).toFixed(1)} km/h</div>
@@ -70,6 +75,46 @@ export const Overlay = forwardRef<HTMLDivElement, { feed: Feed; receipts: boolea
     );
   },
 );
+
+interface SlotProps { air: OnAir; match: MatchInfo | null; receipts: boolean; rtl: boolean; detail: boolean }
+
+/** The broadcast cards in their on-pitch slots. */
+function CueSlots({ air, match, receipts, rtl, detail }: SlotProps) {
+  const dir = rtl ? "rtl" : "ltr";
+  return (
+    <>
+      <div className="slot-ur">
+        {air.ur.map((c) => <Card key={c.id} cue={c} receipts={receipts} detail={detail} dir={dir} match={match} />)}
+      </div>
+      {air.side && <div className="slot-side"><Card cue={air.side} receipts={receipts} detail={detail} dir={dir} match={match} /></div>}
+      {air.lower && <div className="slot-lower"><Lower cue={air.lower} receipts={receipts} detail={detail} dir={dir} match={match} /></div>}
+      {air.ticker && <div className="slot-ticker" key={air.ticker.id}><Ticker cue={air.ticker} rtl={rtl} /></div>}
+    </>
+  );
+}
+
+/** Phones: the same cards stacked below a compact pitch, at a size people can read. */
+export function OverlayCards({ feed, receipts, rtl }: { feed: Feed; receipts: boolean; rtl: boolean }) {
+  const air = useOnAir(feed);
+  const dir = rtl ? "rtl" : "ltr";
+  return (
+    <div className="stage-cards" aria-live="polite">
+      {air.lower && <Lower cue={air.lower} receipts={receipts} detail={false} dir={dir} match={feed.match} />}
+      {air.ur.map((c) => <Card key={c.id} cue={c} receipts={receipts} detail={false} dir={dir} match={feed.match} />)}
+      {air.side && <Card cue={air.side} receipts={receipts} detail={false} dir={dir} match={feed.match} />}
+      {air.ticker && <Ticker cue={air.ticker} rtl={rtl} />}
+    </div>
+  );
+}
+
+function Ticker({ cue, rtl }: { cue: Cue; rtl: boolean }) {
+  return (
+    <div className="ticker" dir={rtl ? "rtl" : "ltr"} style={accent(cue)}>
+      <b>{KICKER[cue.payload.moment_kind] ?? cue.kind}</b>
+      <span className={rtl ? "rtl" : ""}>{cue.body || cue.title}</span>
+    </div>
+  );
+}
 
 function accent(c: Cue): React.CSSProperties {
   const col = c.payload?.colors?.primary;
@@ -102,25 +147,32 @@ function WinProb({ match, snap }: { match: MatchInfo; snap: Snapshot }) {
   );
 }
 
-function Receipt({ cue }: { cue: Cue }) {
+/** Fans see whether the figures were checked; producers (detail) also see who wrote it, on which model, how fast. */
+function Receipt({ cue, detail }: { cue: Cue; detail: boolean }) {
   const p = cue.provenance;
   const v = cue.payload.verdict;
+  const checked = v?.numbers_checked ? `CHECKED · ${v.numbers_supported}/${v.numbers_checked} FIGURES`
+    : p.agent === "Producer" && !cue.moment_id ? "FROM THE MATCH DATA" : "CHECKED";
   return (
     <div className="receipt">
-      {p.verified
-        ? <span className="ok">✓ {v?.numbers_checked ? `VERIFIED ${v.numbers_supported}/${v.numbers_checked}` : p.agent === "Producer" && !cue.moment_id ? "COMPUTED FROM FEED" : "GROUNDED"}</span>
-        : <span className="fb">UNVERIFIED</span>}
-      <span>{p.agent}</span>
-      <span>{p.model}</span>
-      {p.attempts > 1 && <span className="fb">{p.attempts} drafts</span>}
-      {p.fallback && <span className="fb">FALLBACK</span>}
-      {p.latency_ms > 0 && <span>{Math.round(p.latency_ms)} ms</span>}
-      {cue.evidence.length > 0 && <span>{cue.evidence.slice(0, 2).join(" ")}</span>}
+      {p.verified ? <span className="ok">✓ {checked}</span> : <span className="fb">NOT CHECKED</span>}
+      {p.fallback && <span className="fb">TEMPLATE</span>}
+      {detail && (
+        <>
+          <span>{p.agent}</span>
+          <span>{p.model}</span>
+          {p.attempts > 1 && <span className="fb">{p.attempts} drafts</span>}
+          {p.latency_ms > 0 && <span>{Math.round(p.latency_ms)} ms</span>}
+          {cue.evidence.length > 0 && <span>{cue.evidence.slice(0, 2).join(" ")}</span>}
+        </>
+      )}
     </div>
   );
 }
 
-function Lower({ cue, receipts, dir, match }: { cue: Cue; receipts: boolean; dir: string; match: MatchInfo | null }) {
+interface CardProps { cue: Cue; receipts: boolean; detail: boolean; dir: string; match: MatchInfo | null }
+
+function Lower({ cue, receipts, detail, dir, match }: CardProps) {
   const team = cue.payload.team === match?.home.id ? match?.home : cue.payload.team === match?.away.id ? match?.away : null;
   const rtl = dir === "rtl";
   return (
@@ -130,13 +182,13 @@ function Lower({ cue, receipts, dir, match }: { cue: Cue; receipts: boolean; dir
         <div className="caption">{cue.title}</div>
         {cue.body && <div className="line">{cue.body}</div>}
         {cue.payload.explainer && <div className="why">{cue.payload.explainer}</div>}
-        {receipts && <Receipt cue={cue} />}
+        {receipts && <Receipt cue={cue} detail={detail} />}
       </div>
     </div>
   );
 }
 
-function Card({ cue, receipts, dir, match }: { cue: Cue; receipts: boolean; dir: string; match: MatchInfo | null }) {
+function Card({ cue, receipts, detail, dir, match }: CardProps) {
   const p = cue.payload;
   const f = p.facts ?? {};
   const rtl = dir === "rtl";
@@ -201,7 +253,7 @@ function Card({ cue, receipts, dir, match }: { cue: Cue; receipts: boolean; dir:
       {p.moment_kind === "control_chaos" && <FactorViz factors={f.factors ?? []} />}
       {p.moment_kind === "momentum_swing" && <Spark series={(f.series ?? []).map((s: any) => s.value)} color={match?.home.primary} />}
       {p.explainer && <div className={`body ${rtl ? "rtl" : ""}`} style={{ opacity: 0.85 }}>{p.explainer}</div>}
-      {receipts && <Receipt cue={cue} />}
+      {receipts && <Receipt cue={cue} detail={detail} />}
     </div>
   );
 }

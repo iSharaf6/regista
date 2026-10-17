@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { FanStudio } from "../components/FanStudio";
+import { FanStudio, PersonaChips } from "../components/FanStudio";
 import { Stage } from "../components/Stage";
 import { Transport } from "../components/Transport";
 import { useFeed } from "../lib/feed";
@@ -20,11 +20,14 @@ export function Compare() {
         {[{ p: a, set: setA, f: fa, who: "Tom", tag: "analyst · Manchester" }, { p: b, set: setB, f: fb, who: "Amira", tag: "Port Calder fan · Cairo" }].map(({ p, set, f, who, tag }) => (
           <div key={p.id}>
             <div className="fan-chip"><b>{who}</b><span>{tag}</span></div>
-            <div className="card" style={{ marginBottom: 10 }}>
-              <div className="body"><FanStudio profile={p} setProfile={set} match={f.match} compact /></div>
-            </div>
+            {/* the broadcast first; the one-tap personas under it; the full controls folded away */}
             <Stage feed={f} favorite={p.favorite_player} cam="broadcast" lens={false} receipts={p.mode === "analyst"}
               rtl={p.language === "ar"} label={`${p.mode.replace("_", " ")} · ${p.language.toUpperCase()}`} />
+            <PersonaChips profile={p} setProfile={set} className="compare-personas" />
+            <details className="customise">
+              <summary>Customise {who}'s view</summary>
+              <div className="card"><div className="body"><FanStudio profile={p} setProfile={set} match={f.match} compact /></div></div>
+            </details>
           </div>
         ))}
       </div>

@@ -4,7 +4,7 @@ Most entries will open on a dashboard. This one opens on a moment and three peop
 question one of them has, so the judges remember a story, not a feature list.
 
 **The idea in one line:** at 74 minutes Valdane scores the winner. Tom, Amira and Lucía watch the same second and
-need three different broadcasts. Regista gives each of them one, and every word of it is true.
+need three different broadcasts. Regista gives each of them one, and every figure in it is checked against the match data.
 
 **The cast** (fictional, like the whole league; lower thirds are in `docs/media/video/`)
 | | Who | What they need | Fan Studio preset |
@@ -35,8 +35,8 @@ League's synthesised crowd.
 | 0:24–0:28 | Card `06-logo.png` | "This is Regista." |
 | 0:28–0:42 | *Two fans* tab at the 74' goal: Tom on the left in English, Amira on the right in Arabic, right to left | "AI agents watch every pass, work out *why* each moment matters, and re-cut the broadcast for every viewer, live. Same second, two stories: Tom gets the numbers; Amira gets it in Arabic, from her side." |
 | 0:42–0:50 | **The phone shot:** film your hand scanning the *Watch on your phone* QR code on the laptop; on the phone, tap *Lucía · first match · ES* and the Spanish broadcast appears | "Lucía just scans the screen. Her phone becomes her own broadcast: Spanish, and football explained." |
-| 0:50–0:53 | Card `07-truth.png` ("Nothing airs until it's verified.") | "But AI makes things up." |
-| 0:53–1:10 | Tap the goal in *Key moments*: the receipts drawer (why it matters, Analyst → Narrator → Localizer → Verifier, each on gpt-4.1-mini, "39/39 figures grounded"), then the Control room *Story jobs* row with 2 drafts | "So nothing airs until a Verifier checks every number against the match data. When a draft gets one wrong, it goes back to the agent with the fact-checker's notes. Every line on screen carries its receipt." |
+| 0:50–0:53 | Card `07-truth.png` ("Nothing airs unchecked.") | "But AI makes things up." |
+| 0:53–1:10 | Tap the goal in *Key moments*: the receipts drawer (why it matters, Analyst → Narrator → Localizer → Verifier, each on gpt-4.1-mini, "39/39 figures grounded"), then the Control room *Story jobs* row with 2 drafts | "So before anything airs, a Verifier checks the figures, the players and the key football claims against the match data. When a draft gets one wrong, it goes back to the agent with the fact-checker's notes." |
 
 ### Act 3 · The stress test (1:10–1:30)
 | Time | Picture | Voice-over |
@@ -49,8 +49,8 @@ League's synthesised crowd.
 | Time | Picture | Voice-over |
 |---|---|---|
 | 1:30–1:44 | Recap tab at full time: English ("Valdane's Double Secures Northbridge a 2–1 Victory…"), then switch to عربي, then ES | "At full time each of them gets the story of the match, in their own language, written by an agent and checked figure by figure." |
-| 1:44–1:49 | Data lab: *Tested on Microsoft Foundry* (83% of first drafts verified, 100% verified on air) | "Tested on a real model: every story verified before it airs." |
-| 1:49–1:55 | Card `09-end.png` | "Same match. Three fans. Three stories. All of them true." |
+| 1:44–1:49 | Data lab: *Tested on Microsoft Foundry* (83% of first drafts verified, 100% verified on air) | "Tested on a real model: every story checked before it airs." |
+| 1:49–1:55 | Card `09-end.png` | "Same match. Three fans. Three stories. All of them checked." |
 
 ---
 

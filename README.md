@@ -1,6 +1,6 @@
 # REGISTA · the multi-agent match director
 
-![Regista: one match, every fan, every word verified](docs/media/cover.png)
+![Regista: one match, every fan, every figure checked](docs/media/cover.png)
 
 **Live demo:** https://ca-registaednsnlttycm2o.calmsea-720b2319.koreacentral.azurecontainerapps.io (Microsoft Foundry gpt-4.1-mini on Azure Container Apps; the first load after a quiet spell takes about 20 s)
 

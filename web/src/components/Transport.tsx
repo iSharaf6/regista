@@ -13,7 +13,7 @@ export function Transport({ feed }: { feed: Feed }) {
       <span className="clock">{feed.snap?.clock ?? "0'"}</span>
       <div className="seg" aria-label="Speed">
         {SPEEDS.map((s) => (
-          <button key={s} className={c?.speed === s ? "on" : ""} onClick={() => feed.control$("speed", s)}>{s}×</button>
+          <button key={s} className={c?.speed === s ? "on" : ""} aria-pressed={c?.speed === s} onClick={() => feed.control$("speed", s)}>{s}×</button>
         ))}
       </div>
       <div className="scrub">

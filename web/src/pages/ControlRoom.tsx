@@ -1,23 +1,10 @@
 import { useEffect, useMemo, useRef, useState } from "react";
+import { AgentGraph } from "../components/AgentGraph";
 import { Transport } from "../components/Transport";
+import { UseLive } from "../components/UseLive";
 import { useFeed } from "../lib/feed";
 import { defaultProfile } from "../lib/types";
 
-const NODES: { id: string; x: number; y: number; label: string; llm?: boolean; agent?: string }[] = [
-  { id: "feed", x: 20, y: 150, label: "Feed · Bus" },
-  { id: "scout", x: 160, y: 150, label: "Interpret" },
-  { id: "producer_fast", x: 300, y: 20, label: "Producer", agent: "Producer" },
-  { id: "analyst", x: 300, y: 150, label: "Analyst", llm: true, agent: "Analyst" },
-  { id: "narrator", x: 440, y: 150, label: "Narrator", llm: true, agent: "Narrator" },
-  { id: "localizer", x: 580, y: 150, label: "Localizer", llm: true, agent: "Localizer" },
-  { id: "verifier", x: 720, y: 150, label: "Verifier", agent: "Verifier" },
-  { id: "fallback", x: 720, y: 262, label: "Fallback", agent: "Fallback" },
-  { id: "director", x: 860, y: 150, label: "Director ×N" },
-  { id: "pundit", x: 440, y: 262, label: "Pundit", llm: true, agent: "Pundit" },
-  { id: "recap", x: 580, y: 262, label: "Recap", llm: true, agent: "Recap" },
-];
-const W = 120;
-const H = 50;
 
 export function ControlRoom() {
   const profile = useMemo(() => defaultProfile({ id: "ops", mode: "analyst" }), []);
@@ -33,22 +20,17 @@ export function ControlRoom() {
   const sum = feed.ops?.telemetry?.agents ?? {};
   const totals = feed.ops?.telemetry?.totals ?? {};
   const breaker = feed.ops?.breaker ?? feed.control?.breaker;
-  const pulses = usePulses(feed.lastSpanByAgent);
+  // the Rewriter re-runs the Narrator and the Localizer: its work shows up as their second-draft spans
+  const rewrites = feed.spans.filter((x) => x.attempt > 1 && (x.agent === "Narrator" || x.agent === "Localizer"));
+  const lastRewrite = rewrites[rewrites.length - 1];
+  const pulses = usePulses(lastRewrite ? { ...feed.lastSpanByAgent, Rewriter: lastRewrite } : feed.lastSpanByAgent);
+  const graphStats = { ...sum, Rewriter: rewrites.length ? `${rewrites.length} second drafts` : "second drafts" };
   const stories = Object.entries(feed.stories).slice(-14).reverse();
-  const edge = (a: string, b: string) => {
-    const A = NODES.find((n) => n.id === a)!;
-    const B = NODES.find((n) => n.id === b)!;
-    return { x1: A.x + W, y1: A.y + H / 2, x2: B.x, y2: B.y + H / 2 };
-  };
   const chaos = (fr: number, l: number) => {
     setFail(fr);
     setLat(l);
     feed.control$("chaos", { fail_rate: fr / 100, latency_ms: l });
   };
-  const v = NODES.find((n) => n.id === "verifier")!;
-  const nar = NODES.find((n) => n.id === "narrator")!;
-  const fb = NODES.find((n) => n.id === "fallback")!;
-  const dir = NODES.find((n) => n.id === "director")!;
   return (
     <div className="page">
       <div className="kpis">
@@ -61,38 +43,8 @@ export function ControlRoom() {
         <div className="kpi"><span>Event bus</span><b style={{ fontSize: 15 }}>{feed.ops?.bus?.name ?? "-"} · {feed.ops?.bus?.published ?? 0}</b></div>
       </div>
       <div className="card graph" style={{ marginBottom: 16 }}>
-            <header><h3>Agent graph</h3><span className="muted" style={{ fontSize: 12 }}>Microsoft Agent Framework workflow · nodes flash as spans arrive</span></header>
-            <div className="body">
-              <svg viewBox="0 0 1000 330" role="img" aria-label="Agent workflow">
-                <defs>
-                  <marker id="arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
-                    <path d="M0 0 10 5 0 10z" fill="#1f0024" />
-                  </marker>
-                </defs>
-                {[["feed", "scout"], ["scout", "producer_fast"], ["scout", "analyst"], ["analyst", "narrator"], ["narrator", "localizer"],
-                  ["localizer", "verifier"], ["producer_fast", "director"], ["verifier", "director"]].map(([a, b]) => (
-                  <line key={a + b} {...edge(a, b)} className={`edge ${feed.control?.playing ? "flow" : ""}`} markerEnd="url(#arr)" />
-                ))}
-                <path d={`M ${v.x + W / 2} ${v.y} C ${v.x + W / 2} ${v.y - 70}, ${nar.x + W / 2} ${nar.y - 70}, ${nar.x + W / 2} ${nar.y}`} className="edge retry" markerEnd="url(#arr)" />
-                <text x={(v.x + nar.x) / 2 + W / 2} y={v.y - 62} fill="var(--warn)" fontSize="11" textAnchor="middle" fontFamily="JetBrains Mono, monospace">retry with fact-check feedback</text>
-                <line x1={v.x + W / 2} y1={v.y + H} x2={fb.x + W / 2} y2={fb.y} className="edge retry" markerEnd="url(#arr)" />
-                <path d={`M ${fb.x + W} ${fb.y + H / 2} C ${fb.x + W + 50} ${fb.y + H / 2}, ${dir.x + 30} ${dir.y + H + 60}, ${dir.x + W / 2} ${dir.y + H}`} className="edge" markerEnd="url(#arr)" />
-                {NODES.map((n) => {
-                  const s = n.agent ? sum[n.agent] : null;
-                  const pulse = n.agent ? pulses[n.agent] : undefined;
-                  const cx = n.x + W / 2;
-                  return (
-                    <g key={n.id + (pulse?.k ?? "")} className={`node ${n.llm ? "llm" : ""} ${pulse ? "pulse" : ""} ${pulse?.bad ? "bad" : ""}`}>
-                      <rect x={n.x} y={n.y} width={W} height={H} />
-                      <text x={cx} y={n.y + 22} textAnchor="middle">{n.label.toUpperCase()}</text>
-                      <text className="sub" x={cx} y={n.y + 38} textAnchor="middle">
-                        {s ? `p50 ${s.p50_ms ?? "-"}ms · ${s.calls}` : n.llm ? "LLM agent" : "deterministic"}
-                      </text>
-                    </g>
-                  );
-                })}
-              </svg>
-            </div>
+        <header><h3>Agent graph</h3><span className="muted" style={{ fontSize: 12 }}>Microsoft Agent Framework workflow · nodes flash as spans arrive</span></header>
+        <div className="body"><AgentGraph stats={graphStats} pulses={pulses} flowing={!!feed.control?.playing} /></div>
       </div>
       <div className="ops-grid">
         <section className="stack">
@@ -119,6 +71,7 @@ export function ControlRoom() {
           </div>
         </section>
         <section className="stack">
+          <UseLive profile={profile} />
           <div className="card">
             <header><h3>Chaos engineering</h3></header>
             <div className="body stack">

@@ -459,3 +459,38 @@ html.overlay-mode, html.overlay-mode body { background: transparent !important; 
 .fan-chip { display: inline-flex; align-items: stretch; margin-bottom: 10px; box-shadow: 0 4px 0 var(--ink); }
 .fan-chip b { font-family: var(--px); font-size: 14px; letter-spacing: 0.1em; text-transform: uppercase; background: var(--hl); color: var(--ink); padding: 7px 10px 5px; border: 3px solid var(--ink); }
 .fan-chip span { font-family: var(--round); font-size: 14px; background: var(--card); color: var(--ink); padding: 6px 10px 4px; border: 3px solid var(--ink); border-left: 0; }
+
+/* ---------------------------------------------------------------- phones: cards below a compact pitch */
+.stage-wrap { container-type: inline-size; }
+@container (max-width: 640px) { .overlay { font-size: clamp(10px, 2.7cqw, 14px); } }
+.stage-cards { display: grid; gap: 12px; margin-top: 12px; font-size: 15px; }
+.stage-cards:empty { display: none; }
+.stage-cards .lower .caption { font-size: 1.35em; }
+.stage-cards .lower .tag { font-size: 1.15em; }
+.stage-cards .receipt { font-size: 0.74em; }
+.stage-cards .ticker { font-size: 0.95em; }
+
+/* one-tap personas next to the broadcast when the sidebar is pushed below it */
+.persona-bar { display: none; margin-top: 12px; }
+@media (max-width: 1180px) { .persona-bar { display: flex; } }
+.chips button[aria-pressed="true"] { background: var(--ink); color: var(--hl); }
+
+/* Two fans: the broadcast first, the full controls folded away */
+.customise { margin-top: 10px; }
+.customise > summary {
+  cursor: pointer; list-style: none; font-family: var(--px); font-weight: 700; font-size: 11px; letter-spacing: 0.1em;
+  text-transform: uppercase; color: var(--card); padding: 6px 0;
+}
+.customise > summary::before { content: "+ "; color: var(--hl); }
+.customise[open] > summary::before { content: "− "; }
+.customise[open] > summary { margin-bottom: 8px; }
+
+.compare-personas { margin-top: 12px; }
+.bubble .tools .from { background: transparent; color: var(--muted); padding-left: 0; }
+.edge.fast { stroke: var(--hl-d); stroke-dasharray: 3 5; }
+.edge-label { font-family: var(--font-mono); font-size: 11px; font-weight: 700; fill: var(--ink-3); }
+.edge-label.warn { fill: var(--warn); }
+.legend { display: flex; gap: 14px; flex-wrap: wrap; font-family: var(--round); font-size: 14px; }
+.legend span { display: inline-flex; align-items: center; gap: 6px; }
+.legend i { width: 18px; height: 6px; border: 2px solid var(--ink); display: inline-block; }
+.legend i.dash { background: repeating-linear-gradient(90deg, #9a968a 0 5px, transparent 5px 9px); }

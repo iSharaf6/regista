@@ -61,6 +61,7 @@ export function App() {
   }, []);
   if (path === "/overlay") return <OverlayOnly query={query} />;
   const breaker = health?.breaker?.state;
+  const producer = path === "/ops" || path === "/lab";
   return (
     <div className="shell">
       <header className="topbar">
@@ -69,15 +70,18 @@ export function App() {
           <span className="word"><b className="title-px">Regi<span className="y">sta</span></b><small>Match director</small></span>
         </a>
         <nav className="nav">
-          {ROUTES.map((r) => <a key={r.path} href={`#${r.path}`} className={path === r.path ? "active" : ""}>{r.label}</a>)}
+          {ROUTES.map((r) => (
+            <a key={r.path} href={`#${r.path}`} className={path === r.path ? "active" : ""} aria-current={path === r.path ? "page" : undefined}>{r.label}</a>
+          ))}
         </nav>
-        <div className="right">
+        {/* model, bus and producer links belong to the producer views, not the fan's broadcast */}
+        {producer && <div className="right">
           <span className={`pill ${!health ? "bad" : breaker === "open" ? "bad" : breaker === "half_open" ? "warn" : ""}`}>
             <span className="dot" />{health ? `${health.llm.offline ? "Offline agents" : health.llm.model.replace(/^foundry:/, "Foundry · ")}` : "API offline"}
           </span>
           {health && <span className="pill">{health.bus} · {health.viewers} viewer{health.viewers === 1 ? "" : "s"}</span>}
           <a className="pill" href="#/overlay?mode=casual&lang=en" target="_blank" rel="noreferrer">Overlay for OBS ↗</a>
-        </div>
+        </div>}
       </header>
       <main>
         {path === "/" && <Broadcast profile={profile} setProfile={setProfile} />}

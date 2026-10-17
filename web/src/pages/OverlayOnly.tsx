@@ -16,7 +16,7 @@ export function OverlayOnly({ query }: { query: URLSearchParams }) {
   }, []);
   return (
     <div style={{ position: "fixed", inset: 0, containerType: "inline-size" } as React.CSSProperties}>
-      <Overlay ref={ref} feed={feed} receipts={query.get("receipts") === "1"} rtl={profile.language === "ar"} />
+      <Overlay ref={ref} feed={feed} receipts={query.get("receipts") === "1"} rtl={profile.language === "ar"} detail />
     </div>
   );
 }

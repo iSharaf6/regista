@@ -9,6 +9,24 @@ export const PRESETS: { label: string; profile: Partial<Profile> }[] = [
   { label: "Player cam · Arata", profile: { mode: "player_cam", language: "en", favorite_team: "NOR", favorite_player: "NOR-10", focus_metric: "pass_difficulty" } },
 ];
 
+const isPreset = (p: Profile, preset: Partial<Profile>) =>
+  (Object.keys(preset) as (keyof Profile)[]).every((k) => p[k] === preset[k]);
+
+/** One tap to become one of the story's fans. */
+export function PersonaChips({ profile, setProfile, className = "" }: {
+  profile: Profile; setProfile: (p: Profile) => void; className?: string;
+}) {
+  return (
+    <div className={`chips ${className}`} role="group" aria-label="Watch as">
+      {PRESETS.map((p) => (
+        <button key={p.label} aria-pressed={isPreset(profile, p.profile)} onClick={() => setProfile({ ...profile, ...p.profile })}>
+          {p.label}
+        </button>
+      ))}
+    </div>
+  );
+}
+
 export function FanStudio({ profile, setProfile, match, compact = false }: {
   profile: Profile; setProfile: (p: Profile) => void; match: MatchInfo | null; compact?: boolean;
 }) {
@@ -16,21 +34,15 @@ export function FanStudio({ profile, setProfile, match, compact = false }: {
   const players = match ? [match.home, match.away] : [];
   return (
     <div className="stack">
-      {!compact && (
-        <div className="chips" aria-label="Presets">
-          {PRESETS.map((p) => (
-            <button key={p.label} onClick={() => set(p.profile)}>{p.label}</button>
-          ))}
-        </div>
-      )}
+      {!compact && <PersonaChips profile={profile} setProfile={setProfile} />}
       <label className="field">Viewing mode
         <div className="seg">
-          {MODES.map((m) => <button key={m.id} className={profile.mode === m.id ? "on" : ""} onClick={() => set({ mode: m.id })}>{m.label}</button>)}
+          {MODES.map((m) => <button key={m.id} className={profile.mode === m.id ? "on" : ""} aria-pressed={profile.mode === m.id} onClick={() => set({ mode: m.id })}>{m.label}</button>)}
         </div>
       </label>
       <label className="field">Language
         <div className="seg">
-          {LANGS.map((l) => <button key={l.id} className={profile.language === l.id ? "on" : ""} onClick={() => set({ language: l.id })}>{l.label}</button>)}
+          {LANGS.map((l) => <button key={l.id} className={profile.language === l.id ? "on" : ""} aria-pressed={profile.language === l.id} onClick={() => set({ language: l.id })}>{l.label}</button>)}
         </div>
       </label>
       <div className="row" style={{ alignItems: "end" }}>
@@ -54,7 +66,7 @@ export function FanStudio({ profile, setProfile, match, compact = false }: {
       {!compact && (
         <label className="field">Focus metric
           <div className="seg">
-            {FOCUS.map((f) => <button key={f.id} className={profile.focus_metric === f.id ? "on" : ""} onClick={() => set({ focus_metric: f.id })}>{f.label}</button>)}
+            {FOCUS.map((f) => <button key={f.id} className={profile.focus_metric === f.id ? "on" : ""} aria-pressed={profile.focus_metric === f.id} onClick={() => set({ focus_metric: f.id })}>{f.label}</button>)}
           </div>
         </label>
       )}

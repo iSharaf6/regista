@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import type { Feed } from "../lib/feed";
 import { api } from "../lib/feed";
 import type { Lang, Moment } from "../lib/types";
@@ -17,8 +17,7 @@ export function MomentsList({ feed, onOpen, min = 30 }: { feed: Feed; onOpen: (m
               <span className="hl">{m.headline}</span>
               <span className="meta">
                 <span className={`kind ${m.kind === "goal" ? "goal" : ""}`}>{m.kind.replace("_", " ")}</span>
-                <span>{m.lane === "story" ? "story lane" : "fast lane"}</span>
-                {story && <span className="verified">✓ {story.verdict?.numbers_supported}/{story.verdict?.numbers_checked} · {Math.round(story.latency_ms)} ms</span>}
+                {story?.verdict?.numbers_checked ? <span className="verified">✓ checked · {story.verdict.numbers_supported}/{story.verdict.numbers_checked} figures</span> : null}
               </span>
               <span className="imp"><i style={{ width: `${m.importance}%` }} /></span>
             </span>
@@ -39,15 +38,36 @@ export function Receipts({ moment, feed, onClose, lang }: { moment: Moment; feed
   const story = full?.story ?? feed.stories[moment.id];
   const narration = story?.narration ?? {};
   const langs = Object.keys(narration);
+  // a real dialog: focus moves in, Tab stays inside, Escape closes, focus returns to the moment that opened it
+  const panel = useRef<HTMLElement>(null);
+  const closeBtn = useRef<HTMLButtonElement>(null);
+  const close = useRef(onClose);
+  close.current = onClose;
+  useEffect(() => {
+    const opener = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+    closeBtn.current?.focus();
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") { e.preventDefault(); close.current(); return; }
+      if (e.key !== "Tab" || !panel.current) return;
+      const els = panel.current.querySelectorAll<HTMLElement>("button, [href], select, input, textarea, [tabindex]:not([tabindex='-1'])");
+      if (!els.length) return;
+      const first = els[0];
+      const last = els[els.length - 1];
+      if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); }
+      else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
+    };
+    document.addEventListener("keydown", onKey);
+    return () => { document.removeEventListener("keydown", onKey); opener?.focus(); };
+  }, []);
   return (
     <>
       <div className="drawer-back" onClick={onClose} />
-      <aside className="drawer" role="dialog" aria-label="Receipts">
+      <aside className="drawer" role="dialog" aria-modal="true" aria-labelledby="receipts-title" ref={panel}>
         <div className="row" style={{ justifyContent: "space-between" }}>
           <span className="kind">{m.kind.replace("_", " ")} · {m.clock}</span>
-          <button className="btn small" onClick={onClose}>Close</button>
+          <button className="btn small" onClick={onClose} ref={closeBtn}>Close</button>
         </div>
-        <h2 className="cond" style={{ fontSize: 30, margin: "10px 0 2px", textTransform: "uppercase" }}>{m.headline}</h2>
+        <h2 id="receipts-title" className="cond" style={{ fontSize: 30, margin: "10px 0 2px", textTransform: "uppercase" }}>{m.headline}</h2>
         <div className="muted">Importance {m.importance}/100 · {m.lane === "story" ? "story lane (agents)" : "fast lane (deterministic)"} · evidence {m.evidence?.join(", ") || "windowed signal"}</div>
 
         <div className="section-title">Why it matters</div>
@@ -109,7 +129,7 @@ export function Receipts({ moment, feed, onClose, lang }: { moment: Moment; feed
               </>
             )}
             <div className="section-title">On-air copy, every language and persona</div>
-            <div className="tabs">{langs.map((l) => <button key={l} className={tab === l ? "on" : ""} onClick={() => setTab(l)}>{l.toUpperCase()}</button>)}</div>
+            <div className="tabs" role="group" aria-label="Language">{langs.map((l) => <button key={l} className={tab === l ? "on" : ""} aria-pressed={tab === l} onClick={() => setTab(l)}>{l.toUpperCase()}</button>)}</div>
             {narration[tab] && Object.entries(narration[tab]).map(([persona, c]: any) => (
               <div className={`card ${tab === "ar" ? "rtl" : ""}`} style={{ padding: 10, marginBottom: 6 }} key={persona}>
                 <div className="kind" style={{ display: "inline-block", marginBottom: 4 }}>{persona.replace("_", " ")}</div>
