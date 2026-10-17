@@ -501,3 +501,34 @@ html.overlay-mode, html.overlay-mode body { background: transparent !important; 
 .fact-kind { font-family: var(--px); font-weight: 700; font-size: 9px; letter-spacing: 0.06em; text-transform: uppercase; padding: 3px 6px 2px; border: 2px solid var(--ink); white-space: nowrap; }
 .fact-kind.obs { background: var(--hl); color: var(--ink); }
 .fact-kind.est { background: var(--cyan); color: var(--ink); }
+
+/* ---------------------------------------------------------------- explore one moment (curated replay) */
+.replay-badge {
+  justify-self: start; display: inline-block; font-family: var(--px); font-weight: 700; font-size: 12px; letter-spacing: 0.12em; text-transform: uppercase;
+  background: var(--amber); color: var(--ink); border: 3px solid var(--ink); padding: 6px 9px 4px; box-shadow: 0 3px 0 var(--ink); white-space: nowrap;
+}
+.explore-pick { display: flex; gap: 12px 18px; align-items: end; flex-wrap: wrap; padding: 12px 14px; margin-bottom: 18px; }
+.explore-pick label.field { flex: 1 1 320px; }
+.replaying { display: flex; gap: 14px; align-items: center; padding: 14px; margin-bottom: 18px; flex-wrap: wrap; }
+@media (prefers-reduced-motion: no-preference) { .replaying .replay-badge { animation: blink 1.1s steps(2) infinite; } }
+.explore-moment h3 { margin: 8px 0 4px; font-size: clamp(22px, 3vw, 32px); text-transform: uppercase; line-height: 1.05; }
+.explore-moment .raw { margin-left: auto; font-family: var(--font-mono); font-size: 12px; font-weight: 700; color: var(--ink-3); }
+.section-title.on-sky { color: var(--cyan); margin: 22px 0 10px; font-size: 12px; }
+.explore-fans { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 18px; margin-bottom: 22px; align-items: start; }
+@media (max-width: 1000px) { .explore-fans { grid-template-columns: minmax(0, 1fr); } }
+.explore-fan .stage-cards { margin-top: 0; }
+.stage-cards.held { opacity: 0.6; filter: grayscale(0.6); }
+.fan-why { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 14px; font-family: var(--font-mono); font-size: 11.5px; font-weight: 700; }
+.fan-why span { background: var(--card); color: var(--ink); border: 2px solid var(--ink); padding: 2px 7px; }
+.fan-why .on { background: var(--hl); }
+.fan-why .off { background: var(--amber); }
+.why-list { margin: 0; padding-left: 18px; display: grid; gap: 4px; font-size: 14px; }
+.welcome a { color: var(--ink); text-decoration-thickness: 2px; text-underline-offset: 3px; }
+
+/* Data lab: the workflow against a single agent on the same held-out moments */
+.versus { display: grid; grid-template-columns: minmax(0, 1fr) auto auto; background: var(--field); border: 3px solid var(--ink); font-size: 14px; }
+.versus > * { padding: 7px 10px; border-bottom: 2px solid var(--tint); }
+.versus > :nth-last-child(-n + 3) { border-bottom: 0; }
+.versus b { font-family: var(--font-mono); text-align: right; }
+.versus .head { font-family: var(--px); font-weight: 700; font-size: 10px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--ink-3); text-align: right; }
+.versus .win { background: var(--hl); }

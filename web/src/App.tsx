@@ -4,12 +4,14 @@ import { defaultProfile, type Profile, profileFromQuery } from "./lib/types";
 import { Broadcast } from "./pages/Broadcast";
 import { Compare } from "./pages/Compare";
 import { ControlRoom } from "./pages/ControlRoom";
+import { Explore } from "./pages/Explore";
 import { Lab } from "./pages/Lab";
 import { OverlayOnly } from "./pages/OverlayOnly";
 import { Recap } from "./pages/Recap";
 
 const ROUTES = [
   { path: "/", label: "Broadcast" },
+  { path: "/explore", label: "Explore a moment" },
   { path: "/compare", label: "Two fans" },
   { path: "/ops", label: "Control room" },
   { path: "/recap", label: "Recap" },
@@ -85,6 +87,7 @@ export function App() {
       </header>
       <main>
         {path === "/" && <Broadcast profile={profile} setProfile={setProfile} />}
+        {path === "/explore" && <Explore query={query} />}
         {path === "/compare" && <Compare />}
         {path === "/ops" && <ControlRoom />}
         {path === "/recap" && <Recap lang={profile.language} />}

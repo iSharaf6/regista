@@ -69,6 +69,10 @@ Container Registry + managed identity · Azure Developer CLI (Bicep) · Model Co
    the demo match automatically and pauses itself when nobody is watching. Try the Fan Studio presets, the **Two fans**
    tab, **Control room → Simulate model outage** (it switches itself off after 90 s), click any key moment for its
    receipts, and ask the Pundit a question. Playback is shared by everyone on the site.
+   **Short on time?** Open **Explore a moment**
+   (https://ca-registaednsnlttycm2o.calmsea-720b2319.koreacentral.azurecontainerapps.io/#/explore?moment=m055, the 74'
+   winner): a curated replay of one moment that shows Tom's, Amira's and Lucía's broadcasts side by side, with the facts and
+   the Verifier's verdict. It runs privately through the same agents (about 15 s the first time, instant after that).
 2. **Locally, no keys:** `cd backend && uv venv --python 3.12 && uv pip install -e ".[dev]" && .venv/bin/regista serve`,
    then `cd web && npm install && npm run dev` and open http://localhost:5173.
 3. **With a model:** `REGISTA_LLM=foundry` with `FOUNDRY_PROJECT_ENDPOINT` and `FOUNDRY_MODEL` (Entra ID), then

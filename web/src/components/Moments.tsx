@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import type { Feed } from "../lib/feed";
 import { api } from "../lib/feed";
-import type { Lang, Moment } from "../lib/types";
+import type { Lang, MatchInfo, Moment } from "../lib/types";
 
 export function MomentsList({ feed, onOpen, min = 30 }: { feed: Feed; onOpen: (m: Moment) => void; min?: number }) {
   const items = feed.moments.filter((m) => m.importance >= min).slice().reverse().slice(0, 60);
@@ -95,7 +95,7 @@ export function Receipts({ moment, feed, onClose, lang }: { moment: Moment; feed
         </div>
 
         <div className="section-title">The facts</div>
-        <FactTable facts={m.facts ?? {}} kinds={m.fact_kinds ?? {}} />
+        <FactTable facts={m.facts ?? {}} kinds={m.fact_kinds ?? {}} match={feed.match} />
 
         {story && (
           <>
@@ -118,26 +118,7 @@ export function Receipts({ moment, feed, onClose, lang }: { moment: Moment; feed
             ))}
 
             <div className="section-title">How it was checked</div>
-            <div className="kv">
-              <span className="k">Verdict</span><span className={story.verdict?.ok ? "verified" : ""}>{story.verdict?.ok ? "✓ passed" : "✗ rejected"}{story.verdict?.via ? ` (${story.verdict.via})` : ""}</span>
-              <span className="k">Figures grounded in the facts</span><span className="mono">{story.verdict?.numbers_supported}/{story.verdict?.numbers_checked}</span>
-              <span className="k">Drafts</span><span className="mono">{story.attempts}</span>
-              <span className="k">Template fallback</span><span>{story.fallback_langs?.length ? story.fallback_langs.join(", ") : "none"}</span>
-              <span className="k">End-to-end</span><span className="mono">{Math.round(story.latency_ms)} ms</span>
-            </div>
-            {story.verdict?.issues?.length > 0 && (
-              <ul className="muted" style={{ fontSize: 12 }}>{story.verdict.issues.map((i: string) => <li key={i}>{i}</li>)}</ul>
-            )}
-            <div className="trace" style={{ marginTop: 8 }}>
-              {story.trace.map((s: any) => (
-                <div className="step" key={s.id}>
-                  <b>{s.agent}</b>
-                  <span className={`status ${s.status}`}>{s.status}</span>
-                  <span className="muted" style={{ fontSize: 12 }}>{s.detail || s.model}</span>
-                  <span className="mono">{s.ms.toFixed(1)} ms</span>
-                </div>
-              ))}
-            </div>
+            <HowChecked story={story} />
           </>
         )}
       </aside>
@@ -145,17 +126,58 @@ export function Receipts({ moment, feed, onClose, lang }: { moment: Moment; feed
   );
 }
 
+/** The Verifier's verdict on a story and the agent trace behind it. */
+export function HowChecked({ story }: { story: any }) {
+  return (
+    <>
+      <div className="kv">
+        <span className="k">Verdict</span><span className={story.verdict?.ok ? "verified" : ""}>{story.verdict?.ok ? "✓ passed" : "✗ rejected"}{story.verdict?.via ? ` (${story.verdict.via})` : ""}</span>
+        <span className="k">Figures grounded in the facts</span><span className="mono">{story.verdict?.numbers_supported}/{story.verdict?.numbers_checked}</span>
+        <span className="k">Drafts</span><span className="mono">{story.attempts}</span>
+        <span className="k">Template fallback</span><span>{story.fallback_langs?.length ? story.fallback_langs.join(", ") : "none"}</span>
+        <span className="k">End-to-end</span><span className="mono">{Math.round(story.latency_ms)} ms</span>
+      </div>
+      {story.verdict?.issues?.length > 0 && (
+        <ul className="muted" style={{ fontSize: 12 }}>{story.verdict.issues.map((i: string) => <li key={i}>{i}</li>)}</ul>
+      )}
+      <div className="trace" style={{ marginTop: 8 }}>
+        {(story.trace ?? []).map((s: any) => (
+          <div className="step" key={s.id}>
+            <b>{s.agent}</b>
+            <span className={`status ${s.status}`}>{s.status}</span>
+            <span className="muted" style={{ fontSize: 12 }}>{s.detail || s.model}</span>
+            <span className="mono">{s.ms.toFixed(1)} ms</span>
+          </div>
+        ))}
+      </div>
+    </>
+  );
+}
+
 const FACT_LABEL = (k: string) => k.replaceAll("_", " ").replace(/\bkmh\b/, "km/h").replace(/\bwp\b/, "win probability");
 
-function factValue(v: unknown): string {
+/** A fact as a fan reads it: player ids as names, a score as "NOR 1 · CAL 0", win probabilities as percentages. */
+function factValue(k: string, v: unknown, match?: MatchInfo | null): string {
+  if (v === null || v === undefined) return "none";
   if (typeof v === "number") return Number.isInteger(v) ? String(v) : v.toFixed(Math.abs(v) < 10 ? 2 : 1);
-  if (typeof v === "string" || typeof v === "boolean") return String(v);
+  if (typeof v === "boolean") return v ? "yes" : "no";
+  if (typeof v === "string") {
+    const p = [...(match?.home.players ?? []), ...(match?.away.players ?? [])].find((x) => x.id === v);
+    return p ? p.short_name : v;
+  }
+  if (Array.isArray(v) && k.startsWith("wp") && v.length === 3 && v.every((x) => typeof x === "number")) {
+    const [h, d, a] = v.map((x: number) => `${Math.round(x * 100)}%`);
+    return `${match?.home.abbr ?? "home"} ${h} · draw ${d} · ${match?.away.abbr ?? "away"} ${a}`;
+  }
+  if (typeof v === "object" && !Array.isArray(v) && Object.values(v).every((x) => typeof x === "number")) {
+    return Object.entries(v).map(([team, n]) => `${team} ${n}`).join(" · ");
+  }
   const json = JSON.stringify(v);
   return json.length > 60 ? `${json.slice(0, 57)}…` : json;
 }
 
 /** Each fact with what it is: observed in the feed, or estimated by a model. */
-function FactTable({ facts, kinds }: { facts: Record<string, unknown>; kinds: Record<string, string> }) {
+export function FactTable({ facts, kinds, match }: { facts: Record<string, unknown>; kinds: Record<string, string>; match?: MatchInfo | null }) {
   const rows = Object.entries(facts);
   if (!rows.length) return <div className="empty">No facts recorded for this moment.</div>;
   return (
@@ -165,7 +187,7 @@ function FactTable({ facts, kinds }: { facts: Record<string, unknown>; kinds: Re
         return (
           <div className="fact" key={k}>
             <span className="k">{FACT_LABEL(k)}</span>
-            <span className="mono">{factValue(v)}</span>
+            <span className="mono">{factValue(k, v, match)}</span>
             {kind ? <span className={`fact-kind ${kind === "observed" ? "obs" : "est"}`}>{kind}</span> : <span />}
           </div>
         );

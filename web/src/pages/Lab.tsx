@@ -5,10 +5,14 @@ const pct = (v: number | undefined) => (typeof v === "number" ? `${Math.round(v 
 const secs = (ms: number | undefined) => (typeof ms === "number" ? `${(ms / 1000).toFixed(1)} s` : "-");
 
 /** The live agents scored against the real model (docs/llm-eval.json, written by `regista llm-eval`). */
-function ModelEval({ llm }: { llm: any }) {
+function ModelEval({ llm, grounding }: { llm: any; grounding: any }) {
   const model = String(llm.model ?? "").replace(/^foundry:/, "");
   const recaps: any[] = llm.recaps ?? [];
   const sample = (llm.pundit ?? [])[0];
+  const wf = llm.workflow;
+  const one = llm.single_agent_baseline;
+  const planted = Object.values(llm.verifier_probe?.planted_errors ?? {}) as { planted: number; caught: number }[];
+  const seeds: number[] = llm.eval_seeds ?? [];
   return (
     <div className="card">
       <header>
@@ -24,10 +28,25 @@ function ModelEval({ llm }: { llm: any }) {
           <div className="kpi"><span>Story latency p50 / p95</span><b>{secs(llm.story_latency_ms?.p50)} / {secs(llm.story_latency_ms?.p95)}</b></div>
           <div className="kpi"><span>Pundit answers from tools</span><b>{pct(llm.pundit_used_tools)}</b></div>
           {recaps.length > 0 && <div className="kpi"><span>Recaps verified</span><b>{recaps.filter((r) => r.verified).length}/{recaps.length}</b></div>}
+          {planted.length > 0 && <div className="kpi"><span>Planted errors caught</span><b>{planted.reduce((s, p) => s + p.caught, 0)}/{planted.reduce((s, p) => s + p.planted, 0)}</b></div>}
+          {grounding && <div className="kpi"><span>Fallbacks wrongly rejected</span><b>{grounding.rejected}/{grounding.outputs.toLocaleString("en")}</b></div>}
         </div>
-        <div className="muted" style={{ fontSize: 13 }}>
-          {llm.moments} story-lane moments in {(llm.languages ?? []).join(", ").toUpperCase()}, the figures, players and selected football
-          claims checked by the deterministic Verifier before air. Rejected drafts go back to the agents with the fact-checker's notes.
+        {wf && one && (
+          <>
+            <div className="section-title">Workflow vs one big prompt · same model, facts and checker</div>
+            <div className="versus">
+              <span /><span className="head">Workflow</span><span className="head">Single agent</span>
+              <span>Every language written by the model and checked</span><b className="win">{pct(wf.verified_without_fallback)}</b><b>{pct(one.all_languages_verified)}</b>
+              <span>Story latency, median</span><b>{secs(wf.latency_ms?.p50)}</b><b>{secs(one.latency_ms?.p50)}</b>
+              <span>Model cost per moment</span><b>${wf.cost_usd_per_moment}</b><b>${one.cost_usd_per_moment}</b>
+            </div>
+          </>
+        )}
+        <div className="muted" style={{ fontSize: 13, marginTop: 10 }}>
+          {llm.moments} story-lane moments{seeds.length ? ` from ${seeds.length} held-out matches the prompts never saw` : ""}, in{" "}
+          {(llm.languages ?? []).join(", ").toUpperCase()}, the figures, players and selected football claims checked by the deterministic
+          Verifier before air. Rejected drafts go back to the agents with the fact-checker's notes; the Verifier itself was tested by
+          planting errors in real model copy.
         </div>
         {sample && (
           <div className="bubble" style={{ marginTop: 12 }}>
@@ -70,7 +89,7 @@ export function Lab() {
       </div>
       <div className="ops-grid" style={{ marginTop: 16 }}>
         <section className="stack">
-          {llm && <ModelEval llm={llm} />}
+          {llm && <ModelEval llm={llm} grounding={ev?.explainers?.template_grounding} />}
           <div className="card">
             <header><h3>Do the explainers tell the truth?</h3><span className="muted" style={{ fontSize: 12 }}>{ev?.explainers?.matches ?? "-"} matches vs hidden ground truth</span></header>
             <div className="body">

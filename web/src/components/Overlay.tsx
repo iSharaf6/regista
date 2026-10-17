@@ -172,6 +172,14 @@ function Receipt({ cue, detail }: { cue: Cue; detail: boolean }) {
 
 interface CardProps { cue: Cue; receipts: boolean; detail: boolean; dir: string; match: MatchInfo | null }
 
+/** One cue exactly as a fan gets it on air, off the pitch (the Explore page shows three side by side). */
+export function CueView({ cue, match, rtl }: { cue: Cue; match: MatchInfo | null; rtl: boolean }) {
+  const dir = rtl ? "rtl" : "ltr";
+  return cue.slot === "lower_third"
+    ? <Lower cue={cue} receipts detail={false} dir={dir} match={match} />
+    : <Card cue={cue} receipts detail={false} dir={dir} match={match} />;
+}
+
 function Lower({ cue, receipts, detail, dir, match }: CardProps) {
   const team = cue.payload.team === match?.home.id ? match?.home : cue.payload.team === match?.away.id ? match?.away : null;
   const rtl = dir === "rtl";

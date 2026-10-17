@@ -132,6 +132,7 @@ function Welcome() {
         <li><b>1</b>Pick who you are in Fan Studio</li>
         <li><b>2</b>Watch the graphics re-cut for you</li>
         <li><b>3</b>Tap a key moment for its receipts</li>
+        <li><b>4</b><a href="#/explore">No time? Jump straight to a goal</a></li>
       </ol>
       <button className="x" onClick={close} aria-label="Dismiss">✕</button>
     </div>

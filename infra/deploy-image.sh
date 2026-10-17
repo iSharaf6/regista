@@ -62,7 +62,7 @@ TOKEN="$(az acr login -n "${REGISTRY%%.*}" --expose-token --query accessToken -o
   -e PYTHONPATH=/app/site -e PYTHONDONTWRITEBYTECODE=1 -e PYTHONUNBUFFERED=1 -e HOME=/tmp \
   -e REGISTA_WEB_DIST=/app/web/dist -e REGISTA_DOCS=/app/docs \
   -w /app -u 65534:65534 --exposed-ports 8000 \
-  --cmd python,-m,uvicorn,regista.api.app:app,--host,0.0.0.0,--port,8000,--proxy-headers \
+  --cmd 'python,-m,uvicorn,regista.api.app:app,--host,0.0.0.0,--port,8000,--proxy-headers,--forwarded-allow-ips,*' \
   -t "$IMAGE"
 
 echo "==> roll out to $APP"
