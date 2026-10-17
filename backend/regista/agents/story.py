@@ -41,7 +41,7 @@ from .insight import deterministic_insight
 from .telemetry import CircuitBreaker, Span, Telemetry
 from .templates import PERSONAS, Names, narrate
 from .templates import _ctx as template_context
-from .verifier import verify_texts
+from .verifier import _supported, allowed_numbers, verify_texts
 
 
 class AgentFailure(Exception):
@@ -82,6 +82,12 @@ class StoryJob:
             if num is not None:
                 out[self.names["players"].get(pid, pid)] = num
         return out
+
+    def evidence(self) -> list[Any]:
+        """What the Verifier checks copy against: deterministic match data only. Model output (including the
+        Analyst's key numbers) is never evidence, so a model cannot vouch for its own figures."""
+        return [self.moment.get("facts", {}), self.context, list(self.shirt_numbers().values()),
+                {"clock": self.moment.get("clock", "")}]
 
     @property
     def verdict_ok(self) -> bool:
@@ -156,6 +162,9 @@ class AgentRuntime:
                                        job.id if job else "", moment_id, attempt, str(exc)[:160], t_match))
             raise AgentFailure(str(exc)) from exc
         self.breaker.success()
+        usage = getattr(res, "usage_details", None) or {}
+        self.telemetry.tokens[name][0] += int(usage.get("input_token_count") or 0)
+        self.telemetry.tokens[name][1] += int(usage.get("output_token_count") or 0)
         span = self.telemetry.record(Span(name, "ok", (time.perf_counter() - t0) * 1000, self.model_name,
                                           job.id if job else "", moment_id, attempt, "", t_match))
         if job is not None:
@@ -190,7 +199,7 @@ class AnalystExecutor(Executor):
                 data = await self.rt.call(self.rt.analyst, "Analyst", job.payload("analyze"), job)
                 if not isinstance(data, dict) or "claim" not in data:
                     raise AgentFailure("analyst returned no claim")
-                job.insight = data
+                job.insight = _checked_insight(job, data)
             except AgentFailure as exc:
                 t0 = time.perf_counter()
                 job.insight = deterministic_insight(job.moment, job.names_obj)
@@ -198,6 +207,23 @@ class AnalystExecutor(Executor):
                 self.rt.note(job, "Analyst", "fallback", str(exc)[:120], (time.perf_counter() - t0) * 1000)
         job.redo = list(job.languages)
         await ctx.send_message(job)
+
+
+def _checked_insight(job: StoryJob, data: dict[str, Any]) -> dict[str, Any]:
+    """The Analyst is fact-checked too, before any writer sees its insight: key numbers that match data cannot back are
+    dropped, and an insight whose text cites unbacked figures or players is replaced by the factor-based one."""
+    ev = job.evidence()
+    allowed = allowed_numbers(*ev)
+    kn = data.get("key_numbers") if isinstance(data.get("key_numbers"), dict) else {}
+    data["key_numbers"] = {k: v for k, v in kn.items()
+                           if isinstance(v, (int, float)) and not isinstance(v, bool) and _supported(abs(float(v)), allowed)}
+    fields = {f: (x if isinstance(x, str) else " ".join(map(str, x)) if isinstance(x, list) else "")
+              for f, x in ((f, data.get(f)) for f in ("claim", "why", "tactical_read"))}
+    verdict = verify_texts({"en": {"insight": fields}}, ev, set(job.moment.get("players", [])), job.roster_names,
+                           claims=job.moment.get("facts", {}))
+    if not verdict.ok:
+        raise AgentFailure(f"insight failed the fact check: {verdict.issues[0].split('] ', 1)[-1][:100]}")
+    return data
 
 
 async def _write(rt: AgentRuntime, job: StoryJob, lang: str) -> None:
@@ -277,9 +303,7 @@ class VerifierExecutor(Executor):
         job.attempts += 1
         check = {lang: job.narration[lang] for lang in job.languages if lang in job.narration}
         allowed_players = set(job.moment.get("players", []))
-        verdict = verify_texts(check, [job.moment.get("facts", {}), job.context, (job.insight or {}).get("key_numbers", {}),
-                                       list(job.shirt_numbers().values()), job.moment.get("clock", "")],
-                               allowed_players, job.roster_names, claims=job.moment.get("facts", {}))
+        verdict = verify_texts(check, job.evidence(), allowed_players, job.roster_names, claims=job.moment.get("facts", {}))
         job.verdict = verdict.as_dict()
         job.failed = verdict.failed_langs
         job.redo = list(verdict.failed_langs)
@@ -308,9 +332,9 @@ class FallbackExecutor(Executor):
             job.fallback_langs.append(lang)
         self.rt.note(job, "Fallback", "fallback", f"templates for {','.join(job.failed)} after {job.attempts} attempt(s)")
         check = {lang: job.narration[lang] for lang in job.languages}
-        verdict = verify_texts(check, [job.moment.get("facts", {}), job.context], set(job.moment.get("players", [])),
-                               job.roster_names)
-        job.verdict = {**verdict.as_dict(), "ok": True, "via": "fallback"}
+        verdict = verify_texts(check, job.evidence(), set(job.moment.get("players", [])), job.roster_names,
+                               claims=job.moment.get("facts", {}))
+        job.verdict = {**verdict.as_dict(), "via": "fallback"}  # the templates' own verdict, never overridden
         await ctx.send_message(job)
 
 

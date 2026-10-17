@@ -1,10 +1,19 @@
-"""Score the live agents on the demo match with whatever model is configured.
+"""Score the live agents on held-out matches with whatever model is configured.
 
     REGISTA_LLM=foundry FOUNDRY_PROJECT_ENDPOINT=... FOUNDRY_MODEL=gpt-4.1-mini regista llm-eval
 
-Reports first-draft verification rate (how often the model's copy passes the fact check untouched), final
-verification after retries, template fallbacks, the most common rejection reasons, latency, whether the Pundit
-actually calls its tools, and whether model-written recaps survive the Verifier.
+Moments come from evaluation seeds, never the demo seed 16 the prompts were tuned on. They are stratified across
+moment kinds, and each carries the match context as it stood when the moment was detected. Reports:
+
+- the full workflow (Analyst -> Narrator || Localizer -> Verifier -> Rewriter loop -> Fallback): first-draft and
+  final verification, fallbacks, attempts, latency, tokens and cost;
+- a single-agent baseline on the same moments, facts, grounding and model: one call writes every language, with no
+  checker loop, scored by the same Verifier;
+- a Verifier probe: known errors planted in real model copy (how many it catches) and deterministic templates (how
+  many it wrongly rejects);
+- the Pundit's tool use on the demo match and whether model recaps survive the Verifier.
+
+"Verified" means accepted by the Verifier's checks, not independent proof that every statement is true.
 """
 
 from __future__ import annotations
@@ -12,18 +21,29 @@ from __future__ import annotations
 import asyncio
 import json
 import time
-from collections import Counter
-from statistics import median
+from collections import Counter, defaultdict, deque
+from itertools import zip_longest
 from typing import Any
 
+from agent_framework import Agent
+
+from .agents.clients import parse_json
 from .agents.config import load_config
+from .agents.prompts import SAFETY
 from .agents.pundit import Pundit
-from .agents.recap import offline_recap, recap_payload
-from .agents.story import AgentFailure, AgentRuntime, StoryJob, run_story
+from .agents.recap import offline_recap, recap_evidence, recap_payload
+from .agents.story import AgentFailure, AgentRuntime, StoryJob, _shape, _template, run_story
+from .agents.telemetry import percentile
 from .agents.tools import MatchTools
-from .agents.verifier import verify_texts
+from .agents.verifier import _supported, allowed_numbers, unit_numbers, verify_texts
 from .evaluation import replay
+from .intel.moments import MomentDetector
+from .intel.state import MatchState
+from .runtime.session import _event_order, match_context
 from .sim.engine import simulate
+
+EVAL_SEEDS = (101, 202, 303, 404)  # held out: the prompts were developed on the demo seed 16
+PRICE_PER_M = (0.40, 1.60)  # gpt-4.1-mini Global Standard list price, USD per million input / output tokens
 
 QUESTIONS = [
     ("en", "analyst", "Why are Northbridge winning the ball so high since the hour?"),
@@ -32,47 +52,202 @@ QUESTIONS = [
     ("fr", "new_fan", "Qui contrôle le match en ce moment, et pourquoi ?"),
 ]
 
+BASELINE = f"""You are a football commentary assistant. In ONE response, write on-screen copy about one live football
+MOMENT for every language in LANGUAGES, for three audiences: casual (warm, at most one number), analyst (precise, two or
+three numbers), new_fan (plain words, explain jargon). For each give caption (<= 48 characters), line (<= 200
+characters) and explainer (<= 320 characters). GROUNDING gives, per language, FIGURES (the only numbers you may use,
+already formatted), ALLOWED_PLAYERS (the only players you may name) and TEAMS. Keep names unchanged. Describe only what
+FACTS show: never invent what happened before or after, and never call a shot a header, penalty or free kick unless
+FACTS say so. {SAFETY}
+Return ONLY JSON: {{"<language code>": {{"casual": {{"caption","line","explainer"}}, "analyst": {{...}}, "new_fan": {{...}}}}, ...}}"""
+
+GOAL_WORD = {"en": "goals", "es": "goles", "fr": "buts", "ar": "هدفاً", "pt": "gols"}
+FORTY_SEVEN = {"en": "forty-seven", "es": "cuarenta y siete", "fr": "quarante-sept", "pt": "quarenta e sete"}
+HEADER = {"en": "A header.", "es": "De cabeza.", "fr": "De la tête.", "ar": "بالرأس.", "pt": "De cabeça."}
+PENALTY = {"en": "From the penalty spot.", "es": "De penalti.", "fr": "Sur penalty.", "ar": "من ركلة جزاء.", "pt": "De pênalti."}
+
 
 def _reason(issue: str) -> str:
-    for key, label in (("not supported", "unsupported figure"), ("not part of this moment", "unexpected player"),
+    for key, label in (("not supported", "unsupported figure"), ("does not match", "figure of the wrong kind"),
+                       ("not part of this moment", "unexpected player"), ("contradict", "contradicted claim"),
                        ("too long", "too long"), ("brand-safety", "brand safety"), ("malformed", "malformed output")):
         if key in issue:
             return label
     return "other"
 
 
-async def run(seed: int = 16, moments: int = 12, langs: tuple[str, ...] = ("en", "es", "ar"), concurrency: int = 3) -> dict[str, Any]:
+def _cost(tokens_in: int, tokens_out: int) -> float:
+    return tokens_in / 1e6 * PRICE_PER_M[0] + tokens_out / 1e6 * PRICE_PER_M[1]
+
+
+def detect(seed: int) -> dict[str, Any]:
+    """Replay a held-out match, capturing each story moment with the context at the instant it was detected."""
+    res = simulate("NOR", "CAL", seed, "derby")
+    st = MatchState(res.info)
+    det = MomentDetector(st)
+    evs = sorted(res.events, key=_event_order)
+    found: list[tuple[Any, dict[str, Any]]] = []
+
+    def keep(ms: list[Any]) -> None:
+        found.extend((m, match_context(st)) for m in ms if m.lane == "story" and m.kind not in {"half_time", "full_time"})
+
+    k = 0
+    for fi in range(len(res.frame_t)):
+        ft = float(res.frame_t[fi])
+        for sig in st.on_frame(res.frame(fi)):
+            keep(det.on_signal(sig, ft, st.clock))
+        while k < len(evs) and _event_order(evs[k])[0] <= ft:
+            keep(det.on_enriched(st.on_event(evs[k])))
+            k += 1
+    names = {"players": {pid: p.info.short_name for pid, p in st.players.items()}, "teams": dict(st.short)}
+    shirts = {pid: p.info.number for pid, p in st.players.items()}
+    return {"seed": seed, "state": st, "detector": det, "found": found, "names": names, "shirts": shirts}
+
+
+def stratify(matches: list[dict[str, Any]], n: int) -> list[dict[str, Any]]:
+    """Round-robin across moment kinds (and across matches within a kind) so rare kinds are represented."""
+    per_kind: dict[str, list[list[dict[str, Any]]]] = defaultdict(list)
+    for mt in matches:
+        by_kind: dict[str, list[dict[str, Any]]] = defaultdict(list)
+        for m, ctx in mt["found"]:
+            by_kind[m.kind].append({"m": m, "ctx": ctx, "match": mt})
+        for kind, items in by_kind.items():
+            per_kind[kind].append(items)
+    queues = {kind: deque(x for group in zip_longest(*lists) for x in group if x) for kind, lists in per_kind.items()}
+    out: list[dict[str, Any]] = []
+    while len(out) < n and any(queues.values()):
+        for kind in sorted(queues):
+            if queues[kind] and len(out) < n:
+                out.append(queues[kind].popleft())
+    return out
+
+
+def make_job(item: dict[str, Any], langs: list[str]) -> StoryJob:
+    mt = item["match"]
+    st = mt["state"]
+    return StoryJob(item["m"].as_dict(), item["ctx"], list(langs), mt["names"], mt["names"]["players"], st.home, st.away,
+                    shirts=mt["shirts"])
+
+
+def probe(job: StoryJob) -> dict[str, list[bool]]:
+    """Plant known errors in verified copy and record whether the Verifier catches each one."""
+    ev = job.evidence()
+    facts = job.moment.get("facts", {})
+    players = set(job.moment.get("players", []))
+    pool, units = allowed_numbers(*ev), unit_numbers(*ev)
+
+    def free(allowed: set[float]) -> int:
+        return next(c for c in (*range(47, 100), *range(101, 1000)) if not _supported(float(c), allowed))
+
+    allowed_names = {job.roster_names.get(p, "") for p in players}
+    outsider = next((name for pid, name in job.roster_names.items() if pid not in players and len(name) > 3
+                     and not any(name in a or a in name for a in allowed_names if a)), None)
+    out: dict[str, list[bool]] = defaultdict(list)
+    # how permissive the pooled check is for this moment: the share of 10..99 a bare figure could take and pass
+    out["_pool_coverage"] = [_supported(float(x), pool) for x in range(10, 100)]
+    for lang in job.languages:
+        base = job.narration.get(lang, {}).get("analyst", {}).get("line", "")
+        if not base:
+            continue
+        planted = {
+            "unsupported figure": f"{base} {free(pool)}.",
+            "speed of the wrong size": f"{base} {free(units['speed'])} km/h.",
+            "wrong match minute": f"{base} {free(units['minute'])}'.",
+            "wrong goal count": f"{base} {free(units['goals'])} {GOAL_WORD.get(lang, 'goals')}.",
+        }
+        if lang in FORTY_SEVEN and not _supported(47.0, pool):
+            planted["written-out figure"] = f"{base} {FORTY_SEVEN[lang]}."
+        if outsider:
+            planted["uninvolved player"] = f"{base} {outsider}."
+        if "body_part" in facts and facts.get("body_part") != "head":
+            planted["contradicted claim"] = f"{base} {HEADER.get(lang, HEADER['en'])}"
+        elif "set_piece" in facts and facts.get("set_piece") != "penalty":
+            planted["contradicted claim"] = f"{base} {PENALTY.get(lang, PENALTY['en'])}"
+        for kind, text in planted.items():
+            v = verify_texts({lang: {"analyst": {"probe": text}}}, ev, players, job.roster_names, claims=facts)
+            out[kind].append(not v.ok)
+    return out
+
+
+async def baseline(rt: AgentRuntime, job: StoryJob) -> dict[str, Any]:
+    """One agent, one call, every language, no checker loop: the outcome the workflow has to beat."""
+    agent = Agent(rt.client, BASELINE, name="SingleAgent", default_options={"temperature": 0.4, "max_tokens": 4000})
+    body = {"task": "narrate_all", "moment": job.moment, "context": job.context, "names": job.names, "home": job.home,
+            "away": job.away, "LANGUAGES": job.languages, "GROUNDING": {lang: job.grounding(lang) for lang in job.languages}}
+    t0 = time.perf_counter()
+    ok_langs: list[str] = []
+    tokens = [0, 0]
+    error = ""
+    try:
+        res = await asyncio.wait_for(agent.run(json.dumps(body, ensure_ascii=False, default=str)), timeout=90)
+        usage = getattr(res, "usage_details", None) or {}
+        tokens = [int(usage.get("input_token_count") or 0), int(usage.get("output_token_count") or 0)]
+        data = parse_json(res.text)
+        for lang in job.languages:
+            try:
+                copy = _shape(data.get(lang))
+            except AgentFailure:
+                continue
+            v = verify_texts({lang: copy}, job.evidence(), set(job.moment.get("players", [])), job.roster_names,
+                             claims=job.moment.get("facts", {}))
+            if v.ok:
+                ok_langs.append(lang)
+    except Exception as exc:  # noqa: BLE001 - a failed baseline call counts as unverified, it must not stop the run
+        error = str(exc)[:120]
+    return {"ok_langs": ok_langs, "all_ok": len(ok_langs) == len(job.languages), "ms": round((time.perf_counter() - t0) * 1000),
+            "tokens": tokens, "error": error}
+
+
+async def run(moments: int = 24, langs: tuple[str, ...] = ("en", "es", "fr", "ar", "pt"), concurrency: int = 2,
+              seeds: tuple[int, ...] = EVAL_SEEDS, with_baseline: bool = True) -> dict[str, Any]:
     cfg = load_config()
     rt = AgentRuntime(cfg)
-    res = simulate("NOR", "CAL", seed, "derby")
-    st, det, all_moments = replay(res)
-    names = {"players": {pid: p.info.short_name for pid, p in st.players.items()}, "teams": dict(st.short)}
-    story = [m for m in all_moments if m.lane == "story" and m.kind not in {"half_time", "full_time"}][:moments]
+    matches = [detect(seed) for seed in seeds]
+    items = stratify(matches, moments)
     sem = asyncio.Semaphore(concurrency)
     reasons: Counter[str] = Counter()
+    planted: dict[str, list[bool]] = defaultdict(list)
+    coverage: list[bool] = []
+    templates = [0, 0]  # checked, wrongly rejected
 
-    async def one(m: Any) -> dict[str, Any]:
+    async def one(item: dict[str, Any]) -> dict[str, Any]:
         async with sem:
             t0 = time.perf_counter()
-            job = StoryJob(m.as_dict(), {"score": dict(st.score), "clock": st.clock}, list(langs), names, names["players"],
-                           st.home, st.away)
-            job = await run_story(rt, job)
-            verifier = [s for s in job.trace if s["agent"] == "Verifier"]
-            for issue in (job.verdict or {}).get("issues", []):
-                reasons[_reason(issue)] += 1
-            return {"moment": m.kind, "clock": m.clock, "first_draft_ok": bool(verifier) and verifier[0]["status"] == "ok",
-                    "attempts": job.attempts, "fallback_langs": job.fallback_langs,
-                    "verified_without_fallback": bool(job.verdict and job.verdict.get("ok") and not job.verdict.get("via")),
-                    "ms": round((time.perf_counter() - t0) * 1000), "sample_en": job.narration.get("en", {}).get("analyst", {})}
+            job = await run_story(rt, make_job(item, list(langs)))
+            ms = round((time.perf_counter() - t0) * 1000)
+        verifier = [s for s in job.trace if s["agent"] == "Verifier"]
+        for span in verifier:  # why drafts were sent back (each rejection's first issue)
+            if span["status"] == "rejected":
+                reasons[_reason(span["detail"])] += 1
+        if job.verdict_ok:
+            for kind, caught in probe(job).items():
+                (coverage if kind == "_pool_coverage" else planted[kind]).extend(caught)
+        for lang in langs:
+            v = verify_texts({lang: _template(job, lang)}, job.evidence(), set(job.moment.get("players", [])),
+                             job.roster_names, claims=job.moment.get("facts", {}))
+            templates[0] += 1
+            templates[1] += 0 if v.ok else 1
+        m = item["m"]
+        return {"seed": item["match"]["seed"], "moment": m.kind, "clock": m.clock, "ms": ms, "attempts": job.attempts,
+                "first_draft_ok": bool(verifier) and verifier[0]["status"] == "ok", "fallback_langs": job.fallback_langs,
+                "verified": job.verdict_ok, "verified_without_fallback": job.verdict_ok and not job.verdict.get("via"),
+                "sample_en": job.narration.get("en", {}).get("analyst", {})}
 
     t_all = time.perf_counter()
-    rows = await asyncio.gather(*(one(m) for m in story))
-    for sp in rt.telemetry.spans:
-        if sp.agent == "Verifier" and sp.status == "rejected":
-            reasons["rejected drafts"] += 1
+    rows = await asyncio.gather(*(one(it) for it in items))
+    story_tokens = [sum(rt.telemetry.tokens[a][i] for a in ("Analyst", "Narrator", "Localizer")) for i in (0, 1)]
+
+    base_rows: list[dict[str, Any]] = []
+    if with_baseline and not cfg.is_offline:
+        async def b(item: dict[str, Any]) -> dict[str, Any]:
+            async with sem:
+                return await baseline(rt, make_job(item, list(langs)))
+        base_rows = await asyncio.gather(*(b(it) for it in items))
+
+    demo_st, _, demo_moments = replay(simulate("NOR", "CAL", 16, "derby"))
 
     class Ctx:
-        state, moments = st, det.moments
+        state, moments = demo_st, demo_moments
 
     pundit = Pundit(rt, MatchTools(Ctx()))
     answers = []
@@ -81,8 +256,8 @@ async def run(seed: int = 16, moments: int = 12, langs: tuple[str, ...] = ("en",
         answers.append({"lang": lang, "question": q, "answer": a["answer"], "tools": a["tools"], "model": a["model"], "ms": a["ms"]})
 
     recaps = []
-    for lang in ("en", "ar"):
-        payload = recap_payload(st, det.moments, names, lang, "analyst", "full_time")
+    for mt, lang in ((matches[0], "en"), (matches[0], "ar"), (matches[1 % len(matches)], "es")):
+        payload = recap_payload(mt["state"], mt["detector"].moments, mt["names"], lang, "analyst", "full_time")
         t0 = time.perf_counter()
         source = rt.model_name
         try:
@@ -94,28 +269,53 @@ async def run(seed: int = 16, moments: int = 12, langs: tuple[str, ...] = ("en",
         fields = {"headline": data.get("headline", ""), "summary": data.get("summary", ""), "tactical": data.get("tactical_story", "")}
         fields.update({f"tp{i}": tp.get("text", "") for i, tp in enumerate(data.get("turning_points", []))})
         allowed = {p["id"] for p in payload["top_players"]} | {pid for m in payload["moments"] for pid in m["players"]}
-        v = verify_texts({lang: {"analyst": fields}}, [payload["teams"], payload["score"], payload["top_players"],
-                                                      [m["facts"] for m in payload["moments"]], payload["wp_path"]],
-                         allowed, names["players"])
-        recaps.append({"lang": lang, "source": source, "verified": v.ok, "issues": v.issues[:4], "headline": fields["headline"],
-                       "ms": round((time.perf_counter() - t0) * 1000)})
+        v = verify_texts({lang: {"analyst": fields}}, recap_evidence(payload), allowed, mt["names"]["players"])
+        recaps.append({"seed": mt["seed"], "lang": lang, "source": source, "verified": v.ok, "issues": v.issues[:4],
+                       "headline": fields["headline"], "ms": round((time.perf_counter() - t0) * 1000)})
 
-    lat = sorted(r["ms"] for r in rows) or [0]
     n = max(1, len(rows))
-    return {
+    lat = [r["ms"] for r in rows] or [0]
+    report: dict[str, Any] = {
         "model": rt.model_name,
+        "eval_seeds": list(seeds),
         "moments": len(rows),
+        "moment_kinds": dict(Counter(r["moment"] for r in rows)),
         "languages": list(langs),
-        "first_draft_verified": round(sum(r["first_draft_ok"] for r in rows) / n, 2),
-        "verified_without_fallback": round(sum(r["verified_without_fallback"] for r in rows) / n, 2),
-        "jobs_with_fallback": sum(1 for r in rows if r["fallback_langs"]),
-        "mean_attempts": round(sum(r["attempts"] for r in rows) / n, 2),
-        "story_latency_ms": {"p50": median(lat), "p95": lat[int(0.95 * (len(lat) - 1))]},
-        "wall_s": round(time.perf_counter() - t_all, 1),
+        "workflow": {
+            "first_draft_verified": round(sum(r["first_draft_ok"] for r in rows) / n, 2),
+            "verified": round(sum(r["verified"] for r in rows) / n, 2),
+            "verified_without_fallback": round(sum(r["verified_without_fallback"] for r in rows) / n, 2),
+            "jobs_with_fallback": sum(1 for r in rows if r["fallback_langs"]),
+            "mean_attempts": round(sum(r["attempts"] for r in rows) / n, 2),
+            "latency_ms": {"p50": percentile(lat, 0.5), "p95": percentile(lat, 0.95)},
+            "tokens_in": story_tokens[0], "tokens_out": story_tokens[1],
+            "cost_usd_per_moment": round(_cost(*story_tokens) / n, 5) if not cfg.is_offline else 0.0,
+        },
+        "verifier_probe": {
+            "planted_errors": {k: {"planted": len(v), "caught": sum(v)} for k, v in sorted(planted.items())},
+            "caught_rate": round(sum(sum(v) for v in planted.values()) / max(1, sum(len(v) for v in planted.values())), 3),
+            "templates_checked": templates[0], "templates_wrongly_rejected": templates[1],
+            "bare_figure_pool_coverage_10_99": round(sum(coverage) / max(1, len(coverage)), 2),
+        },
         "rejection_reasons": dict(reasons),
         "agents": rt.telemetry.summary()["agents"],
         "pundit": answers,
         "pundit_used_tools": round(sum(1 for a in answers if a["tools"]) / len(answers), 2),
         "recaps": recaps,
+        "wall_s": round(time.perf_counter() - t_all, 1),
         "jobs": rows,
     }
+    if base_rows:
+        bt = [sum(r["tokens"][i] for r in base_rows) for i in (0, 1)]
+        blat = [r["ms"] for r in base_rows]
+        report["single_agent_baseline"] = {
+            "all_languages_verified": round(sum(r["all_ok"] for r in base_rows) / n, 2),
+            "language_outputs_verified": round(sum(len(r["ok_langs"]) for r in base_rows) / (n * len(langs)), 2),
+            "per_language_verified": {lang: round(sum(lang in r["ok_langs"] for r in base_rows) / n, 2) for lang in langs},
+            "latency_ms": {"p50": percentile(blat, 0.5), "p95": percentile(blat, 0.95)},
+            "tokens_in": bt[0], "tokens_out": bt[1], "cost_usd_per_moment": round(_cost(*bt) / n, 5),
+            "errors": sum(1 for r in base_rows if r["error"]),
+        }
+    else:
+        report["single_agent_baseline"] = {"skipped": "offline model" if cfg.is_offline else "disabled"}
+    return report

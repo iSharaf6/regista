@@ -4,6 +4,7 @@ webhooks for media teams, and the guards that keep a public deployment usable.""
 from __future__ import annotations
 
 import asyncio
+import json
 import time
 
 import pytest
@@ -72,6 +73,24 @@ def test_producer_token_guards_shared_controls(client, monkeypatch):
     assert client.get("/api/health").json()["producer_token_required"] is True
 
 
+def test_feed_token_locks_the_feed_but_not_playback(client, monkeypatch):
+    """Nobody can take over the public broadcast, while judges can still play, pause and run the outage demo."""
+    monkeypatch.setattr(api, "FEED_TOKEN", "feed-only")
+    monkeypatch.setattr(api, "ADMIN_TOKEN", "")
+    assert client.post("/api/feed/stop").status_code == 401
+    assert client.post("/api/feed", json={"frames": [], "events": []}).status_code == 401
+    assert client.post("/api/control", json={"action": "pause"}).status_code == 200  # playback stays open
+    health = client.get("/api/health").json()
+    assert health["feed_token_required"] and not health["producer_token_required"]
+    too_big = {"frames": [{"t": 0.0, "b": [0, 0, 0], "p": []}] * 3001, "events": []}
+    assert client.post("/api/feed", json=too_big, headers={"X-Regista-Token": "feed-only"}).status_code == 422
+
+
+def test_recaps_are_rate_limited(client, monkeypatch):
+    monkeypatch.setattr(api, "recap_limit", api.RateLimit(2))
+    assert [client.get("/api/recap", params={"language": "en"}).status_code for _ in range(3)] == [200, 200, 429]
+
+
 def test_pundit_is_rate_limited(client, monkeypatch):
     monkeypatch.setattr(api, "ask_limit", api.RateLimit(2))
     answers = [client.post("/api/ask", json={"question": "Who is the best player?", "language": "fr"}).json() for _ in range(3)]
@@ -93,6 +112,20 @@ def test_webhook_payload_works_for_slack_teams_and_discord(match, monkeypatch):
     msg = hooks.message(goal, names, st.home, st.away, "Northbridge Rovers v Port Calder FC")
     assert msg["text"] == msg["content"] and goal.evidence[0] in msg["text"]
     assert "هدف" in msg["text"]  # Arabic copy
+
+
+def test_web_app_never_serves_files_outside_its_folder(tmp_path):
+    root = tmp_path / "dist"
+    (root / "assets").mkdir(parents=True)
+    (root / "index.html").write_text("<html>")
+    (root / "assets" / "app.js").write_text("js")
+    (tmp_path / "secret.txt").write_text("nope")
+    (root / "escape").symlink_to(tmp_path / "secret.txt")
+    assert api.web_file(root, "assets/app.js") == (root / "assets" / "app.js").resolve()
+    assert api.web_file(root, "") == (root / "index.html").resolve()
+    assert api.web_file(root, "control") == (root / "index.html").resolve()  # SPA routes get the app
+    for bad in ["../secret.txt", "assets/../../secret.txt", "../../../../etc/passwd", "escape", "/etc/passwd"]:
+        assert api.web_file(root, bad) is None, bad
 
 
 def test_chaos_switches_itself_off():
@@ -161,15 +194,98 @@ def test_half_time_recap_stays_true_later_in_the_match():
     asyncio.run(run())
 
 
-def test_web_app_never_serves_files_outside_its_folder(tmp_path):
-    root = tmp_path / "dist"
-    (root / "assets").mkdir(parents=True)
-    (root / "index.html").write_text("<html>")
-    (root / "assets" / "app.js").write_text("js")
-    (tmp_path / "secret.txt").write_text("nope")
-    (root / "escape").symlink_to(tmp_path / "secret.txt")
-    assert api.web_file(root, "assets/app.js") == (root / "assets" / "app.js").resolve()
-    assert api.web_file(root, "") == (root / "index.html").resolve()
-    assert api.web_file(root, "control") == (root / "index.html").resolve()  # SPA routes get the app
-    for bad in ["../secret.txt", "assets/../../secret.txt", "../../../../etc/passwd", "escape", "/etc/passwd"]:
-        assert api.web_file(root, bad) is None, bad
+def test_a_late_story_never_lands_on_a_new_timeline(monkeypatch):
+    """A model call that finishes after a restart or a new match must be discarded, not attached to a reused id."""
+    import regista.runtime.session as session_mod
+
+    release = asyncio.Event()
+    real = session_mod.run_story
+
+    async def slow_run_story(rt, job):
+        await release.wait()
+        return await real(rt, job)
+
+    monkeypatch.setattr(session_mod, "run_story", slow_run_story)
+
+    async def run():
+        s = api.MatchSession()
+        s.seek(25)
+        goal = next(m for m in s.moments if m.kind == "goal")
+        task = asyncio.create_task(s._run_story(goal, s._gen, s._context()))
+        await asyncio.sleep(0)
+        s.load("NOR", "CAL", 17, "derby")  # a different match reusing moment ids from m001
+        s.seek(25)
+        release.set()
+        await task
+        assert goal.id not in s.story or s.story[goal.id]["narration"] == {}
+        assert all(c.id != goal.id or "goal" not in str(c.model_dump()).lower() for c in s.cues if c.kind.value != "score_bug")
+        # and a job queued before the reset is skipped outright
+        before = len(s.story)
+        await s._run_story(goal, s._gen - 1, {})
+        assert len(s.story) == before
+    asyncio.run(run())
+
+
+def _moments_of(s):
+    return [(m.kind, m.clock, tuple(m.players), json.dumps(m.facts, sort_keys=True, default=str)) for m in s.moments]
+
+
+def test_live_feed_matches_replay_whatever_the_batch_size(match):
+    until = 25 * 60.0
+
+    async def replay_run():
+        s = api.MatchSession()
+        s.load("NOR", "CAL", 16, "derby")
+        s.advance(until - s.clock_t, live=False)
+        return _moments_of(s), s.state.snapshot()["teams"]
+
+    async def live_run(step):
+        s = api.MatchSession()
+        s.start_live(match.info)
+        for b in _batches(match, until, step=step):
+            frames = [f for f in b["frames"] if f["t"] <= until]
+            if not frames:
+                break
+            s.ingest(frames, [api.MatchEvent.model_validate(e) for e in b["events"]
+                              if e["qualifiers"].get("t_end", e["t"]) <= frames[-1]["t"]])
+        return _moments_of(s), s.state.snapshot()["teams"]
+
+    ref = asyncio.run(replay_run())
+    for step in (7, 150, 900):
+        got = asyncio.run(live_run(step))
+        assert got[0] == ref[0], f"moments differ with batches of {step} frames"
+        assert got[1] == ref[1], f"team state differs with batches of {step} frames"
+
+
+def test_changing_profile_recuts_what_is_on_air():
+    """The client drops its cues on a profile change, so the server re-sends what is on air, cut for the new fan."""
+    async def run():
+        s = api.MatchSession()
+        s.seek(25)
+        goal = next(m for m in s.moments if m.kind == "goal")
+        s.seek((goal.t + 2) / 60)
+        assert any(c.moment_id == goal.id for c in s.live_cues())
+        v = s.connect(FanProfile())
+        while not v.queue.empty():
+            v.queue.get_nowait()
+        s.set_profile(v.id, FanProfile(id=v.id, mode="analyst", language="es", favorite_team="CAL"))
+        msgs = [v.queue.get_nowait() for _ in range(v.queue.qsize())]
+        cues = [m["cue"] for m in msgs if m["type"] == "cue"]
+        assert msgs[0]["type"] == "profile" and any(c["kind"] == "score_bug" for c in cues)
+        goal_cues = [c for c in cues if c.get("moment_id") == goal.id]
+        assert goal_cues and goal_cues[0]["locale"] == "es" and goal_cues[0]["payload"].get("partisan") == "against"
+    asyncio.run(run())
+
+
+def test_explore_one_moment_shows_three_fans_without_touching_the_broadcast(client):
+    client.post("/api/control", json={"action": "pause"})  # a paused shared broadcast must stay exactly where it is
+    before = client.get("/api/state").json()
+    out = client.get("/api/explore").json()
+    assert out["curated"] and out["moment"]["kind"] == "goal" and out["moments"]
+    assert [f["name"] for f in out["fans"]] == ["Tom", "Amira", "Lucía"]
+    assert [f["cue"]["locale"] for f in out["fans"]] == ["en", "ar", "es"]
+    assert out["story"]["verdict"]["ok"] and set(out["moment"]["fact_kinds"].values()) == {"observed", "model estimate"}
+    assert out["fans"][1]["cue"]["payload"].get("partisan") == "against"  # Amira supports the side that conceded
+    assert client.get("/api/explore").json()["fans"] == out["fans"]  # cached: one story job per moment
+    assert client.get("/api/explore", params={"moment": "nope"}).status_code == 404
+    assert client.get("/api/state").json()["clock"] == before["clock"]  # the shared broadcast did not move

@@ -24,7 +24,7 @@ from ..agents.config import LLMConfig, load_config
 from ..agents.director import Director
 from ..agents.producer import Producer
 from ..agents.pundit import Pundit
-from ..agents.recap import offline_recap, recap_payload
+from ..agents.recap import offline_recap, recap_evidence, recap_payload
 from ..agents.story import AgentFailure, AgentRuntime, StoryJob, run_story
 from ..agents.telemetry import Span, Telemetry
 from ..agents.templates import LANGS, PERSONAS, Names, narrate
@@ -68,12 +68,26 @@ class Viewer:
             self.queue.put_nowait(msg)
 
 
+def match_context(state: MatchState) -> dict[str, Any]:
+    """The live CONTEXT a story job sees: the match as it stands at the moment, frozen when the job is queued."""
+    s = state.snapshot()
+    return {"clock": s["clock"], "score": s["score"], "win_probability": s["win_probability"], "momentum": s["momentum"],
+            "teams": {t: {k: v for k, v in s["teams"][t].items() if k in {"name", "xg", "shots", "possession", "pass_accuracy",
+                                                                          "pressures", "high_regains"}}
+                      for t in s["teams"]}}
+
+
+def _event_order(e: Any) -> tuple[float, int]:
+    """Events take effect when they complete (a pass when it arrives), then by sequence: replay and live agree."""
+    return (float(e.qualifiers.get("t_end", e.t)), e.seq)
+
+
 class MatchSession:
-    def __init__(self, cfg: LLMConfig | None = None, story_workers: int = 4):
+    def __init__(self, cfg: LLMConfig | None = None, story_workers: int = 4, bus: Any = None):
         self.cfg = cfg or load_config()
         self.telemetry = Telemetry()
         self.rt = AgentRuntime(self.cfg, self.telemetry)
-        self.bus = make_bus()
+        self.bus = bus or make_bus()
         self.viewers: dict[str, Viewer] = {}
         self.speed = 4.0
         self.playing = False
@@ -82,7 +96,9 @@ class MatchSession:
         self._last_state_push = 0.0
         self.telemetry.listeners.append(self._on_span)
         # created once: story workers block on this queue, so it must survive pipeline resets
-        self.queue: asyncio.Queue[Moment] = asyncio.Queue()
+        self.queue: asyncio.Queue[tuple[int, Moment, dict[str, Any]]] = asyncio.Queue()
+        self._gen = 0  # timeline generation: bumped on every reset so late model results cannot land on a new timeline
+        self._pending_events: list[Any] = []
         self.mode = "replay"  # or "live": an external provider pushes the feed
         self.virtual: dict[str, CaptureViewer] = {}
         self.webhooks = Webhooks()
@@ -101,7 +117,7 @@ class MatchSession:
     def load(self, home: str, away: str, seed: int, scenario: str) -> None:
         self.params = {"home": home, "away": away, "seed": seed, "scenario": scenario}
         self.res = get_sim(home, away, seed, scenario)
-        self.events = sorted(self.res.events, key=lambda e: (e.qualifiers.get("t_end", e.t), e.seq))
+        self.events = sorted(self.res.events, key=_event_order)
         self._reset_pipeline()
 
     def _reset_pipeline(self) -> None:
@@ -121,6 +137,9 @@ class MatchSession:
         self.story: dict[str, dict[str, Any]] = {}
         self.recaps: dict[tuple[str, str, str], dict[str, Any]] = {}
         self._ht_base: dict[str, Any] | None = None  # the match as it stood at the half-time whistle
+        self._live_recaps: dict[tuple[str, str], tuple[str, dict[str, Any]]] = {}  # (lang, persona) -> (clock, recap)
+        self._gen += 1
+        self._pending_events = []
         while not self.queue.empty():  # stale story jobs belong to the previous timeline
             self.queue.get_nowait()
         for v in self.viewers.values():
@@ -159,6 +178,20 @@ class MatchSession:
             v.profile = profile
             v.director.update_profile(profile)
             v.send({"type": "profile", "profile": profile.model_dump()})
+            # the client drops its non-persistent cues on a profile change: re-cut what is on air now for the new profile
+            for cue in self.live_cues():
+                out = v.director.decide(cue)
+                if out is not None:
+                    v.send({"type": "cue", "cue": out.model_dump()})
+
+    def live_cues(self) -> list[Cue]:
+        """The cues on air at the current clock (latest, verified version where the story lane upgraded one)."""
+        on_air = []
+        for c in self.cues:
+            if c.t_in <= self.clock_t <= c.t_out:
+                upgraded = self.producer.by_moment.get(c.moment_id) if c.moment_id else None
+                on_air.append(upgraded if upgraded is not None and upgraded.id == c.id else c)
+        return [self.producer.score_bug(self.clock_t, []), *on_air]
 
     def languages(self) -> list[str]:
         langs = {"en"} | {v.profile.language for v in self.viewers.values() if v.profile.language in LANGS}
@@ -345,6 +378,20 @@ class MatchSession:
             raise RuntimeError("call /api/feed/start first")
         rec = self.res
         self._last_ingest = time.monotonic()
+        before = len(self.moments)
+        accepted = 0
+        queued = {e.id for e in self._pending_events}
+        for ev in events:
+            if ev.id in self.state.events or ev.id in queued:
+                continue  # idempotent: providers may resend
+            queued.add(ev.id)
+            rec.events.append(ev)
+            self._pending_events.append(ev)
+            accepted += 1
+        self._pending_events.sort(key=_event_order)
+        # Same order as replay, whatever the batch size: each frame, then the events it completes.
+        # Late events (ending at or before the newest frame already processed) apply on arrival.
+        self._apply_events_until(rec.frames[-1]["t"] if rec.frames else float("-inf"))
         batch = []
         for f in sorted(frames, key=lambda f: f["t"]):
             if rec.frames and f["t"] <= rec.frames[-1]["t"]:
@@ -352,18 +399,17 @@ class MatchSession:
             rec.frames.append(f)
             self.clock_t = f["t"]
             self._process_frame(f, True)
+            self._apply_events_until(f["t"])
             batch.append(f)
-        before = len(self.moments)
-        accepted = 0
-        for ev in events:
-            if ev.id in self.state.events:
-                continue  # idempotent: providers may resend
-            rec.events.append(ev)
-            self._on_event(ev, True)
-            accepted += 1
+        if not frames or any(e.type.value == "full_time" for e in self._pending_events):
+            self._apply_events_until(float("inf"))  # event-only feeds and the final whistle don't wait for tracking
         self._after_batch(batch, True)
         return {"accepted_frames": len(batch), "accepted_events": accepted, "clock": self.state.clock,
                 "score": dict(self.state.score), "new_moments": [m.headline for m in self.moments[before:]]}
+
+    def _apply_events_until(self, t: float) -> None:
+        while self._pending_events and _event_order(self._pending_events[0])[0] <= t:
+            self._on_event(self._pending_events.pop(0), True)
 
     def stop_live(self) -> dict[str, Any]:
         self.mode = "replay"
@@ -411,7 +457,7 @@ class MatchSession:
             msg = self.webhooks.message(m, self.names, self.state.home, self.state.away, f"{info.home.name} v {info.away.name}")
             asyncio.get_running_loop().create_task(self.webhooks.post(msg))
         if m.lane == "story" and m.kind not in {"half_time", "full_time"}:
-            self.queue.put_nowait(m)
+            self.queue.put_nowait((self._gen, m, self._context()))  # context frozen at the moment, not at dequeue
         if m.kind in {"half_time", "full_time"}:
             for lang in self.languages():
                 asyncio.get_running_loop().create_task(self.recap(lang, "casual", m.kind))
@@ -436,18 +482,24 @@ class MatchSession:
     # ------------------------------------------------------------------ story lane
     async def _story_worker(self) -> None:
         while True:
-            m = await self.queue.get()
+            gen, m, ctx = await self.queue.get()
             try:
-                await self._run_story(m)
+                await self._run_story(m, gen, ctx)
             except Exception:  # noqa: BLE001
                 log.exception("story job failed for %s", m.id)
 
-    async def _run_story(self, m: Moment) -> None:
+    async def _run_story(self, m: Moment, gen: int | None = None, ctx: dict[str, Any] | None = None) -> None:
+        gen = self._gen if gen is None else gen
+        if gen != self._gen:
+            return  # queued before a seek, restart or new match
         t0 = time.perf_counter()
-        job = StoryJob(moment=m.as_dict(), context=self._context(), languages=self.languages(), names=self.names_dict,
+        job = StoryJob(moment=m.as_dict(), context=ctx or self._context(), languages=self.languages(), names=self.names_dict,
                        roster_names=self.roster_names, home=self.state.home, away=self.state.away,
                        shirts={pid: p.info.number for pid, p in self.state.players.items()})
         job = await run_story(self.rt, job)
+        if gen != self._gen:
+            log.info("discarded story for %s: the timeline changed while it was being written", m.id)
+            return
         latency = (time.perf_counter() - t0) * 1000
         i18n = {lang: {p: narrate(job.moment, self.names, lang, p, self.state.home, self.state.away) for p in PERSONAS}
                 for lang in LANGS}
@@ -460,9 +512,11 @@ class MatchSession:
         )
         self.story[m.id] = {"job": job.id, "insight": job.insight, "verdict": job.verdict, "attempts": job.attempts,
                             "fallback_langs": job.fallback_langs, "latency_ms": round(latency, 1), "models": job.models,
-                            "trace": job.trace, "narration": job.narration}
-        cue = self.producer.upgrade(m.id, i18n, prov, job.verdict or {}, job.trace)
+                            "trace": job.trace, "narration": job.narration if job.verdict_ok else {}}  # never show unchecked copy
         self.broadcast({"type": "story", "moment_id": m.id, "story": self.story[m.id]})
+        if not job.verdict_ok:
+            return  # unverified copy never reaches air: the deterministic fast-lane cue stays up
+        cue = self.producer.upgrade(m.id, i18n, prov, job.verdict or {}, job.trace)
         if cue is None:
             return
         for v in self.viewers.values():
@@ -471,11 +525,7 @@ class MatchSession:
                 v.send({"type": "cue_update", "cue": out.model_dump()})
 
     def _context(self) -> dict[str, Any]:
-        s = self.state.snapshot()
-        return {"clock": s["clock"], "score": s["score"], "win_probability": s["win_probability"], "momentum": s["momentum"],
-                "teams": {t: {k: v for k, v in s["teams"][t].items() if k in {"name", "xg", "shots", "possession", "pass_accuracy",
-                                                                              "pressures", "high_regains"}}
-                          for t in s["teams"]}}
+        return match_context(self.state)
 
     # ------------------------------------------------------------------ recap & Q&A
     async def recap(self, lang: str, persona: str, period: str | None = None) -> dict[str, Any]:
@@ -489,12 +539,16 @@ class MatchSession:
         key = (period, lang, persona)
         if key in self.recaps and period != "live":
             return self.recaps[key]
+        cached = self._live_recaps.get((lang, persona))
+        if period == "live" and cached and cached[0] == self.state.clock:
+            return cached[1]  # one model call per match minute, however many viewers ask
         if period == "half_time":
             payload = {**self._ht_base, "language": lang, "persona": persona}  # type: ignore[dict-item]
         else:
             payload = recap_payload(self.state, self.moments, self.names_dict, lang, persona,
                                     "half_time" if period == "live" else period)
         payload["live"] = period == "live"
+        gen = self._gen
         t0 = time.perf_counter()
         source = "deterministic"
         try:
@@ -515,14 +569,20 @@ class MatchSession:
         for i, tp in enumerate(data.get("turning_points", [])):
             fields[f"tp{i}"] = tp.get("text", "")
         allowed = {p["id"] for p in payload["top_players"]} | {pid for m in payload["moments"] for pid in m["players"]}
-        verdict = verify_texts({lang: {persona: fields}}, [payload["teams"], payload["score"], payload["top_players"],
-                                                           [m["facts"] for m in payload["moments"]], payload["wp_path"]],
-                               allowed, self.roster_names)
+        verdict = verify_texts({lang: {persona: fields}}, recap_evidence(payload), allowed, self.roster_names)
         if not verdict.ok and source != "deterministic":
             data = offline_recap(payload)
             source = "deterministic (verifier rejected model recap)"
+            fields = {"headline": data.get("headline", ""), "summary": data.get("summary", ""),
+                      "tactical": data.get("tactical_story", "")}
+            fields.update({f"tp{i}": tp.get("text", "") for i, tp in enumerate(data.get("turning_points", []))})
+            verdict = verify_texts({lang: {persona: fields}}, recap_evidence(payload), allowed, self.roster_names)
         out = {"period": period, "language": lang, "persona": persona, "source": source, "verdict": verdict.as_dict(),
                "recap": data, "ms": round((time.perf_counter() - t0) * 1000, 1)}
+        if gen != self._gen:
+            return out  # the timeline changed while the model wrote: never cache or broadcast it
+        if period == "live":
+            self._live_recaps[(lang, persona)] = (payload.get("clock", self.state.clock), out)
         if period != "live":
             self.recaps[key] = out
             self.broadcast({"type": "recap", "recap": out})

@@ -10,7 +10,7 @@
 
 Regista turns synthetic football events and 5 Hz tracking into match intelligence that explains *why* moments matter, renders it as timed broadcast graphics, and re-cuts the whole broadcast per viewer: an analyst in English, a Port Calder fan in Arabic, a newcomer in Spanish and a player-cam viewer following one midfielder, all from the same feed at the same time.
 
-It is built on **Microsoft Agent Framework** (agents + workflow), runs models on **Microsoft Foundry**, ingests through **Azure Event Hubs**, ships as one container on **Azure Container Apps**, traces to **Application Insights**, and exposes the live match to **GitHub Copilot agent mode** and any agent over **MCP**.
+It is built on **Microsoft Agent Framework** (agents + workflow), runs models on **Microsoft Foundry**, publishes every feed event to **Azure Event Hubs** for downstream consumers, ships as one container on **Azure Container Apps**, traces to **Application Insights**, and exposes the live match to **GitHub Copilot agent mode** and any agent over **MCP**.
 
 | | |
 |---|---|
@@ -23,17 +23,17 @@ It is built on **Microsoft Agent Framework** (agents + workflow), runs models on
 
 ## Why it stands out
 
-1. **Receipts on every claim.** Every on-screen sentence carries the evidence event ids behind it. A deterministic **Verifier** checks every figure and every player name against the computed facts before anything airs. If a draft fails, it goes back to the Narrator with the exact issues, and after two failures a grounded template airs instead. Template copy verifies at **283/283 moments × 5 languages × 3 personas**.
+1. **Receipts, and a fact-checker with teeth.** Every cue carries the evidence event ids behind it. Before generated copy airs, a deterministic **Verifier** checks it against match data only (never against anything a model produced): every figure, including ordinals and written-out numbers; figures with a unit (km/h, metres, %, goals, the match minute) against facts of that kind, so a 33 km/h sprint cannot become "33 goals"; the squad players it names; and selected football claims (header, penalty, free kick). A failing draft goes back to its writer with the exact issues; after two failures a grounded template airs instead, and unverified copy never replaces the on-air graphic. What it does not check: causal claims, tone, and invented names from outside the squad.
 2. **Two lanes, never dark.** A deterministic *fast lane* puts shot cards, pass-quality cards, player tags and speed flashes on screen within milliseconds of the event. A generative *story lane* (Analyst → Narrator → Localizer → Verifier) upgrades the copy **in place** once it passes verification. Pull the plug on the model (Control Room → *Simulate model outage*) and the breaker trips, templates take over, and viewers see no gap.
 3. **Explanations you can grade.** Real feeds never tell you *why* a team changed shape, so nobody can check whether an "explainable AI" is right. Our simulator logs what it actually did (true xG per shot, the minute a team switched its press). Regista detects tactical shifts **from tracking alone**: players within 8 m of the ball in the opponent's build-up, and defensive line height. It is then scored against that ground truth. Few entries will be able to measure their explanations at all.
 4. **A broadcast contract, not a chat box.** The output is the **Graphics Cue Protocol (GCP v1)**: versioned, machine-readable cues timed on the match clock, with slot, priority, locale, audience, evidence and provenance. They can drive any renderer. The same cues drive our web overlay and a **transparent overlay page for OBS / vMix / CasparCG** (`/#/overlay?mode=analyst&lang=es`).
-5. **Personalisation that changes the broadcast, not just the language.** The **Director** scores every cue per viewer: mode, favourite club, favourite player and focus metric. It enforces a cue budget and screen-slot scheduling, picks the language and voice, and writes partisan captions ("GET IN! Valdane" for one fan, "Northbridge score · 1-0" for the other). Player cam pins a live stats card and a halo to one player for the whole match.
+5. **Personalisation that changes the broadcast, not just the language.** The **Director** scores every cue per viewer: mode, favourite club, favourite player and focus metric. It enforces a cue budget and screen-slot scheduling, picks the language and voice, and writes partisan captions ("GET IN! Valdane" for one fan, "Northbridge score · 1-0" for the other). Player cam keeps a halo on one player and brings back their live stats card throughout the match.
 
 ## The pipeline: one feed, five stages
 
 | Stage | What Regista does | Where |
 |---|---|---|
-| **Ingest** | Seeded, tactically-aware simulator: possession chains, physics-limited 5 Hz tracking for 22 players, set pieces, cards, subs, scripted tactical scenarios and a hidden ground-truth log. Published through an event bus (in-memory or **Azure Event Hubs**). | `sim/`, `runtime/bus.py` |
+| **Ingest** | Seeded, tactically-aware simulator: possession chains, physics-limited 5 Hz tracking for 22 players, set pieces, cards, subs, scripted tactical scenarios and a hidden ground-truth log. Every event is also published to an event bus (in-memory or **Azure Event Hubs**) for downstream consumers; the live pipeline reads the feed directly. | `sim/`, `runtime/bus.py` |
 | **Interpret** | A live blackboard of team and player state. Interpretable models with named factors: location xG, a 0–100 **pass difficulty** rating, opponents bypassed per pass, Poisson **win probability**, momentum, a **control-vs-chaos index** scored against the league reference, a press-shift detector (z-test plus change-point onset), and game-rhythm classes. | `intel/` |
 | **Explain** | Agent Framework workflow: **Analyst** (why it matters), **Narrator** (3 personas), **Localizer** (es/fr/ar/pt idiom), **Verifier** (grounding + brand safety, retry loop), **Recap** (match report), **Pundit** (Q&A with function tools). | `agents/` |
 | **Render** | **Producer** emits GCP cues; the web app renders them over a broadcast-angle pitch (or a tactical cam with a tactical lens showing line heights and the pressing radius). | `agents/producer.py`, `web/` |
@@ -41,7 +41,8 @@ It is built on **Microsoft Agent Framework** (agents + workflow), runs models on
 
 ```mermaid
 flowchart LR
-  F[Synthetic feed<br/>events + 5 Hz tracking] -->|Event Hubs / in-memory| I[Interpret<br/>MatchState · models · MomentDetector]
+  F[Synthetic feed<br/>events + 5 Hz tracking] --> I[Interpret<br/>MatchState · models · MomentDetector]
+  F -.->|mirrored| EH[Azure Event Hubs<br/>fabric-rti consumer group]
   I -->|fast lane, ms| P[Producer · GCP cues]
   I -->|story lane| A[Analyst]
   A --> N[Narrator · EN] --> V{Verifier}
@@ -63,7 +64,7 @@ flowchart LR
 | **Analyst** | LLM (`agent_framework.Agent`) | why the moment matters: claim, reasons, tactical read, key numbers; called only for goals, red cards, press shifts and big chances (routine moments use their factor breakdown, saving a model round trip) | deterministic insight from the moment's factors |
 | **Narrator** | LLM | caption / line / explainer × casual, analyst, new fan | retry with the Verifier's issues, then template |
 | **Localizer** | LLM | native es / fr / ar / pt copy, written in parallel with the Narrator from the same insight (no translation) | per-language rewrite, then template |
-| **Verifier** | deterministic | every figure grounded within rounding (incl. the moment's minute and its players' shirt numbers), only allowed players named, football claims (header, penalty, free kick) match the facts, slot length limits, brand safety | n/a (it is the guard) |
+| **Verifier** | deterministic | evidence is match data only (facts, context, clock, shirt numbers), never model output; every figure grounded within rounding (digits, ordinals, written-out numbers in 5 languages); figures with units matched to facts of that kind; no uninvolved squad players; football claims (header, penalty, free kick) match the facts; slot length limits; brand safety | n/a (it is the guard) |
 | **Producer** | deterministic | GCP cues: kind, slot, timing, priority, provenance | n/a |
 | **Director** ×N | deterministic policy | per-viewer relevance, budget, slot scheduling, language, persona, partisan copy | n/a |
 | **Recap** | LLM | half-time / full-time report with evidence ids per turning point | verified template recap |
@@ -75,15 +76,16 @@ Reliability: per-call timeout, a circuit breaker (opens after 3 consecutive fail
 
 | Measure | Result |
 |---|---|
-| Realism (20 matches, per team, per match, vs top-flight reference ranges) | **14/14 metrics inside**: 615 passes at 80%, 15.3 shots, 1.50 xG, 1.55 goals, 0.097 xG/shot, 12.0 km per outfield player, 32 km/h median top speed |
+| Realism sanity check (20 matches, per team, per match, vs generous top-flight bands in `sim/realism.py`; consistency of the synthetic data, not proof it predicts real football) | **14/14 metrics inside**: 615 passes at 80%, 15.3 shots, 1.50 xG, 1.55 goals, 0.097 xG/shot, 12.0 km per outfield player, 32 km/h median top speed |
 | Live xG model vs engine's true scoring probability (607 shots) | bias **−0.007**, MAE **0.009** per shot |
 | Press-shift detection from tracking (33 true shifts, 20 matches) | recall **52%**, **0.6** false alarms per match, median detection delay **5 min**, median onset error **2 min** |
-| Generated-copy grounding (offline templates, 283 moments × 5 languages × 3 personas) | **100%** of figures supported by facts |
-| Real model: Microsoft Foundry `gpt-4.1-mini`, 12 story moments × English, Spanish, Arabic (`regista llm-eval`) | **100%** of moments air model-written, verified copy (0 template fallbacks); **83%** of first drafts pass the fact-check untouched; story lane p50 **5.0 s**, p95 8.1 s; the Pundit called its tools for 100% of questions in 4 languages; English and Arabic recaps verified |
-| Self-correction loop | a test model that invents a figure and an uninvolved player is rejected by the Verifier, receives the exact issues, and fixes its draft on retry; a model that never listens ends in the grounded fallback |
-| Tests | 24 end-to-end and unit tests, all offline, ~25 s, covering the live feed API, on-air JSON, webhooks, guards, the agent loop, football-claim checks and the pipeline |
+| Fallback copy vs the Verifier (`regista evaluate`: every story moment of 20 matches × 5 languages × 3 personas) | **0 of 3,425** template outputs rejected (685 moments), so the fallback that airs when a model fails always passes the same checks |
+| Real model on held-out matches: Microsoft Foundry `gpt-4.1-mini`, 24 moments stratified across 6 kinds from 4 matches the prompts never saw × 5 languages (`regista llm-eval`; a small sample, so read it as a direction, not a precise rate) | **Workflow:** model-written, checked copy in all 5 languages for **92%** of moments and **97%** of language outputs; the rest aired as checked templates, so 100% of what aired passed the Verifier. First drafts pass 54%; mean 1.46 attempts; p50 **13.4 s**, p95 21.7 s; $0.0073 per moment. **Single agent** (same model, facts and checker; one call writes every language): all languages pass for **54%** of moments and 54% of language outputs, with nothing to catch the rest; p50 12.3 s; $0.0034 per moment. **Verifier probe:** caught 691 of 691 errors planted in real model copy. The Pundit called its tools for 100% of questions; 3 of 3 model recaps verified |
+| Self-correction loop | a test model that invents a figure and an uninvolved player is rejected by the Verifier, receives the exact issues, and fixes its draft on retry; a model that never listens ends in the grounded fallback; an Analyst that invents a figure is caught before any writer sees its insight |
+| Fan-out (`regista fanout`, in-process, excluding network I/O) | 1 → 1,000 simultaneous personalised viewers: about **0.7 → 7 ms** of Director and cue work per match-second (run to run, ±0.3 ms); model work stays at the same story jobs (one per moment, at most 5 languages) whatever the audience size |
+| Tests | 36 end-to-end and unit tests, all offline, ~50 s: the live feed API (including replay/live parity at any batch size), on-air JSON, webhooks, guards and tokens, path containment, stale-result discarding, profile re-cuts, the curated explore replay, the agent loop, the Verifier against poisoned agents, unit-mismatched figures, ordinals and written-out numbers in 5 languages, and the pipeline |
 
-Reproduce: `regista realism --matches 20` and `regista evaluate --matches 20` (results land in `docs/`; the Data lab page renders them).
+Reproduce: `regista realism --matches 20`, `regista evaluate --matches 20`, `regista fanout` and, with a model, `regista llm-eval` (results land in `docs/`; the Data lab page renders them).
 
 ## Microsoft and GitHub stack
 
@@ -92,7 +94,7 @@ Reproduce: `regista realism --matches 20` and `regista evaluate --matches 20` (r
 | **Microsoft Agent Framework** | `Agent`s with distinct instructions, a `WorkflowBuilder` graph with switch-case retry edges, `@tool` function tools for the Pundit, a custom `BaseChatClient` for offline runs, and OpenTelemetry instrumentation |
 | **Microsoft Foundry** | Foundry project + `gpt-4.1-mini` deployment (Bicep), `FoundryChatClient` with Entra ID / managed identity, no keys |
 | **Azure Container Apps** | one container serves API, WebSocket, MCP and the web app; managed identity pulls from ACR |
-| **Azure Event Hubs** | the ingest stage: every feed event is published to `match-events`, with a `fabric-rti` consumer group for Fabric Real-Time Intelligence |
+| **Azure Event Hubs** | every feed event is mirrored to `match-events` for downstream consumers, with a `fabric-rti` consumer group for Fabric Real-Time Intelligence (the in-process pipeline does not depend on it) |
 | **Application Insights** | agent runs, chat calls, tool calls and workflow supersteps via Azure Monitor OpenTelemetry |
 | **MCP** | 10 live-match tools + a match resource at `/mcp` (streamable HTTP) |
 | **GitHub Copilot agent mode** | `.vscode/mcp.json` + a custom `match-analyst` agent (`.github/agents`) + repo instructions |

@@ -394,7 +394,8 @@ def _ctx(m: dict[str, Any], names: Names, lang: str, home: str, away: str) -> di
         xg = f.get("xg") or 0.0
         c.update(
             score=f["score_text"], xg=num(xg, lang, 2), one_in=max(1, round(1 / max(xg, 0.01))),
-            wp_from=round(100 * wp_from), wp_to=round(100 * wp_to), swing=round(100 * (wp_to - wp_from)),
+            wp_from=round(100 * wp_from), wp_to=round(100 * wp_to),
+            swing=round(100 * abs(f["wp_swing"] if f.get("wp_swing") is not None else wp_to - wp_from)),  # the fact, not a re-derivation
             speed=num(f.get("shot_speed_kmh") or 0, lang), dist=num(f.get("distance_m") or 0, lang),
             ctx=GOAL_CTX[lang].get(f.get("context", "go_ahead"), "").format(team=names.t(team)),
             quality={"en": "against the odds", "es": "contra pronóstico", "fr": "contre toute attente", "ar": "عكس التوقعات",

@@ -1,76 +1,160 @@
 {
  "model": "foundry:gpt-4.1-mini",
- "moments": 12,
+ "eval_seeds": [
+  101,
+  202,
+  303,
+  404
+ ],
+ "moments": 24,
+ "moment_kinds": {
+  "big_chance": 2,
+  "goal": 5,
+  "master_pass": 5,
+  "momentum_swing": 4,
+  "press_shift": 4,
+  "red_card": 4
+ },
  "languages": [
   "en",
   "es",
-  "ar"
+  "fr",
+  "ar",
+  "pt"
  ],
- "first_draft_verified": 0.83,
- "verified_without_fallback": 1.0,
- "jobs_with_fallback": 0,
- "mean_attempts": 1.17,
- "story_latency_ms": {
-  "p50": 4990.5,
-  "p95": 8102
+ "workflow": {
+  "first_draft_verified": 0.54,
+  "verified": 1.0,
+  "verified_without_fallback": 0.92,
+  "jobs_with_fallback": 3,
+  "mean_attempts": 1.46,
+  "latency_ms": {
+   "p50": 13352,
+   "p95": 21737
+  },
+  "tokens_in": 228722,
+  "tokens_out": 51919,
+  "cost_usd_per_moment": 0.00727
  },
- "wall_s": 54.6,
+ "verifier_probe": {
+  "planted_errors": {
+   "contradicted claim": {
+    "planted": 35,
+    "caught": 35
+   },
+   "speed of the wrong size": {
+    "planted": 120,
+    "caught": 120
+   },
+   "uninvolved player": {
+    "planted": 120,
+    "caught": 120
+   },
+   "unsupported figure": {
+    "planted": 120,
+    "caught": 120
+   },
+   "written-out figure": {
+    "planted": 56,
+    "caught": 56
+   },
+   "wrong goal count": {
+    "planted": 120,
+    "caught": 120
+   },
+   "wrong match minute": {
+    "planted": 120,
+    "caught": 120
+   }
+  },
+  "caught_rate": 1.0,
+  "templates_checked": 120,
+  "templates_wrongly_rejected": 0,
+  "bare_figure_pool_coverage_10_99": 0.35
+ },
  "rejection_reasons": {
-  "rejected drafts": 2
+  "contradicted claim": 3,
+  "unsupported figure": 6,
+  "figure of the wrong kind": 3,
+  "too long": 1
  },
  "agents": {
   "Analyst": {
-   "calls": 12,
-   "p50_ms": 0.0,
-   "p95_ms": 0.0,
+   "calls": 31,
+   "p50_ms": 0.1,
+   "p95_ms": 5120.9,
+   "tokens_in": 17930,
+   "tokens_out": 4483,
    "errors": 0,
-   "fallbacks": 0,
+   "fallbacks": 7,
    "rejections": 0
   },
   "Narrator": {
-   "calls": 13,
-   "p50_ms": 3086.8,
-   "p95_ms": 5093.5,
+   "calls": 26,
+   "p50_ms": 3846.0,
+   "p95_ms": 4396.2,
+   "tokens_in": 40359,
+   "tokens_out": 7166,
    "errors": 0,
    "fallbacks": 0,
    "rejections": 0
   },
   "Localizer": {
-   "calls": 25,
-   "p50_ms": 4571.7,
-   "p95_ms": 5623.9,
-   "errors": 0,
-   "fallbacks": 0,
+   "calls": 118,
+   "p50_ms": 7035.2,
+   "p95_ms": 9282.7,
+   "tokens_in": 170433,
+   "tokens_out": 40270,
+   "errors": 2,
+   "fallbacks": 2,
    "rejections": 0
   },
   "Verifier": {
-   "calls": 14,
-   "p50_ms": 6.8,
-   "p95_ms": 7.7,
+   "calls": 35,
+   "p50_ms": 6.3,
+   "p95_ms": 16.2,
+   "tokens_in": 0,
+   "tokens_out": 0,
    "errors": 0,
    "fallbacks": 0,
-   "rejections": 2
+   "rejections": 13
   },
-  "Producer": {
-   "calls": 12,
+  "Fallback": {
+   "calls": 2,
    "p50_ms": 0.0,
    "p95_ms": 0.0,
+   "tokens_in": 0,
+   "tokens_out": 0,
+   "errors": 0,
+   "fallbacks": 2,
+   "rejections": 0
+  },
+  "Producer": {
+   "calls": 24,
+   "p50_ms": 0.0,
+   "p95_ms": 0.0,
+   "tokens_in": 0,
+   "tokens_out": 0,
    "errors": 0,
    "fallbacks": 0,
    "rejections": 0
   },
   "Pundit": {
    "calls": 4,
-   "p50_ms": 4095.4,
-   "p95_ms": 4456.5,
+   "p50_ms": 5167.9,
+   "p95_ms": 6354.3,
+   "tokens_in": 0,
+   "tokens_out": 0,
    "errors": 0,
    "fallbacks": 0,
    "rejections": 0
   },
   "Recap": {
-   "calls": 2,
-   "p50_ms": 6693.0,
-   "p95_ms": 5837.3,
+   "calls": 3,
+   "p50_ms": 6444.7,
+   "p95_ms": 6707.8,
+   "tokens_in": 20006,
+   "tokens_out": 2375,
    "errors": 0,
    "fallbacks": 0,
    "rejections": 0
@@ -80,231 +164,485 @@
   {
    "lang": "en",
    "question": "Why are Northbridge winning the ball so high since the hour?",
-   "answer": "Northbridge is winning the ball high since the hour because they have pushed their defensive line significantly higher (around 39.6m) and increased players near the ball in the opponent's buildup. This shift, starting close to the 60th minute, has increased their pressures and high regains, disrupting Port Calder's buildup deep in their own half. Their aggressive pressing style here contrasts with Port Calder’s lower line and fewer pressures, explaining Northbridge’s higher ball-winning success.",
+   "answer": "Since the hour mark, Northbridge Rovers have pushed their defensive line higher, increasing players near the ball in the opponent buildup and raising their pressures from 140 to 185. This tactical shift boosts their PPDA efficiency (27.0) and results in more high regains (6 vs 3), allowing them to win the ball aggressively and early in Port Calder FC's half. Their higher line and concentrated pressing disrupt Calder's buildup rhythm and create more attacking chances.",
    "tools": [
     "get_tactical_picture"
    ],
    "model": "foundry:gpt-4.1-mini",
-   "ms": 4714
+   "ms": 6354
   },
   {
    "lang": "es",
    "question": "¿Quién es el mejor jugador del partido?",
-   "answer": "El mejor jugador del partido es Teo Valdane, un delantero que lleva dos goles y ha corrido más de 11 kilómetros, además de alcanzar una velocidad top de 31.4 km/h. Está teniendo un impacto enorme en el juego.",
+   "answer": "El mejor jugador del partido hasta ahora es Teo Valdane de NOR, con una valoración de 9.3. Ha marcado 2 goles y ha corrido más de 11 km con una velocidad máxima de 31.4 km/h. Está siendo una pieza clave en el ataque de su equipo.",
    "tools": [
     "get_top_players"
    ],
    "model": "foundry:gpt-4.1-mini",
-   "ms": 4456
+   "ms": 5136
   },
   {
    "lang": "ar",
    "question": "ما هي احتمالات فوز كل فريق؟",
-   "answer": "مباراة انتهت والفوز كان من نصيب فريق Northbridge Rovers باحتمالية نجاح 100% بعد فوزه 2-1 على Port Calder FC.",
+   "answer": "المباراة انتهت بنتيجة 2-1 لصالح Northbridge Rovers، لذلك احتمالات الفوز الآن هي 100% لـ Northbridge Rovers و0% لـ Port Calder FC. إذا حابب تعرف عن لحظات أو أداء الفريقين، اسألني!",
    "tools": [
     "get_match_status"
    ],
    "model": "foundry:gpt-4.1-mini",
-   "ms": 3143
+   "ms": 5124
   },
   {
    "lang": "fr",
    "question": "Qui contrôle le match en ce moment, et pourquoi ?",
-   "answer": "En ce moment, c'est Port Calder FC qui contrôle le match avec 64 % de possession, moins de pertes de balle et un jeu plus stable malgré une passe réussie un peu juste à 79 %. Ils imposent un jeu plus posé avec plus de passes par possession, tandis que Northbridge Rovers presse haut mais est moins efficace dans les duels. C’est ce contrôle du ballon et cette maîtrise des phases qui donnent l’avantage en termes de rythme et de domination.",
+   "answer": "Actuellement, c'est Port Calder FC qui contrôle le match. Ils ont 64% de possession, moins de pertes de balle et des duels, ce qui favorise une maîtrise plus stable du jeu. Leur style de jeu est plus calme avec 4.33 passes par possession, ce qui leur donne un contrôle supérieur face à Northbridge Rovers.",
    "tools": [
     "get_tactical_picture"
    ],
    "model": "foundry:gpt-4.1-mini",
-   "ms": 3734
+   "ms": 5200
   }
  ],
  "pundit_used_tools": 1.0,
  "recaps": [
   {
+   "seed": 101,
    "lang": "en",
    "source": "foundry:gpt-4.1-mini",
    "verified": true,
    "issues": [],
-   "headline": "Valdane's Brace Secures Northbridge's 2-1 Victory Over Port Calder",
-   "ms": 5843
+   "headline": "Northbridge and Port Calder settle for a tense 1-1 draw amid dramatic swings",
+   "ms": 6017
   },
   {
+   "seed": 101,
    "lang": "ar",
    "source": "foundry:gpt-4.1-mini",
    "verified": true,
    "issues": [],
-   "headline": "نورثبريدج تفوز 2-1 على بورت كالدر في مباراة مشوقة بقيادة فالدان",
-   "ms": 7554
+   "headline": "تعادل Northbridge وPort Calder في مباراة مثيرة مع طردين لـ Northbridge",
+   "ms": 6711
+  },
+  {
+   "seed": 202,
+   "lang": "es",
+   "source": "foundry:gpt-4.1-mini",
+   "verified": true,
+   "issues": [],
+   "headline": "Dominio y eficacia definen la victoria de Northbridge sobre Port Calder por 3-1",
+   "ms": 6449
   }
  ],
+ "wall_s": 692.4,
  "jobs": [
   {
-   "moment": "master_pass",
-   "clock": "3'",
-   "first_draft_ok": true,
-   "attempts": 1,
-   "fallback_langs": [],
-   "verified_without_fallback": true,
-   "ms": 5684,
+   "seed": 303,
+   "moment": "big_chance",
+   "clock": "42'",
+   "ms": 21737,
+   "attempts": 2,
+   "first_draft_ok": false,
+   "fallback_langs": [
+    "fr"
+   ],
+   "verified": true,
+   "verified_without_fallback": false,
    "sample_en": {
-    "caption": "Masterclass Pass by Reid",
-    "line": "Reid delivers a 54-meter pass at 79 km/h, bypassing 7 opponents with perfect accuracy on just his second pass.",
-    "explainer": "This pass’s difficulty rating of 81/100 highlights its complexity, combining length, pressure, and precision to break the defensive line effectively."
+    "caption": "High-quality chance blocked",
+    "line": "Pellegrini’s shot from 5 meters out had a 0.33 xG and 103 km/h speed but was blocked, reflecting Port Calder’s sustained attacking threat with a team xG of 0.82.",
+    "explainer": "An xG of 0.33 means Pellegrini had a one-in-three chance to score from this close-range shot. Port Calder’s 57% possession and 86.4% pass accuracy underpin their ability to create quality chances and pressure Northbridge’s defense."
    }
   },
   {
-   "moment": "master_pass",
-   "clock": "3'",
-   "first_draft_ok": true,
-   "attempts": 1,
-   "fallback_langs": [],
-   "verified_without_fallback": true,
-   "ms": 5811,
-   "sample_en": {
-    "caption": "Masterful Long Pass",
-    "line": "Fontes delivers a 47-meter pass at 78 km/h, bypassing 9 opponents with perfect accuracy, showcasing exceptional difficulty (59/100).",
-    "explainer": "The pass's difficulty rating factors in its length, pressure on Fontes, and forward progress. Bypassing 9 opponents highlights its tactical impact in breaking defensive lines."
-   }
-  },
-  {
-   "moment": "master_pass",
-   "clock": "7'",
-   "first_draft_ok": true,
-   "attempts": 1,
-   "fallback_langs": [],
-   "verified_without_fallback": true,
-   "ms": 7075,
-   "sample_en": {
-    "caption": "Benali’s 52m Master Pass",
-    "line": "Benali completes a 52-meter pass at 85 km/h, bypassing 9 opponents with 67% accuracy on his 3rd pass.",
-    "explainer": "The pass’s difficulty rating of 46/100 reflects the challenge of its length and precision. Bypassing 9 defenders highlights its tactical impact in breaking Port Calder’s lines."
-   }
-  },
-  {
-   "moment": "master_pass",
-   "clock": "10'",
-   "first_draft_ok": true,
-   "attempts": 1,
-   "fallback_langs": [],
-   "verified_without_fallback": true,
-   "ms": 4588,
-   "sample_en": {
-    "caption": "Masterful 53m Pass by Osei",
-    "line": "Osei executes a difficult 80/100 long pass spanning 53 meters at 69 km/h, bypassing 7 opponents with 83% accuracy to Pellegrini.",
-    "explainer": "The pass’s high difficulty rating reflects its length, pressure, and loft. Bypassing 7 defenders disrupts Northbridge’s defense, creating a valuable attacking opportunity for Port Calder."
-   }
-  },
-  {
-   "moment": "master_pass",
-   "clock": "12'",
-   "first_draft_ok": true,
-   "attempts": 1,
-   "fallback_langs": [],
-   "verified_without_fallback": true,
-   "ms": 4753,
-   "sample_en": {
-    "caption": "High-Difficulty Master Pass",
-    "line": "Benali completes a 50m pass to Valdane with 83% accuracy, bypassing 6 opponents at 80 km/h ball speed, showcasing exceptional vision and technique.",
-    "explainer": "The pass difficulty rated 78/100 reflects the challenge of a long, lofted through ball under pressure. Bypassing 6 defenders at high speed and maintaining 83% accuracy highlights Benali’s elite passing ability and tactical awareness."
-   }
-  },
-  {
-   "moment": "master_pass",
-   "clock": "15'",
-   "first_draft_ok": true,
-   "attempts": 1,
-   "fallback_langs": [],
-   "verified_without_fallback": true,
-   "ms": 4770,
-   "sample_en": {
-    "caption": "Masterful 52m Pass by Erdem",
-    "line": "Erdem completes a 52-meter pass at 82 km/h, bypassing 9 opponents with 100% accuracy on his 4th pass.",
-    "explainer": "This pass’s difficulty rating of 64/100 highlights the technical challenge of such a long, fast, and precise ball that slices through the opposition’s defensive lines, showcasing Erdem’s exceptional vision and execution."
-   }
-  },
-  {
-   "moment": "master_pass",
-   "clock": "18'",
-   "first_draft_ok": true,
-   "attempts": 1,
-   "fallback_langs": [],
-   "verified_without_fallback": true,
-   "ms": 4291,
-   "sample_en": {
-    "caption": "High-Difficulty Master Pass",
-    "line": "Reid completes a 51-meter pass at 66 km/h, bypassing 9 opponents with 80% accuracy after 5 passes.",
-    "explainer": "This pass’s difficulty rating of 64/100 reflects its long distance, pressure on Reid, and aerial delivery. Bypassing 9 opponents disrupts the defense and creates attacking opportunities."
-   }
-  },
-  {
+   "seed": 101,
    "moment": "goal",
-   "clock": "20'",
-   "first_draft_ok": false,
-   "attempts": 2,
+   "clock": "46'",
+   "ms": 14288,
+   "attempts": 1,
+   "first_draft_ok": true,
    "fallback_langs": [],
+   "verified": true,
    "verified_without_fallback": true,
-   "ms": 12098,
    "sample_en": {
-    "caption": "Key Goal Shift",
-    "line": "Valdane’s header from 13m with 56 km/h speed increased Northbridge’s win probability by 34 points, despite a low xG of 0.04.",
-    "explainer": "The goal’s low expected goal value (0.04) shows it was a tough chance, made harder by the 32° angle and header finish. Yet, it swung Northbridge’s win probability from 41 to 75, giving them a strong tactical edge early on."
+    "caption": "Pellegrini's Key Opener",
+    "line": "Pellegrini nets a 0.14 xG chance from 10.5m at 80 km/h, swinging win probability 47 points to Port Calder.",
+    "explainer": "Despite a modest expected goal value, this goal dramatically shifted Port Calder's win probability from 18% to 65%, forcing Northbridge to chase the game."
    }
   },
   {
-   "moment": "momentum_swing",
-   "clock": "23'",
-   "first_draft_ok": false,
-   "attempts": 2,
+   "seed": 101,
+   "moment": "master_pass",
+   "clock": "1'",
+   "ms": 9150,
+   "attempts": 1,
+   "first_draft_ok": true,
    "fallback_langs": [],
+   "verified": true,
    "verified_without_fallback": true,
-   "ms": 8102,
+   "sample_en": {
+    "caption": "Masterful 52m Pass by Carrow",
+    "line": "Carrow delivers a 52-meter pass at 80 km/h, bypassing 9 opponents with 100% accuracy, demonstrating high difficulty (66/100) under pressure.",
+    "explainer": "This pass is tactically significant due to its length, speed, and precision. Bypassing 9 opponents disrupts the defense, while a difficulty score of 66/100 reflects the challenging conditions Carrow faced, including pressure and the aerial nature of the ball."
+   }
+  },
+  {
+   "seed": 101,
+   "moment": "momentum_swing",
+   "clock": "86'",
+   "ms": 9573,
+   "attempts": 1,
+   "first_draft_ok": true,
+   "fallback_langs": [],
+   "verified": true,
+   "verified_without_fallback": true,
+   "sample_en": {
+    "caption": "Port Calder Gains Momentum",
+    "line": "By 86', momentum drops to -49.8, indicating Port Calder's dominance despite a tied scoreline.",
+    "explainer": "Momentum here is measured on a scale from -100 (away dominance) to +100 (home dominance). A value of -49.8 shows Port Calder (the away team) has gained significant control, shifting the threat balance in their favor late in the match."
+   }
+  },
+  {
+   "seed": 101,
+   "moment": "press_shift",
+   "clock": "64'",
+   "ms": 20130,
+   "attempts": 2,
+   "first_draft_ok": false,
+   "fallback_langs": [
+    "pt"
+   ],
+   "verified": true,
+   "verified_without_fallback": false,
+   "sample_en": {
+    "caption": "Northbridge's pressing surge",
+    "line": "From 61', Northbridge raised their defensive line from 32m to 45m, increased players near the ball from 0.8 to 0.9, and cut PPDA from 12.2 to 5.7, intensifying their press.",
+    "explainer": "By pushing their line higher and reducing passes allowed per defensive action (PPDA), Northbridge forces turnovers earlier in Port Calder's build-up, leveraging their possession and shot volume to try to equalize."
+   }
+  },
+  {
+   "seed": 101,
+   "moment": "red_card",
+   "clock": "45'",
+   "ms": 19423,
+   "attempts": 2,
+   "first_draft_ok": false,
+   "fallback_langs": [],
+   "verified": true,
+   "verified_without_fallback": true,
+   "sample_en": {
+    "caption": "Numerical Disadvantage Hits Northbridge",
+    "line": "Haddad’s second yellow reduces Northbridge to ten men, dropping their win probability from 48 to 36 and boosting Port Calder’s chances.",
+    "explainer": "Playing with ten men lowers Northbridge’s scoring ability and win probability significantly, shifting momentum toward Port Calder despite Northbridge’s higher possession and shots before the card."
+   }
+  },
+  {
+   "seed": 404,
+   "moment": "big_chance",
+   "clock": "90'",
+   "ms": 18671,
+   "attempts": 2,
+   "first_draft_ok": false,
+   "fallback_langs": [],
+   "verified": true,
+   "verified_without_fallback": true,
+   "sample_en": {
+    "caption": "Valdane's 0.25 xG Shot Blocked",
+    "line": "Valdane's shot from 7 m at 79 km/h with a 0.25 xG was blocked, keeping Northbridge's total xG at 1.41 despite their 1 goal.",
+    "explainer": "This shot had a 0.25 expected goals (xG) value, meaning it was a strong scoring chance. The shot speed of 79 km/h shows the power behind it, but the block prevented a likely goal for Northbridge."
+   }
+  },
+  {
+   "seed": 202,
+   "moment": "goal",
+   "clock": "8'",
+   "ms": 18776,
+   "attempts": 2,
+   "first_draft_ok": false,
+   "fallback_langs": [],
+   "verified": true,
+   "verified_without_fallback": true,
+   "sample_en": {
+    "caption": "Early goal shifts momentum",
+    "line": "Valdane nets a 0.15 xG chance from 10 m at 80 km/h, boosting Northbridge's win probability from 41 to 73.",
+    "explainer": "The goal came from a half-chance with a moderate shot speed and distance, causing a 32-point swing in win probability, forcing Port Calder to chase the game."
+   }
+  },
+  {
+   "seed": 202,
+   "moment": "master_pass",
+   "clock": "4'",
+   "ms": 9815,
+   "attempts": 1,
+   "first_draft_ok": true,
+   "fallback_langs": [],
+   "verified": true,
+   "verified_without_fallback": true,
+   "sample_en": {
+    "caption": "Masterful Pass by Fontes",
+    "line": "Fontes delivers a 48-meter aerial pass at 64 km/h, bypassing 9 opponents with perfect accuracy, showing exceptional skill under pressure.",
+    "explainer": "This pass’s difficulty rating of 61/100 reflects the challenge of its length, pressure, and loft. Bypassing 9 opponents disrupts the defense and opens attacking opportunities."
+   }
+  },
+  {
+   "seed": 202,
+   "moment": "momentum_swing",
+   "clock": "48'",
+   "ms": 8442,
+   "attempts": 1,
+   "first_draft_ok": true,
+   "fallback_langs": [],
+   "verified": true,
+   "verified_without_fallback": true,
+   "sample_en": {
+    "caption": "Port Calder Momentum Surge",
+    "line": "At 48', momentum swung sharply to Port Calder with a model estimate of -48.3, indicating strong away dominance despite equal score.",
+    "explainer": "Momentum is measured by a threat model where -100 means full away dominance and +100 full home dominance. Port Calder's -48.3 shows they are controlling the game flow, even though shots and xG still favor Northbridge."
+   }
+  },
+  {
+   "seed": 202,
+   "moment": "press_shift",
+   "clock": "20'",
+   "ms": 12094,
+   "attempts": 1,
+   "first_draft_ok": true,
+   "fallback_langs": [],
+   "verified": true,
+   "verified_without_fallback": true,
+   "sample_en": {
+    "caption": "Press intensity rises at 17'",
+    "line": "Port Calder raised their defensive line from 24 to 32 meters and increased players near the ball from 0.7 to 0.7, cutting PPDA from 43 to 21 to intensify pressing.",
+    "explainer": "This tactical shift means Port Calder is committing more players closer to the ball and pushing their defensive line higher, reducing opponents' time on the ball (PPDA is passes allowed per defensive action; lower means more pressure)."
+   }
+  },
+  {
+   "seed": 404,
+   "moment": "red_card",
+   "clock": "4'",
+   "ms": 15724,
+   "attempts": 2,
+   "first_draft_ok": false,
+   "fallback_langs": [],
+   "verified": true,
+   "verified_without_fallback": true,
+   "sample_en": {
+    "caption": "Numerical edge shifts win odds",
+    "line": "Ade’s red card drops Port Calder’s win chance from 32 to 22 while Northbridge’s rises from 43 to 53, forcing tactical adjustments.",
+    "explainer": "Playing with ten men reduces scoring rate by about 25%, so Port Calder must defend more, while Northbridge can press harder and exploit more space."
+   }
+  },
+  {
+   "seed": 303,
+   "moment": "goal",
+   "clock": "37'",
+   "ms": 16783,
+   "attempts": 2,
+   "first_draft_ok": false,
+   "fallback_langs": [],
+   "verified": true,
+   "verified_without_fallback": true,
+   "sample_en": {
+    "caption": "Key goal shifts momentum",
+    "line": "Pellegrini’s goal from 11 meters with a 102 km/h shot lifts Port Calder’s win probability from 30 to 71, a 41-point swing.",
+    "explainer": "Despite fewer defensive pressures, Port Calder’s clinical finishing from a 0.15 xG chance and maintaining 54.1% possession put Northbridge under pressure. The shot angle of 37° and high speed underline technical quality."
+   }
+  },
+  {
+   "seed": 303,
+   "moment": "master_pass",
+   "clock": "2'",
+   "ms": 8745,
+   "attempts": 1,
+   "first_draft_ok": true,
+   "fallback_langs": [],
+   "verified": true,
+   "verified_without_fallback": true,
+   "sample_en": {
+    "caption": "Masterful 52m Pass by Kral",
+    "line": "Kral’s 52-meter pass to Pellegrini bypassed 9 opponents at 87 km/h with perfect accuracy, highlighting precise long-range distribution.",
+    "explainer": "A 46/100 difficulty rating reflects the challenge of this 52-meter aerial pass. Bypassing 9 opponents at 87 km/h with 100% accuracy shows Kral’s technical ability and vision under pressure."
+   }
+  },
+  {
+   "seed": 303,
+   "moment": "momentum_swing",
+   "clock": "63'",
+   "ms": 9888,
+   "attempts": 1,
+   "first_draft_ok": true,
+   "fallback_langs": [],
+   "verified": true,
+   "verified_without_fallback": true,
+   "sample_en": {
+    "caption": "Momentum Swings to Northbridge",
+    "line": "At 63', Northbridge's momentum value has surged to 48.7, recovering from a low near -62 just 11 minutes earlier.",
+    "explainer": "Momentum (threat EWMA) quantifies game control from -100 (away dominance) to +100 (home dominance). Northbridge's rise from -62.5 to 48.7 shows a strong shift in attacking threat and game influence."
+   }
+  },
+  {
+   "seed": 303,
+   "moment": "press_shift",
+   "clock": "62'",
+   "ms": 13149,
+   "attempts": 1,
+   "first_draft_ok": true,
+   "fallback_langs": [],
+   "verified": true,
+   "verified_without_fallback": true,
+   "sample_en": {
+    "caption": "Pressing intensity rises sharply",
+    "line": "Northbridge increased players near ball from 0.7 to 0.9, raised defensive line from 29m to 38m, and improved pressing rate from 22 to 31 actions per minute.",
+    "explainer": "These changes show Northbridge’s tactical shift to a higher, more aggressive press, reducing Port Calder’s space and time to build attacks, aiming to force turnovers."
+   }
+  },
+  {
+   "seed": 101,
+   "moment": "red_card",
+   "clock": "90+4'",
+   "ms": 21992,
+   "attempts": 2,
+   "first_draft_ok": false,
+   "fallback_langs": [],
+   "verified": true,
+   "verified_without_fallback": true,
+   "sample_en": {
+    "caption": "Red Card: Benali (No. 3)",
+    "line": "Benali receives a second yellow, reducing Northbridge to 10 men. Their win probability drops from 3 to 0, severely hurting their chances.",
+    "explainer": "Playing with 10 men lowers Northbridge's scoring ability significantly. Their win probability falls from 3 to 0, while the draw chance rises to 99, reflecting the impact of numerical disadvantage."
+   }
+  },
+  {
+   "seed": 404,
+   "moment": "goal",
+   "clock": "29'",
+   "ms": 17033,
+   "attempts": 1,
+   "first_draft_ok": true,
+   "fallback_langs": [
+    "ar",
+    "pt"
+   ],
+   "verified": true,
+   "verified_without_fallback": true,
+   "sample_en": {
+    "caption": "Tactical breakthrough",
+    "line": "Valdane scores a header from 8 m with a 47 km/h shot, lifting Northbridge's win chance from 33 to 72%.",
+    "explainer": "Despite a modest xG of 0.10 reflecting a half-chance, this headed goal significantly boosts Northbridge's win probability by 39 points, forcing Port Calder to adjust their strategy."
+   }
+  },
+  {
+   "seed": 404,
+   "moment": "master_pass",
+   "clock": "3'",
+   "ms": 9201,
+   "attempts": 1,
+   "first_draft_ok": true,
+   "fallback_langs": [],
+   "verified": true,
+   "verified_without_fallback": true,
+   "sample_en": {
+    "caption": "High-Difficulty Master Pass",
+    "line": "Fontes executes a 62m pass at 77 km/h, bypassing 9 opponents with 100% accuracy to Brightwell.",
+    "explainer": "This pass's difficulty rating is 72/100, reflecting the challenge of its length and precision. Bypassing 9 opponents highlights Northbridge's ability to break defensive lines early in the match."
+   }
+  },
+  {
+   "seed": 202,
+   "moment": "momentum_swing",
+   "clock": "59'",
+   "ms": 7720,
+   "attempts": 1,
+   "first_draft_ok": true,
+   "fallback_langs": [],
+   "verified": true,
+   "verified_without_fallback": true,
    "sample_en": {
     "caption": "Northbridge Momentum Surge",
-    "line": "At 23', Northbridge's momentum value hits 52.1, marking a significant shift from earlier negative values below -27.9.",
-    "explainer": "Momentum is measured by threat EWMA, ranging from -100 (away dominance) to +100 (home dominance). Northbridge's rise to 52.1 indicates they have taken control after a period of Port Calder dominance."
+    "line": "Momentum rose from -48.3 to 52.8 in ten minutes, signaling a major swing as Northbridge dominates possession and outshoots Port Calder.",
+    "explainer": "Momentum is a model measuring control from -100 (away dominance) to +100 (home dominance). Northbridge’s momentum jumped over 100 points, reflecting superior possession (55.3%), shots (15), and pass accuracy (84.0%) compared to Port Calder."
    }
   },
   {
-   "moment": "master_pass",
-   "clock": "26'",
-   "first_draft_ok": true,
-   "attempts": 1,
+   "seed": 404,
+   "moment": "press_shift",
+   "clock": "53'",
+   "ms": 18525,
+   "attempts": 2,
+   "first_draft_ok": false,
    "fallback_langs": [],
+   "verified": true,
    "verified_without_fallback": true,
-   "ms": 4261,
    "sample_en": {
-    "caption": "High-difficulty master pass",
-    "line": "Morel delivers a 31-meter through ball at 56 km/h, bypassing 5 opponents with 64% accuracy under pressure.",
-    "explainer": "The pass difficulty rating of 75/100 reflects the challenge of playing a long through ball into a crowded penalty area while under pressure. Bypassing 5 defenders highlights its tactical value in breaking defensive lines."
+    "caption": "Tactical press shift by Northbridge",
+    "line": "Northbridge increased players near the ball from 0.6 to 1.1, raised their defensive line from 34 to 36 meters, and dropped PPDA from 54 to 12, signaling a sharp rise in pressing intensity.",
+    "explainer": "By nearly doubling the number of players close to the ball and pushing their defensive line higher, Northbridge compresses space and reduces Port Calder's time on the ball. The PPDA drop shows a more aggressive press, aiming to force turnovers and create scoring chances."
    }
   },
   {
-   "moment": "master_pass",
-   "clock": "30'",
-   "first_draft_ok": true,
+   "seed": 404,
+   "moment": "red_card",
+   "clock": "25'",
+   "ms": 13352,
    "attempts": 1,
+   "first_draft_ok": true,
    "fallback_langs": [],
+   "verified": true,
    "verified_without_fallback": true,
-   "ms": 4589,
    "sample_en": {
-    "caption": "High-Difficulty Master Pass",
-    "line": "Morel's 38-meter pass at 69 km/h bypassed 6 defenders with 64% accuracy, showcasing exceptional vision and technical skill under pressure.",
-    "explainer": "A pass difficulty rating of 72/100 reflects the challenge of delivering a 38-meter lofted through ball into a crowded penalty area. Bypassing six opponents highlights its tactical impact, breaking defensive lines to create attacking opportunities."
+    "caption": "Reid's Red Cuts Northbridge Odds",
+    "line": "Northbridge's win probability drops from 44 to 33 after Reid's red card, while Port Calder's rises from 24 to 31, reflecting a 25% scoring rate drop for Northbridge with ten men.",
+    "explainer": "Playing with ten men reduces Northbridge's scoring chances by about 25%, forcing them to adopt a defensive strategy. Port Calder can now press harder and exploit the extra space to improve their chances of winning."
    }
   },
   {
-   "moment": "master_pass",
-   "clock": "32'",
-   "first_draft_ok": true,
-   "attempts": 1,
+   "seed": 101,
+   "moment": "goal",
+   "clock": "72'",
+   "ms": 16304,
+   "attempts": 2,
+   "first_draft_ok": false,
    "fallback_langs": [],
+   "verified": true,
    "verified_without_fallback": true,
-   "ms": 5211,
+   "sample_en": {
+    "caption": "Crucial Equalizer by Wren",
+    "line": "At 72', Wren converts a half-chance (xG 0.22) from 8 meters with a 110 km/h shot, swinging Northbridge’s win probability from 2% to 21%.",
+    "explainer": "Wren’s goal, assisted by Marchetti, was a precise finish from a moderate chance, significantly shifting momentum and forcing Port Calder to rethink their defense."
+   }
+  },
+  {
+   "seed": 101,
+   "moment": "master_pass",
+   "clock": "10'",
+   "ms": 12941,
+   "attempts": 2,
+   "first_draft_ok": false,
+   "fallback_langs": [],
+   "verified": true,
+   "verified_without_fallback": true,
    "sample_en": {
     "caption": "Masterful Long Pass",
-    "line": "Quintero delivers a 32-meter through ball bypassing 5 defenders at 52 km/h with 81% accuracy to Pellegrini.",
-    "explainer": "The pass's difficulty rating of 73/100 reflects its length, pressure, and precision. Bypassing 5 opponents at this speed and accuracy disrupts defensive lines and creates key attacking opportunities."
+    "line": "Iturra completes a 59-meter pass to Pellegrini, bypassing 9 opponents at 71 km/h with 80% accuracy, showcasing precise ball control under pressure.",
+    "explainer": "The pass difficulty is rated 57/100, reflecting the challenge of its length and forward progress. Bypassing 9 opponents disrupts Northbridge’s defensive shape, creating a key attacking opportunity for Port Calder."
    }
   }
- ]
+ ],
+ "single_agent_baseline": {
+  "all_languages_verified": 0.54,
+  "language_outputs_verified": 0.54,
+  "per_language_verified": {
+   "en": 0.54,
+   "es": 0.54,
+   "fr": 0.54,
+   "ar": 0.54,
+   "pt": 0.54
+  },
+  "latency_ms": {
+   "p50": 12307,
+   "p95": 14748
+  },
+  "tokens_in": 39902,
+  "tokens_out": 40848,
+  "cost_usd_per_moment": 0.00339,
+  "errors": 0
+ }
 }

@@ -6,7 +6,9 @@ can: the engine logs every tactical change it makes. This module replays
 matches through the live Interpret stage and scores:
 
 * press-shift detection: recall, false alarms per match, detection delay;
-* xG calibration: live model vs the engine's true scoring probability.
+* xG calibration: live model vs the engine's true scoring probability;
+* template grounding: the deterministic fallback copy (every story moment x 5 languages x 3 personas) checked by the
+  same Verifier the live agents face, since that copy is what airs when a model fails.
 """
 
 from __future__ import annotations
@@ -17,6 +19,8 @@ from typing import Any
 from .intel.moments import Moment, MomentDetector
 from .intel.state import MatchState
 from .sim.engine import SimResult, simulate
+
+LANGS = ("en", "es", "fr", "ar", "pt")
 
 
 def replay(res: SimResult) -> tuple[MatchState, MomentDetector, list[Moment]]:
@@ -56,7 +60,11 @@ def _clock_minutes(clock: str) -> float:
 
 
 def evaluate(seeds: list[int], home: str = "NOR", away: str = "CAL", scenario: str = "derby") -> dict[str, Any]:
+    from .agents.story import StoryJob, _template
+    from .agents.verifier import verify_texts
+
     hits, misses, false_alarms, delays, onset_err = 0, 0, 0, [], []
+    grounding = {"moments": 0, "outputs": 0, "rejected": 0}
     xg_pairs: list[tuple[float, float]] = []
     per_match = []
     for seed in seeds:
@@ -85,6 +93,19 @@ def evaluate(seeds: list[int], home: str = "NOR", away: str = "CAL", scenario: s
         for eid, data in st.enriched.items():
             if "xg" in data and eid in truth_xg and data.get("set_piece") != "penalty":
                 xg_pairs.append((data["xg"], truth_xg[eid]))
+        names = {"players": {pid: p.info.short_name for pid, p in st.players.items()}, "teams": dict(st.short)}
+        shirts = {pid: p.info.number for pid, p in st.players.items()}
+        for m in moments:
+            if m.lane != "story" or m.kind in {"half_time", "full_time"}:
+                continue
+            job = StoryJob(m.as_dict(), {"score": dict(st.score)}, list(LANGS), names, names["players"], st.home, st.away,
+                           shirts=shirts)
+            grounding["moments"] += 1
+            for lang in LANGS:
+                grounding["outputs"] += 1
+                if not verify_texts({lang: _template(job, lang)}, job.evidence(), set(m.players), names["players"],
+                                    claims=m.facts).ok:
+                    grounding["rejected"] += 1
         per_match.append({"seed": seed, "score": dict(st.score), "truth_shifts": len(truth),
                           "detected": len(detections), "false_alarms": len(fa)})
     n_truth = hits + misses
@@ -101,6 +122,7 @@ def evaluate(seeds: list[int], home: str = "NOR", away: str = "CAL", scenario: s
             "mean_delay_min": round(mean(delays), 1) if delays else None,
             "median_onset_error_min": round(median(onset_err), 1) if onset_err else None,
         },
+        "template_grounding": {**grounding, "languages": list(LANGS), "personas_per_output": 3},
         "xg_model": {
             "shots": len(xg_pairs),
             "mean_model_xg": round(mean(model), 3) if model else None,

@@ -8,6 +8,7 @@ are mirrored to it as well (see runtime/observability.py).
 
 from __future__ import annotations
 
+import math
 import time
 import uuid
 from collections import Counter, defaultdict, deque
@@ -15,6 +16,14 @@ from collections.abc import Callable
 from dataclasses import asdict, dataclass, field
 from statistics import median
 from typing import Any
+
+
+def percentile(values: Any, q: float) -> float | None:
+    """Nearest-rank percentile: always an observed value, and p95 is never below p50."""
+    vals = sorted(values)
+    if not vals:
+        return None
+    return vals[max(0, math.ceil(q * len(vals)) - 1)]
 
 
 @dataclass
@@ -77,6 +86,7 @@ class Telemetry:
         self.counters: Counter[str] = Counter()
         self.latency: dict[str, deque[float]] = defaultdict(lambda: deque(maxlen=200))
         self.listeners: list[Callable[[Span], None]] = []
+        self.tokens: dict[str, list[int]] = defaultdict(lambda: [0, 0])  # agent -> [input, output] tokens
         self.chaos_fail_rate = 0.0
         self.chaos_latency_ms = 0.0
 
@@ -100,7 +110,9 @@ class Telemetry:
             agents[name] = {
                 "calls": sum(v for k, v in self.counters.items() if k.startswith(f"{name}.")),
                 "p50_ms": round(median(vals), 1) if vals else None,
-                "p95_ms": round(vals[int(0.95 * (len(vals) - 1))], 1) if vals else None,
+                "p95_ms": round(percentile(vals, 0.95), 1) if vals else None,
+                "tokens_in": self.tokens[name][0] if name in self.tokens else 0,
+                "tokens_out": self.tokens[name][1] if name in self.tokens else 0,
                 "errors": self.counters.get(f"{name}.error", 0) + self.counters.get(f"{name}.timeout", 0),
                 "fallbacks": self.counters.get(f"{name}.fallback", 0),
                 "rejections": self.counters.get(f"{name}.rejected", 0),

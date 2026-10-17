@@ -8,6 +8,19 @@
   "mean_delay_min": 6.1,
   "median_onset_error_min": 2.0
  },
+ "template_grounding": {
+  "moments": 685,
+  "outputs": 3425,
+  "rejected": 0,
+  "languages": [
+   "en",
+   "es",
+   "fr",
+   "ar",
+   "pt"
+  ],
+  "personas_per_output": 3
+ },
  "xg_model": {
   "shots": 607,
   "mean_model_xg": 0.084,

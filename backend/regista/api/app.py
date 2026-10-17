@@ -21,6 +21,7 @@ from pydantic import BaseModel, Field
 
 from .. import __version__
 from ..mcp_server import build_mcp
+from ..runtime.explore import Explore
 from ..runtime.observability import setup_observability
 from ..runtime.session import MatchSession
 from ..schema.cues import Cue
@@ -65,9 +66,16 @@ def S() -> MatchSession:
 ADMIN_TOKEN = os.getenv("REGISTA_ADMIN_TOKEN", "").strip()
 
 
-def require_producer(token: str | None) -> None:
-    """With REGISTA_ADMIN_TOKEN set, only producers holding it may change the shared broadcast or push a feed."""
-    if ADMIN_TOKEN and token != ADMIN_TOKEN:
+# Replacing the feed takes over the public broadcast, so it can be locked on its own (REGISTA_FEED_TOKEN) while
+# playback and the outage demo stay open for judges and visitors.
+FEED_TOKEN = os.getenv("REGISTA_FEED_TOKEN", "").strip()
+
+
+def require_producer(token: str | None, feed: bool = False) -> None:
+    """With a token set, only producers holding it may change the shared broadcast (REGISTA_ADMIN_TOKEN) or push a
+    live feed (REGISTA_FEED_TOKEN, falling back to the admin token)."""
+    want = (FEED_TOKEN or ADMIN_TOKEN) if feed else ADMIN_TOKEN
+    if want and token != want:
         raise HTTPException(401, "producer token required (X-Regista-Token)")
 
 
@@ -98,6 +106,7 @@ class RateLimit:
 
 
 ask_limit = RateLimit(int(os.getenv("REGISTA_ASK_PER_MINUTE", "8")))
+recap_limit = RateLimit(int(os.getenv("REGISTA_RECAP_PER_MINUTE", "30")))  # live recaps call the model
 SLOW_DOWN = {"en": "One moment - you have asked a lot of questions. Try again in a minute.",
              "es": "Un momento: has hecho muchas preguntas. Vuelve a intentarlo en un minuto.",
              "fr": "Un instant : vous avez posé beaucoup de questions. Réessayez dans une minute.",
@@ -122,7 +131,7 @@ def health() -> dict[str, Any]:
     return {"ok": True, "version": __version__, "llm": s.llm_info(), "bus": s.bus.name,
             "viewers": len(s.viewers) - len(s.virtual), "onair_consumers": len(s.virtual), "mode": s.mode,
             "clock": s.state.clock, "breaker": s.rt.breaker.as_dict(), "webhooks": s.webhooks.status(),
-            "producer_token_required": bool(ADMIN_TOKEN)}
+            "producer_token_required": bool(ADMIN_TOKEN), "feed_token_required": bool(FEED_TOKEN or ADMIN_TOKEN)}
 
 
 @app.get("/api/match")
@@ -205,7 +214,7 @@ class FeedBatch(BaseModel):
 @app.post("/api/feed/start", tags=["live feed"])
 async def feed_start(info: MatchInfo, x_regista_token: str | None = Header(None)) -> dict[str, Any]:
     """Start a live match from an external provider: send the MatchInfo (teams, squads, roster order)."""
-    require_producer(x_regista_token)
+    require_producer(x_regista_token, feed=True)
     if not info.roster:
         info.roster = [p.id for t in (info.home, info.away) for p in t.players]
     return S().start_live(info)
@@ -214,7 +223,7 @@ async def feed_start(info: MatchInfo, x_regista_token: str | None = Header(None)
 @app.post("/api/feed", tags=["live feed"])
 async def feed(batch: FeedBatch, x_regista_token: str | None = Header(None)) -> dict[str, Any]:
     """Push tracking frames (5 Hz, positions in MatchInfo.roster order) and completed events, in any batch size."""
-    require_producer(x_regista_token)
+    require_producer(x_regista_token, feed=True)
     s = S()
     if s.mode != "live":
         raise HTTPException(409, "no live match: POST /api/feed/start first")
@@ -228,7 +237,7 @@ async def feed(batch: FeedBatch, x_regista_token: str | None = Header(None)) -> 
 
 @app.post("/api/feed/stop", tags=["live feed"])
 async def feed_stop(x_regista_token: str | None = Header(None)) -> dict[str, Any]:
-    require_producer(x_regista_token)
+    require_producer(x_regista_token, feed=True)
     return S().stop_live()
 
 
@@ -242,8 +251,28 @@ async def onair(mode: Mode = Mode.CASUAL, lang: str = "en", team: str | None = N
 
 
 @app.get("/api/recap")
-async def recap(language: str = "en", persona: str = "analyst", period: str | None = None) -> dict[str, Any]:
+async def recap(request: Request, language: str = "en", persona: str = "analyst", period: str | None = None) -> dict[str, Any]:
+    if not recap_limit.allow(request.client.host if request.client else "anon"):
+        raise HTTPException(429, "too many recap requests: try again in a minute")
     return await S().recap(language, persona, period)
+
+
+explore_ref: dict[str, Explore] = {}
+
+
+@app.get("/api/explore")
+async def explore(request: Request, moment: str | None = None) -> dict[str, Any]:
+    """Explore one moment: a curated, private replay of a demo-match moment as Tom, Amira and Lucía see it, with the
+    facts (observed vs model estimate), the checked story and the agent trace. Defaults to the first goal."""
+    if "x" not in explore_ref:
+        explore_ref["x"] = Explore(S().cfg)
+    ex = explore_ref["x"]
+    if (moment or "") not in ex.cache and not recap_limit.allow(request.client.host if request.client else "anon"):
+        raise HTTPException(429, "too many requests: try again in a minute")
+    out = await ex.get(moment)
+    if out is None:
+        raise HTTPException(404, "unknown moment: pick one of /api/explore's `moments`")
+    return out
 
 
 @app.get("/api/evaluation")
@@ -256,6 +285,11 @@ def evaluation() -> dict[str, Any]:
     if (DOCS / "llm-eval.json").exists():
         llm = json.loads((DOCS / "llm-eval.json").read_text())
         out["llm"] = {k: v for k, v in llm.items() if k not in {"jobs", "agents"}}
+        wf = llm.get("workflow") or {}  # the Data lab reads the workflow figures at the top level
+        out["llm"].update({k: wf[k] for k in ("first_draft_verified", "verified_without_fallback", "jobs_with_fallback",
+                                               "mean_attempts") if k in wf})
+        if "latency_ms" in wf:
+            out["llm"]["story_latency_ms"] = wf["latency_ms"]
     return out
 
 

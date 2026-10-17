@@ -75,6 +75,8 @@ Delivery is retried once and never blocks the broadcast; `GET /api/health` repor
 |---|---|
 | `REGISTA_ADMIN_TOKEN` | Playback control, chaos and the live-feed API require the header `X-Regista-Token` (WebSocket: a `token` field). Viewers can still personalise and ask questions. |
 | `REGISTA_ASK_PER_MINUTE` | Pundit questions per viewer per minute (default 8); extra questions get a polite "try again" in the viewer's language. |
+| `REGISTA_FEED_TOKEN` | Locks only the live-feed API (`/api/feed/start`, `/api/feed`, `/api/feed/stop`), so nobody can replace a public broadcast while visitors keep playback, the outage demo and Q&A. Falls back to `REGISTA_ADMIN_TOKEN`. Feed batches are capped at 3,000 frames and 2,000 events per request. |
+| `REGISTA_RECAP_PER_MINUTE` | Recap requests per client per minute (default 30). Live recaps are also cached per match minute, so many viewers cost one model call. |
 | `REGISTA_AUTOPLAY=1` | The demo match plays on boot, loops 45 s after full time, and resumes if it has been left paused for 5 minutes. |
 | (always on) | Chaos fault injection switches itself off after 90 s. |
 

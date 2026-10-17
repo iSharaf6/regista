@@ -52,6 +52,7 @@ class Director:
         self.profile = profile
         self.slots.clear()
         self.recent.clear()
+        self.shown_moments.clear()  # a new profile re-scores everything, including moments the old one was shown
 
     # ------------------------------------------------------------------ scoring
     def relevance(self, cue: Cue) -> tuple[int, list[str]]:
@@ -109,6 +110,15 @@ class Director:
             self.shown_moments[cue.moment_id] = cue.id
         self.decisions["shown"] += 1
         return self._localize(cue, score, reasons)
+
+    def preview(self, cue: Cue) -> tuple[Cue, bool]:
+        """What this fan would see for a cue, and whether it clears their relevance threshold (no budget or slot state):
+        for side-by-side comparisons, never for the live broadcast."""
+        if cue.kind in PERSISTENT:
+            return self._localize(cue, cue.priority, ["persistent"]), True
+        score, reasons = self.relevance(cue)
+        threshold = 30 if cue.slot == CueSlot.FOLLOW else THRESHOLD[self.profile.mode]
+        return self._localize(cue, score, reasons), score >= threshold
 
     def _localize(self, cue: Cue, score: int, reasons: list[str]) -> Cue:
         p = self.profile

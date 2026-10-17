@@ -94,3 +94,82 @@ def test_verifier_accepts_the_moments_own_minute_and_shirt_numbers(goal_job_part
     assert verify_texts(texts, facts, set(goal.players), names["players"]).ok
     wrong = {"ar": {"casual": {"caption": "هدف", "line": "في الدقيقة 63 سجل رقم 47", "explainer": ""}}}
     assert not verify_texts(wrong, facts, set(goal.players), names["players"]).ok
+
+
+class PoisonedAnalyst(FlakyWriter):
+    """The Analyst invents a figure, and the writer repeats it until the Verifier objects."""
+
+    async def _respond(self, messages: list[Message]) -> ChatResponse:
+        payload = parse_json(next(m.text for m in reversed(messages) if m.role == "user"))
+        out = OfflineChatClient.run_task(payload)
+        if payload.get("task") == "analyze":
+            out.setdefault("key_numbers", {})["scorer_goals"] = 97
+            out["claim"] = f"{out.get('claim', '')} His 97th goal for the club."
+        elif payload.get("task") in {"narrate", "localize"} and not payload.get("feedback"):
+            scorer = payload["names"]["players"][payload["moment"]["players"][0]]
+            out["analyst"]["line"] = f"{out['analyst']['line'][:120]} {scorer} has scored 97 goals."
+        return ChatResponse(messages=[Message("assistant", [Content.from_text(json.dumps(out, ensure_ascii=False))])],
+                            model="poisoned-analyst")
+
+
+def test_a_model_cannot_vouch_for_its_own_numbers(goal_job_parts):
+    rt = AgentRuntime(LLMConfig(provider="test", model="poisoned"), client=PoisonedAnalyst(), model_name="poisoned")
+    job = asyncio.run(run_story(rt, _job(goal_job_parts, ["en"])))
+    # the Analyst is checked before the writers see it: its invented figure never becomes part of the insight
+    analyst = [s for s in job.trace if s["agent"] == "Analyst"]
+    assert analyst[-1]["status"] == "fallback" and "fact check" in analyst[-1]["detail"]
+    assert "97" not in json.dumps(job.insight, ensure_ascii=False)
+    # and a writer that repeats the figure anyway is caught and corrected
+    assert [s["status"] for s in job.trace if s["agent"] == "Verifier"][0] == "rejected"
+    assert job.verdict["ok"] and "97" not in json.dumps(job.narration, ensure_ascii=False)
+
+
+def _check(lang: str, line: str, parts) -> bool:
+    from regista.agents.verifier import verify_texts
+
+    goal, names, _ = parts
+    job = _job(parts, [lang])
+    texts = {lang: {"analyst": {"caption": "", "line": line, "explainer": ""}}}
+    return verify_texts(texts, job.evidence(), set(goal.players), names["players"], claims=goal.facts).ok
+
+
+def test_figures_must_match_the_kind_of_fact_they_describe(goal_job_parts):
+    # the seed-16 opener: 20', a 56.2 km/h header from 13 m, win chance 75%, the scorer's first goal
+    good = {
+        "en": "A 56 km/h header from 13 m in the 20th minute, his 1st goal; win chance now 75%.",
+        "es": "Cabezazo a 56 km/h desde 13 metros en el minuto 20; 75 por ciento de opciones.",
+        "fr": "Une tête à 56 km/h à 13 mètres, à la 20e minute.",
+        "ar": "رأسية بسرعة 56 كم/س من 13 متر في الدقيقة 20",
+        "pt": "Cabeçada a 56 km/h de 13 metros aos 20'.",
+    }
+    for lang, line in good.items():
+        assert _check(lang, line, goal_job_parts), (lang, line)
+    bad = {
+        "en": ["He now has 33 goals this season.",          # 33 is a speed constant, not a goal count
+               "A 13 km/h dink over the keeper.",            # 13 is the distance, not a speed
+               "Struck in the 63rd minute.",                 # ordinals are checked
+               "That makes ninety-seven goals for him."],    # and written-out numbers
+        "es": ["Ya suma noventa y siete goles."],
+        "fr": ["Il marque son septième but, sept buts en tout."],
+        "ar": ["هذا هدفه رقم 1 بعد 33 هدفاً"],
+        "pt": ["Já são 33 gols na temporada."],
+    }
+    for lang, lines in bad.items():
+        for line in lines:
+            assert not _check(lang, line, goal_job_parts), (lang, line)
+    # a shirt number next to a goal word is not a goal count
+    assert _check("en", "The No. 9 goal machine strikes again.", goal_job_parts)
+    assert _check("ar", "رقم 9 هدف رائع", goal_job_parts)
+
+
+def test_fallback_is_never_marked_verified_when_its_copy_fails(goal_job_parts, monkeypatch):
+    import regista.agents.story as story
+
+    def broken_template(job, lang):
+        return {p: {"caption": "GOAL", "line": "A 63rd-minute strike, his 33rd goal.", "explainer": ""}
+                for p in story.PERSONAS}
+
+    monkeypatch.setattr(story, "_template", broken_template)
+    rt = AgentRuntime(LLMConfig(provider="test", model="flaky"), client=FlakyWriter(stubborn=True), model_name="flaky-writer")
+    job = asyncio.run(run_story(rt, _job(goal_job_parts, ["en"])))
+    assert job.verdict["via"] == "fallback" and not job.verdict["ok"]

@@ -1,0 +1,29 @@
+{
+ "match_seconds": 600,
+ "rows": [
+  {
+   "viewers": 1,
+   "ms_per_match_second": 0.69,
+   "story_jobs": 3,
+   "languages": 1
+  },
+  {
+   "viewers": 10,
+   "ms_per_match_second": 0.76,
+   "story_jobs": 3,
+   "languages": 4
+  },
+  {
+   "viewers": 100,
+   "ms_per_match_second": 1.28,
+   "story_jobs": 3,
+   "languages": 5
+  },
+  {
+   "viewers": 1000,
+   "ms_per_match_second": 6.92,
+   "story_jobs": 3,
+   "languages": 5
+  }
+ ]
+}

@@ -20,6 +20,10 @@ STORY_THRESHOLD = 45
 
 @dataclass
 class Moment:
+    """A detected moment. Its facts are either observed (counted or measured from events and tracking) or model
+    estimates (xG, win probability, momentum, pass difficulty, press-shift statistics): fact_kinds says which, so a
+    receipt can show the difference. Generated copy is the third layer, interpretation, and lives in the story lane."""
+
     id: str
     t: float
     clock: str
@@ -39,7 +43,17 @@ class Moment:
     def as_dict(self) -> dict[str, Any]:
         d = asdict(self)
         d["lane"] = self.lane
+        d["fact_kinds"] = {k: fact_kind(k) for k in self.facts}
         return d
+
+
+ESTIMATES = ("xg", "wp", "momentum", "difficulty", "z_", "onset", "series", "label")
+
+
+def fact_kind(key: str) -> str:
+    """'model estimate' for figures a model produced, 'observed' for what the feed counted or measured."""
+    k = key.lower()
+    return "model estimate" if any(k.startswith(e) or f"_{e}" in k for e in ESTIMATES) else "observed"
 
 
 class MomentDetector:

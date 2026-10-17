@@ -6,6 +6,7 @@
   regista evaluate --matches 20 explainers vs ground truth -> docs/evaluation.json
   regista cast --tries 40       storyline casting: find the most dramatic seed for a demo
   regista llm-eval              score the live agents (first-draft verification, retries, latency) with the configured model
+  regista fanout                per-viewer personalisation cost at 1 to 1,000 viewers (model work does not grow with viewers)
   regista publish --url URL     reference data provider: stream a match into the live feed API
   regista mcp                   MCP server over stdio (for local MCP clients)
 """
@@ -15,7 +16,9 @@ from __future__ import annotations
 import argparse
 import json
 import sys
+import time
 from pathlib import Path
+from typing import Any
 
 ROOT = Path(__file__).resolve().parents[2]
 
@@ -62,6 +65,38 @@ def cmd_evaluate(a: argparse.Namespace) -> None:
     print(json.dumps({k: v for k, v in rep.items() if k != "per_match"}, indent=1))
 
 
+def cmd_fanout(a: argparse.Namespace) -> None:
+    """Shared generation, per-viewer selection: measure the Director/cue fan-out as the audience grows (no network I/O)."""
+    import asyncio
+    import itertools
+
+    from .runtime.session import MatchSession
+    from .schema.profiles import FanProfile
+
+    modes, langs, teams = ["casual", "analyst", "player_cam", "new_fan"], ["en", "es", "fr", "ar", "pt"], [None, "NOR", "CAL"]
+
+    async def one(n: int) -> dict[str, Any]:
+        s = MatchSession(story_workers=0)
+        combos = itertools.cycle(itertools.product(modes, langs, teams))
+        for i in range(n):
+            m, lang, team = next(combos)
+            s.connect(FanProfile(id=f"v{i}", mode=m, language=lang, favorite_team=team,
+                                 favorite_player="NOR-10" if m == "player_cam" else None))
+        s.seek(15)
+        t0 = time.perf_counter()
+        for _ in range(a.seconds):
+            s.advance(1.0, live=True)
+        dt = time.perf_counter() - t0
+        return {"viewers": n, "ms_per_match_second": round(1000 * dt / a.seconds, 2), "story_jobs": s.queue.qsize(),
+                "languages": len(s.languages())}
+
+    rows = [asyncio.run(one(n)) for n in (1, 10, 100, 1000)]
+    (ROOT / "docs" / "fanout.json").write_text(json.dumps({"match_seconds": a.seconds, "rows": rows}, indent=1))
+    for r in rows:
+        print(f"{r['viewers']:>5} viewers: {r['ms_per_match_second']:6.2f} ms per match-second, "
+              f"{r['story_jobs']} story jobs, {r['languages']} languages")
+
+
 def cmd_cast(a: argparse.Namespace) -> None:
     from .evaluation import replay
     from .sim.engine import simulate
@@ -89,11 +124,12 @@ def cmd_llm_eval(a: argparse.Namespace) -> None:
 
     from .llm_eval import run
 
-    rep = asyncio.run(run(a.seed, a.moments, tuple(a.langs.split(","))))
+    rep = asyncio.run(run(a.moments, tuple(a.langs.split(",")), a.concurrency,
+                          tuple(int(x) for x in a.seeds.split(",")), not a.no_baseline))
     (ROOT / "docs").mkdir(exist_ok=True)
     (ROOT / "docs" / "llm-eval.json").write_text(json.dumps(rep, indent=1, ensure_ascii=False))
-    keys = ("model", "moments", "first_draft_verified", "verified_without_fallback", "jobs_with_fallback", "mean_attempts",
-            "story_latency_ms", "rejection_reasons", "pundit_used_tools")
+    keys = ("model", "eval_seeds", "moments", "moment_kinds", "workflow", "single_agent_baseline", "verifier_probe",
+            "rejection_reasons", "pundit_used_tools")
     print(json.dumps({k: rep[k] for k in keys}, indent=1, ensure_ascii=False))
     for r in rep["recaps"]:
         print(f"recap[{r['lang']}] {r['source']} verified={r['verified']} :: {r['headline']}")
@@ -182,21 +218,26 @@ def main(argv: list[str] | None = None) -> None:
         match_args(s)
         s.add_argument("--matches", type=int, default=20)
         s.set_defaults(fn=fn)
+    s = sub.add_parser("fanout", help="per-viewer personalisation cost as the audience grows")
+    s.add_argument("--seconds", type=int, default=600)
+    s.set_defaults(fn=cmd_fanout)
     s = sub.add_parser("cast")
     match_args(s)
     s.add_argument("--tries", type=int, default=40)
     s.set_defaults(fn=cmd_cast)
     s = sub.add_parser("llm-eval", help="score the live agents with the configured model")
-    s.add_argument("--seed", type=int, default=16)
-    s.add_argument("--moments", type=int, default=12)
-    s.add_argument("--langs", default="en,es,ar")
+    s.add_argument("--seeds", default="101,202,303,404", help="held-out evaluation matches (the demo is seed 16)")
+    s.add_argument("--moments", type=int, default=24)
+    s.add_argument("--langs", default="en,es,fr,ar,pt")
+    s.add_argument("--concurrency", type=int, default=2)
+    s.add_argument("--no-baseline", action="store_true", help="skip the single-agent comparison")
     s.set_defaults(fn=cmd_llm_eval)
     s = sub.add_parser("publish", help="stream a simulated match into a running Regista via the live feed API")
     match_args(s)
     s.add_argument("--seed", type=int, default=7)
     s.add_argument("--url", default="http://localhost:8000")
     s.add_argument("--speed", type=float, default=4.0)
-    s.add_argument("--token", default=None, help="producer token, if the server sets REGISTA_ADMIN_TOKEN")
+    s.add_argument("--token", default=None, help="producer token, if the server sets REGISTA_FEED_TOKEN or REGISTA_ADMIN_TOKEN")
     s.set_defaults(fn=cmd_publish)
     s = sub.add_parser("mcp")
     s.add_argument("--minute", type=float, default=70.0, help="replay the demo match up to this minute first")

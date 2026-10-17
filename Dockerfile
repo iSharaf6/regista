@@ -23,4 +23,5 @@ COPY --from=web /web/dist web/dist
 USER regista
 EXPOSE 8000
 HEALTHCHECK --interval=30s --timeout=3s CMD python -c "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/api/health')"
-CMD ["uvicorn", "regista.api.app:app", "--host", "0.0.0.0", "--port", "8000", "--proxy-headers"]
+# The Container Apps ingress is the only way in, so trust its X-Forwarded-For: per-visitor rate limits see real clients
+CMD ["uvicorn", "regista.api.app:app", "--host", "0.0.0.0", "--port", "8000", "--proxy-headers", "--forwarded-allow-ips", "*"]

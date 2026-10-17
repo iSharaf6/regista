@@ -92,6 +92,12 @@ def recap_payload(state: MatchState, moments: list[Moment], names: dict[str, dic
     }
 
 
+def recap_evidence(p: dict[str, Any]) -> list[Any]:
+    """What the Verifier checks a recap against: deterministic match data only, with each moment's minute."""
+    return [p["teams"], p["score"], p["top_players"], [{"clock": m.get("clock", ""), **m["facts"]} for m in p["moments"]],
+            p["wp_path"], {"clock": p.get("clock", "")}]
+
+
 def offline_recap(p: dict[str, Any]) -> dict[str, Any]:
     lang = p["language"] if p["language"] in R["edge"] else "en"
     persona = p.get("persona", "casual")
