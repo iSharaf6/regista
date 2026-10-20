@@ -532,3 +532,12 @@ html.overlay-mode, html.overlay-mode body { background: transparent !important; 
 .versus b { font-family: var(--font-mono); text-align: right; }
 .versus .head { font-family: var(--px); font-weight: 700; font-size: 10px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--ink-3); text-align: right; }
 .versus .win { background: var(--hl); }
+
+/* Figures in a face that reads at a glance: the pixel font's 4 looks like a Y and its % like a Z, so a "54%" tile or a
+   74' clock is misread. Labels keep the pixel font; numbers use the rounded display face. */
+.kpi b, .hero-stat b, .gcard .metric b, .scorebug .score, .scorebug .clock, .speedflash, .ptag .num, .ptag .spd,
+.momentum .lbl .mono, .moment-row .clk, .tp .clk, .transport .clock, .transport .scrub .mono, .stat-row .row .mono,
+.performer .mono { font-family: var(--round); font-weight: 400; letter-spacing: 0.02em; }
+.kpi b { font-size: 24px; line-height: 1.15; }
+.hero-stat b { font-size: 34px; }
+.gcard .metric b { font-size: 1.3em; }
