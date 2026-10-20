@@ -4,6 +4,8 @@
 
 **Live demo:** https://ca-registaednsnlttycm2o.calmsea-720b2319.koreacentral.azurecontainerapps.io (Microsoft Foundry gpt-4.1-mini on Azure Container Apps; the first load after a quiet spell takes about 20 s)
 
+**Try it in one minute:** [Explore a moment](https://ca-registaednsnlttycm2o.calmsea-720b2319.koreacentral.azurecontainerapps.io/#/explore?moment=m055) shows the 74th-minute winner as three fans get it (an English analyst, an Arabic-speaking supporter of the side that conceded, a Spanish newcomer), with the facts behind it and the Verifier's verdict.
+
 > *Regista* (Italian): the deep-lying playmaker who orchestrates a team, and the director who calls the shots in a TV gallery.
 
 **One synthetic match feed in. A different, explainable, verified broadcast out for every fan.**
@@ -12,12 +14,17 @@ Regista turns synthetic football events and 5 Hz tracking into match intelligenc
 
 It is built on **Microsoft Agent Framework** (agents + workflow), runs models on **Microsoft Foundry**, publishes every feed event to **Azure Event Hubs** for downstream consumers, ships as one container on **Azure Container Apps**, traces to **Application Insights**, and exposes the live match to **GitHub Copilot agent mode** and any agent over **MCP**.
 
+![Explore a moment: the same goal as three fans get it](docs/img/explore.jpg)
+**Explore a moment**: the same second as three broadcasts, each in its fan's language, with what each fan is shown and why
+
 | | |
 |---|---|
 | ![Broadcast](docs/img/broadcast.jpg) | ![Two fans](docs/img/compare.jpg) |
-| **Broadcast**: tracked players, name tags, a pass-quality card, and an on-air receipt with provenance and evidence id | **Two fans, two broadcasts**: an English analyst and an Arabic, right-to-left Port Calder fan watch the same second |
-| ![Control room](docs/img/control-room.jpg) | ![Data lab](docs/img/lab.jpg) |
-| **Control room**: the live agent graph, the chaos switch, the circuit breaker, spans and Director decisions | **Data lab**: realism vs top-flight ranges, and explainers scored against ground truth |
+| **Broadcast**: the 74th-minute goal with tracked players, name tags, a shot card and a lower third whose figures were checked | **Two fans, two broadcasts**: an English analyst and an Arabic, right-to-left Port Calder fan watch the same second |
+| ![Receipts](docs/img/explore-checks.jpg) | ![Data lab](docs/img/lab.jpg) |
+| **Receipts**: every fact tagged observed or model estimate, the Verifier's verdict and the agent trace | **Data lab**: the workflow against one big prompt on held-out matches, and 691/691 planted errors caught |
+| ![Control room](docs/img/control-room.jpg) | ![Recap](docs/img/recap.jpg) |
+| **Control room**: the real agent workflow live, the chaos switch, the circuit breaker, spans and Director decisions | **Recap**: the full-time report written by the Recap agent, checked figure by figure, with the win-probability path |
 
 ---
 
