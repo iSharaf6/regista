@@ -43,10 +43,10 @@ Built with **Microsoft Agent Framework** (agents + a workflow graph with fan-out
 5. A deterministic **fast lane** airs shot and pass graphics in milliseconds, and a circuit breaker keeps the broadcast on air when the model fails.
 
 ### Measured, not claimed
-- **Orchestration beats one agent, on matches the prompts never saw.** 24 moments from 4 held-out matches, 5 languages, same model, facts and checker: the workflow got model-written, checked copy into every language for **92%** of moments; one big prompt managed **54%**. The workflow's own first drafts also pass for only 54%: the Verifier's notes are what lift it to 92%. The price: 13.4 s vs 12.3 s median, $0.0073 vs $0.0034 per moment.
-- **A checker you can audit.** It caught **691 of 691** errors planted in real model copy (invented figures, wrong units, wrong minutes, wrong goal counts, written-out numbers, uninvolved players, contradicted claims) and wrongly rejected **0 of 3,425** fallback outputs. Its limits are documented: it doesn't judge causal claims or catch invented names from outside the squad.
+- **The fact-check loop, tested fairly on matches the prompts never saw.** 24 moments from 4 held-out matches, 5 languages, same model and facts: one-shot generation got every language through the Verifier for **18/24** moments. With the Verifier's feedback loop, our multi-agent workflow reached **21/24** (117/120 language outputs) and a single agent given the same loop and draft budget **23/24** (115/120). The loop is what lifts accuracy; splitting the work across agents adds speed (median 18.7 s vs 21.9 s, slowest moment 30 s vs 42 s) and isolation (a failure costs one language, not a whole moment). Every moment aired checked copy.
+- **A checker you can audit.** It caught **235 of 235** hand-written believable mistakes in five languages (a wrong goal tally in digits or words, a false brace, "down to ten" with nine left, a rate per 100 passes called "per minute", a wrong minute) and wrongly rejected **0 of 3,425** fallback outputs. Its limits are documented: it doesn't judge causal claims or catch invented names from outside the squad.
 - **Graded explainability.** The simulator logs ground truth, so tactical detection is measured: press-shift recall 52%, 0.6 false alarms per match. Every receipt labels each fact as observed or a model estimate.
-- **Scales by sharing.** From 1 to 1,000 personalised viewers, Director work grows from about 0.7 to 7 ms per match-second while model work stays one story job per moment.
+- **Scales by sharing.** In an in-process selection microbenchmark (no network, no generation), 1 to 1,000 personalised viewers cost about 0.7 to 7 ms of Director work per match-second, while model work stays one story job per moment.
 
 ### Who it's for
 A **producer running one match for several markets**: push the feed to `POST /api/feed`, drive existing vMix, CasparCG or OBS graphics from `GET /api/onair` (already personalised per market), open any graphic's receipt, and stay on air through a model outage. Fans get it as a second screen (scan the QR code), and club media teams as checked posts in Slack, Teams or Discord.
@@ -56,7 +56,7 @@ Microsoft Agent Framework · Microsoft Foundry (gpt-4.1-mini, Entra ID, no keys)
 
 ### Links and testing
 - **Live demo:** https://ca-registaednsnlttycm2o.calmsea-720b2319.koreacentral.azurecontainerapps.io (the first load after a quiet spell takes about 20 s). Start with **Explore a moment**, then **Broadcast**, **Two fans**, **Control room → Simulate model outage** (it switches itself off after 90 s), **Recap** and **Data lab**.
-- **Code:** https://github.com/iSharaf6/regista (runs locally with no keys; 39 offline tests; full testing steps in `docs/submission.md`)
+- **Code:** https://github.com/iSharaf6/regista (runs locally with no keys; 65 offline tests; full testing steps in `docs/submission.md`)
 - **Video (under 2 minutes):** <VIDEO URL>
 
 All data is synthetic; all clubs, players and venues are fictional.
@@ -81,7 +81,7 @@ Select **The Synthetic Match Insights Engine for Premier League Studio**.
 | 4 | `docs/img/broadcast.jpg` | The live broadcast with tracked players and timed graphics |
 | 5 | `docs/img/compare.jpg` | Two fans, two broadcasts, the same second |
 | 6 | `docs/img/control-room.jpg` | Control room: the real agent workflow, live, with the outage switch |
-| 7 | `docs/img/lab.jpg` | Data lab: the workflow against one big prompt, and 691/691 planted errors caught |
+| 7 | `docs/img/lab.jpg` | Data lab: the workflow against a single agent with and without the checker, and 235/235 believable errors caught |
 | 8 | `docs/img/recap.jpg` | Full-time recap, written by an agent and checked figure by figure |
 | 9 | `docs/img/receipts.jpg` | A graphic's receipt, opened from the broadcast |
 

@@ -271,6 +271,30 @@ async def baseline(rt: AgentRuntime, job: StoryJob, max_attempts: int = 1) -> di
             "tokens": tokens, "attempts": attempts, "error": error}
 
 
+async def recap_checks(rt: AgentRuntime, cfg: Any, matches: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    """Model recaps of held-out matches, checked field by field like the live Recap screen."""
+    recaps = []
+    for mt, lang in ((matches[0], "en"), (matches[0], "ar"), (matches[1 % len(matches)], "es")):
+        payload = recap_payload(mt["state"], mt["detector"].moments, mt["names"], lang, "analyst", "full_time")
+        t0 = time.perf_counter()
+        source = rt.model_name
+        try:
+            if cfg.is_offline:
+                raise AgentFailure("offline")
+            data = await rt.call(rt.recapper, "Recap", json.dumps(payload, ensure_ascii=False, default=str))
+        except AgentFailure:
+            data, source = offline_recap(payload), "deterministic"
+        data = normalize_recap(data, payload, mt["names"]["players"])
+        fields, problems = recap_fields(data, payload, mt["names"]["players"])  # every field the Recap screen shows
+        allowed = {p["id"] for p in payload["top_players"]} | {pid for m in payload["moments"] for pid in m["players"]}
+        v = verify_texts({lang: {"analyst": fields}}, recap_evidence(payload), allowed, mt["names"]["players"])
+        if problems:
+            v.ok, v.issues = False, problems + v.issues
+        recaps.append({"seed": mt["seed"], "lang": lang, "source": source, "verified": v.ok, "issues": v.issues[:4],
+                       "headline": fields["headline"], "ms": round((time.perf_counter() - t0) * 1000)})
+    return recaps
+
+
 async def run(moments: int = 24, langs: tuple[str, ...] = ("en", "es", "fr", "ar", "pt"), concurrency: int = 2,
               seeds: tuple[int, ...] = EVAL_SEEDS, with_baseline: bool = True, pace_s: float = 0.0) -> dict[str, Any]:
     """pace_s waits between moments so the run stays under the deployment's token quota: without it, back-to-back
@@ -348,25 +372,7 @@ async def run(moments: int = 24, langs: tuple[str, ...] = ("en", "es", "fr", "ar
         a = await pundit.ask(q, lang, persona)
         answers.append({"lang": lang, "question": q, "answer": a["answer"], "tools": a["tools"], "model": a["model"], "ms": a["ms"]})
 
-    recaps = []
-    for mt, lang in ((matches[0], "en"), (matches[0], "ar"), (matches[1 % len(matches)], "es")):
-        payload = recap_payload(mt["state"], mt["detector"].moments, mt["names"], lang, "analyst", "full_time")
-        t0 = time.perf_counter()
-        source = rt.model_name
-        try:
-            if cfg.is_offline:
-                raise AgentFailure("offline")
-            data = await rt.call(rt.recapper, "Recap", json.dumps(payload, ensure_ascii=False, default=str))
-        except AgentFailure:
-            data, source = offline_recap(payload), "deterministic"
-        data = normalize_recap(data, payload, mt["names"]["players"])
-        fields, problems = recap_fields(data, payload, mt["names"]["players"])  # every field the Recap screen shows
-        allowed = {p["id"] for p in payload["top_players"]} | {pid for m in payload["moments"] for pid in m["players"]}
-        v = verify_texts({lang: {"analyst": fields}}, recap_evidence(payload), allowed, mt["names"]["players"])
-        if problems:
-            v.ok, v.issues = False, problems + v.issues
-        recaps.append({"seed": mt["seed"], "lang": lang, "source": source, "verified": v.ok, "issues": v.issues[:4],
-                       "headline": fields["headline"], "ms": round((time.perf_counter() - t0) * 1000)})
+    recaps = await recap_checks(rt, cfg, matches)
 
     n = max(1, len(rows))
     lat = [r["ms"] for r in rows] or [0]

@@ -440,10 +440,12 @@ def _ctx(m: dict[str, Any], names: Names, lang: str, home: str, away: str) -> di
         else:
             c["label"] = MILESTONE_LABEL["km"][lang].format(n=f["distance_km"])
     elif kind == "press_shift":
+        near_before, near_after = _pair(f["players_near_ball_before"], f["players_near_ball_after"], lang, 1)
+        line_before, line_after = _pair(f["line_height_before_m"], f["line_height_after_m"], lang, 0)
         c.update(
-            onset=f["onset_clock"].rstrip("'") if lang == "ar" else f["onset_clock"], near_before=num(f["players_near_ball_before"], lang, 1),
-            near_after=num(f["players_near_ball_after"], lang, 1), line_before=num(f["line_height_before_m"], lang),
-            line_after=num(f["line_height_after_m"], lang), z=num(f["z_score"], lang, 1), direction=f["direction"],
+            onset=f["onset_clock"].rstrip("'") if lang == "ar" else f["onset_clock"], near_before=near_before,
+            near_after=near_after, line_before=line_before, line_after=line_after, z=num(f["z_score"], lang, 1),
+            direction=f["direction"],
         )
     elif kind == "control_chaos":
         fs = f.get("factors", [])
@@ -474,6 +476,14 @@ def _ctx(m: dict[str, Any], names: Names, lang: str, home: str, away: str) -> di
             top_player=tp.get("name", ""), top_rating=num(tp.get("rating"), lang, 1),
         )
     return c
+
+
+def _pair(a: float | None, b: float | None, lang: str, digits: int) -> tuple[str, str]:
+    """A before/after pair that shows its change: 0.65 -> 0.69 must not read "0.7 to 0.7"."""
+    a, b = a or 0.0, b or 0.0
+    while digits < 3 and round(a, digits) == round(b, digits) and a != b:
+        digits += 1
+    return num(a, lang, digits), num(b, lang, digits)
 
 
 def _fdetail(factor: dict[str, Any], lang: str) -> str:

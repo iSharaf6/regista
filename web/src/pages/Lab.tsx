@@ -17,6 +17,9 @@ function ModelEval({ llm, grounding }: { llm: any; grounding: any }) {
   const sum = (xs: { planted: number; caught: number }[]) => `${xs.reduce((s, p) => s + p.caught, 0)}/${xs.reduce((s, p) => s + p.planted, 0)}`;
   const share = (frac: string | undefined, v: number | undefined) => (frac ? `${frac} · ${pct(v)}` : pct(v));
   const lead = wf && loop ? Math.round(100 * (wf.verified_without_fallback - loop.all_languages_verified)) : null;
+  // highlight the best setup in a row, whichever it is: the workflow does not win every comparison
+  const best = (vals: (number | undefined)[]) => Math.max(...vals.map((v) => v ?? -1));
+  const mark = (v: number | undefined, vals: (number | undefined)[]) => (v !== undefined && v === best(vals) ? "win" : "");
   const seeds: number[] = llm.eval_seeds ?? [];
   return (
     <div className="card">
@@ -27,7 +30,7 @@ function ModelEval({ llm, grounding }: { llm: any; grounding: any }) {
       <div className="body">
         <div className="kpis">
           <div className="kpi"><span>First draft verified</span><b>{pct(llm.first_draft_verified)}</b></div>
-          <div className="kpi"><span>On air verified, no fallback</span><b>{pct(llm.verified_without_fallback)}</b></div>
+          <div className="kpi"><span>Every language model-written</span><b>{pct(llm.verified_without_fallback)}</b></div>
           <div className="kpi"><span>Template fallbacks</span><b>{llm.jobs_with_fallback ?? "-"}</b></div>
           <div className="kpi"><span>Drafts per moment</span><b>{llm.mean_attempts ?? "-"}</b></div>
           <div className="kpi"><span>Story latency p50 / p95</span><b>{secs(llm.story_latency_ms?.p50)} / {secs(llm.story_latency_ms?.p95)}</b></div>
@@ -43,13 +46,15 @@ function ModelEval({ llm, grounding }: { llm: any; grounding: any }) {
             <div className={`versus ${loop ? "three" : ""}`}>
               <span /><span className="head">Workflow</span>{loop && <span className="head">1 agent + checker</span>}<span className="head">1 agent, one shot</span>
               <span>Moments with every language model-written and checked</span>
-              <b className="win">{share(wf.moments_model_written, wf.verified_without_fallback)}</b>
-              {loop && <b>{share(loop.moments_all_languages, loop.all_languages_verified)}</b>}
-              <b>{share(one.moments_all_languages, one.all_languages_verified)}</b>
+              <b className={mark(wf.verified_without_fallback, [wf.verified_without_fallback, loop?.all_languages_verified, one.all_languages_verified])}>{share(wf.moments_model_written, wf.verified_without_fallback)}</b>
+              {loop && <b className={mark(loop.all_languages_verified, [wf.verified_without_fallback, loop.all_languages_verified, one.all_languages_verified])}>{share(loop.moments_all_languages, loop.all_languages_verified)}</b>}
+              <b className={mark(one.all_languages_verified, [wf.verified_without_fallback, loop?.all_languages_verified, one.all_languages_verified])}>{share(one.moments_all_languages, one.all_languages_verified)}</b>
               {typeof wf.language_outputs_model_written === "number" && (
                 <>
-                  <span>Language outputs model-written and checked</span><b>{pct(wf.language_outputs_model_written)}</b>
-                  {loop && <b>{pct(loop.language_outputs_verified)}</b>}<b>{pct(one.language_outputs_verified)}</b>
+                  <span>Language outputs model-written and checked</span>
+                  <b className={mark(wf.language_outputs_model_written, [wf.language_outputs_model_written, loop?.language_outputs_verified, one.language_outputs_verified])}>{pct(wf.language_outputs_model_written)}</b>
+                  {loop && <b className={mark(loop.language_outputs_verified, [wf.language_outputs_model_written, loop.language_outputs_verified, one.language_outputs_verified])}>{pct(loop.language_outputs_verified)}</b>}
+                  <b className={mark(one.language_outputs_verified, [wf.language_outputs_model_written, loop?.language_outputs_verified, one.language_outputs_verified])}>{pct(one.language_outputs_verified)}</b>
                 </>
               )}
               <span>Drafts per moment</span><b>{wf.mean_attempts}</b>{loop && <b>{loop.mean_attempts}</b>}<b>1</b>
@@ -60,7 +65,7 @@ function ModelEval({ llm, grounding }: { llm: any; grounding: any }) {
               <div className="muted" style={{ fontSize: 13, marginTop: 6 }}>
                 Given the same Verifier feedback and the same {loop.mean_attempts > 1 ? "two-draft" : "draft"} budget, one agent reaches{" "}
                 {pct(loop.all_languages_verified)}: {lead > 0 ? `splitting the work across agents adds ${lead} points on top of the checker loop` :
-                  lead === 0 ? "the checker loop, not the split, makes the difference" : "the checker loop matters more than the split"}.
+                  `the checker loop is what lifts accuracy; splitting the work across agents adds speed (median ${secs(wf.latency_ms?.p50)} vs ${secs(loop.latency_ms?.p50)}, slowest ${secs(wf.latency_ms?.p95)} vs ${secs(loop.latency_ms?.p95)}) and keeps a failure to one language instead of the whole moment`}.
               </div>
             )}
             {typeof wf.first_draft_verified === "number" && (

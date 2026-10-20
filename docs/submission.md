@@ -32,25 +32,27 @@ for every market and fan. Regista makes explanation automatic, checkable and per
 AI fails.
 
 ## What makes it different (all measured; `docs/*.json`)
-- **Orchestration that beats one agent, on held-out matches.** On 24 moments from 4 matches the prompts never
-  saw, in 5 languages, with the same model, facts and checker: the workflow put checked copy in every language on air
-  for 100% of moments (92% written by the model, the rest by grounded fallback). A single agent writing
-  all languages in one call got every language through the same checker for 54% of moments, with nothing to
-  catch the rest. The workflow's own first drafts also pass for only 54%: the Verifier's notes, sent back to the
-  writers, are what lift it to 92%. The price is latency and tokens: 13.4 s vs 12.3 s median, $0.0073 vs $0.0034 per
-  moment.
+- **The fact-check loop, tested fairly on held-out matches.** 24 moments from 4 matches the prompts never saw, in 5
+  languages, same model and facts: one-shot generation got every language through the Verifier for 18/24 moments.
+  With the Verifier's feedback loop, the multi-agent workflow reached 21/24 (117/120 language outputs) and a single
+  agent given the same loop and draft budget 23/24 (115/120). The loop is what lifts accuracy; splitting the work
+  across agents adds speed (median 18.7 s vs 21.9 s, slowest moment 30 s vs 42 s) and isolation (a failure costs one
+  language, not a whole moment), at $0.0076 vs $0.0042 per moment. Every moment aired checked copy: 3 languages fell
+  back to grounded templates.
 - **A checker you can audit.** The Verifier uses match data only, never anything a model produced (the Analyst's
-  insight is checked before writers see it). It caught 691 of 691 errors planted in real model
-  copy: invented figures, figures with the wrong unit, wrong minutes, wrong goal counts, written-out numbers, uninvolved
-  players, contradicted claims. It wrongly rejects 0 of 3,425 fallback outputs. It does not judge causal claims or catch
-  invented names from outside the squad, and the README says so.
+  insight is checked before writers see it). It caught 235 of 235 hand-written believable mistakes in five languages:
+  a wrong tally in digits or words, a false brace, "down to ten" with nine left, a rate per 100 passes called "per
+  minute", a wrong minute. It wrongly rejects 0 of 3,425 fallback outputs, and a constructed regression probe (691
+  errors built from its own figure pools) also passes. It does not judge causal claims or catch invented names from
+  outside the squad, and the README says so.
 - **Graded explainability.** The simulator logs ground truth, so tactical detection is measured: press-shift recall 52%,
   0.6 false alarms per match, median detection delay 5 minutes, median onset-estimation error 2 minutes; live xG bias
   −0.007 over 607 shots. Receipts label each fact as observed or a model estimate.
 - **Two lanes.** Deterministic graphics in milliseconds, generative copy upgraded in place only once it is checked; a
   chaos switch shows the broadcast staying on air through a model outage.
-- **Shared generation, per-viewer selection.** From 1 to 1,000 simultaneous personalised viewers, Director work grows
-  from about 0.7 to 7 ms per match-second while model work stays one story job per moment (at most 5 languages).
+- **Shared generation, per-viewer selection.** In an in-process selection microbenchmark (no network, no generation),
+  1 to 1,000 personalised viewers cost about 0.7 to 7 ms of Director work per match-second, while model work stays one
+  story job per moment (at most 5 languages).
 - **A synthetic league that passes a sanity check:** 14 of 14 aggregate match statistics inside generous top-flight
   bands (consistency of the synthetic data, not a claim that it predicts real football).
 
@@ -81,7 +83,7 @@ Container Registry + managed identity · Azure Developer CLI (Bicep) · Model Co
    then `cd web && npm install && npm run dev` and open http://localhost:5173.
 4. **With a model:** `REGISTA_LLM=foundry` with `FOUNDRY_PROJECT_ENDPOINT` and `FOUNDRY_MODEL` (Entra ID), then
    `regista llm-eval` to score the workflow against the single-agent baseline on held-out matches.
-5. **Tests and evaluation:** `pytest -q` (39 tests), `regista evaluate --matches 20` and `regista fanout`.
+5. **Tests and evaluation:** `pytest -q` (65 tests), `regista evaluate --matches 20` and `regista fanout`.
 6. **Real-world integrations:** with the local server from step 3, `regista publish --url http://localhost:8000`
    streams a match through the live feed API (the public site locks that API so nobody can replace its broadcast);
    `https://ca-registaednsnlttycm2o.calmsea-720b2319.koreacentral.azurecontainerapps.io/api/onair?mode=casual&lang=es`

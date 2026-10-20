@@ -36,7 +36,7 @@ League's synthesised crowd.
 | 0:28–0:42 | *Two fans* tab around the 74' goal: Tom on the left in English, Amira on the right in Arabic, right to left | "AI agents watch every pass, work out *why* each moment matters, and re-cut the broadcast for every viewer, live. Same second, two stories: Tom gets the numbers; Amira gets it in Arabic, from her side." |
 | 0:42–0:50 | **The phone shot:** film your hand scanning the *Watch on your phone* QR code on the laptop; on the phone, tap *Lucía · first match · ES* and the Spanish broadcast appears | "Lucía just scans the screen. Her phone becomes her own broadcast: Spanish, and football explained." |
 | 0:50–0:53 | Card `07-truth.png` ("Nothing airs unchecked.") | "But AI makes things up." |
-| 0:53–1:10 | Back on **Explore a moment**, scroll slowly: *The facts* (each one tagged observed or model estimate), then *How it was checked* (the Verifier's verdict, the agent trace). Cut to the Data lab tile **Planted errors caught 691/691** | "So before anything airs, a Verifier checks every figure, player and key claim against the match data. When a draft gets one wrong, it goes back to the writer with the fact-checker's notes. We planted six hundred and ninety-one errors: it caught every one." |
+| 0:53–1:10 | Back on **Explore a moment**, scroll slowly: *The facts* (each one tagged observed or model estimate), then *How it was checked* (the Verifier's verdict, the agent trace). Cut to the Data lab tile **Believable errors caught 235/235** | "So before anything airs, a Verifier checks every figure, player and key claim against the match data. When a draft gets one wrong, it goes back to the writer with the fact-checker's notes. We wrote two hundred and thirty-five believable mistakes in five languages: it caught every one." |
 
 ### Act 3 · The stress test (1:10–1:30)
 | Time | Picture | Voice-over |
@@ -49,7 +49,7 @@ League's synthesised crowd.
 | Time | Picture | Voice-over |
 |---|---|---|
 | 1:30–1:42 | Recap tab at full time: English ("Valdane's Double Secures Northbridge a 2–1 Victory…"), then switch to عربي, then ES | "At full time each of them gets the story of the match, in their own language, checked figure by figure." |
-| 1:42–1:50 | Data lab: *Workflow vs one big prompt* (92% vs 54%) | "On matches it had never seen, the team of agents got checked copy into every language for ninety-two percent of moments. One big prompt: fifty-four." |
+| 1:42–1:50 | Data lab: *Workflow vs a single agent* (18/24 one shot, 21/24 with the checker loop) | "On matches it had never seen, one-shot AI got every language right three times in four. With the fact-checker in the loop, nearly nine in ten, and nothing unchecked ever airs." |
 | 1:50–1:55 | Card `09-end.png` | "Same match. Three fans. Three stories. All of them checked." |
 
 ---
@@ -68,7 +68,7 @@ League's synthesised crowd.
 5. **Outage:** Control room, *Simulate model outage*, wait 5 s, cut to Broadcast, then *Restore*.
 6. **Azure:** portal → `rg-regista` → Application Insights → *Transaction search* → open one `invoke_agent Narrator`.
 7. **Full time:** slider to 94', let the whistle go, open Recap (the full-time report holds for 45 s before the match loops).
-8. **Data lab:** scroll to *Tested on Microsoft Foundry*: the planted-errors tile and the *Workflow vs one big prompt* table.
+8. **Data lab:** scroll to *Tested on Microsoft Foundry*: the *Believable errors caught* tile and the *Workflow vs a single agent* table.
 9. **Edit** in Clipchamp (free, from Microsoft) or any editor: drop the cards from `docs/media/video/` between clips and
    the transparent fan lower thirds over the three fan crops. Hard cuts, no transitions; it matches the pixel style.
 10. **Voice-over:** read it slowly; it runs about 90 seconds of speech, which leaves room for the goal and the outage to breathe.

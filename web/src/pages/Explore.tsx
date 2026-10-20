@@ -78,7 +78,7 @@ export function Explore({ query }: { query: URLSearchParams }) {
           <span className="replay-badge">Replaying{pending ? ` to ${pending.clock}` : ""}</span>
           <div>
             <b>Running the match up to this moment, then the Analyst, Narrator, Localizers and Verifier.</b>
-            <div className="muted">A new moment takes 10 to 30 seconds on the live model (the first after a quiet spell is the slowest); after that it loads instantly.</div>
+            <div className="muted">A new moment takes 10 to 40 seconds on the live model (the first after a quiet spell is the slowest); after that it loads instantly.</div>
           </div>
         </div>
       )}
