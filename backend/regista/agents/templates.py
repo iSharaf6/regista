@@ -21,17 +21,29 @@ def num(v: float | int | None, lang: str, digits: int = 0) -> str:
     return s.replace(".", ",") if lang in {"es", "fr", "pt"} and digits else s
 
 
+# each phrase names the scoring team exactly once ("puts Northbridge in front", never "... in front for Northbridge")
 GOAL_CTX = {
-    "en": {"opener": "breaks the deadlock", "equaliser": "levels it", "go_ahead": "puts {team} in front",
-           "extends_lead": "extends the lead", "pulls_one_back": "pulls one back"},
-    "es": {"opener": "abre el marcador", "equaliser": "iguala el partido", "go_ahead": "pone por delante a {team}",
-           "extends_lead": "amplía la ventaja", "pulls_one_back": "recorta distancias"},
-    "fr": {"opener": "ouvre le score", "equaliser": "égalise", "go_ahead": "donne l'avantage à {team}",
-           "extends_lead": "creuse l'écart", "pulls_one_back": "réduit l'écart"},
-    "ar": {"opener": "يفتتح التسجيل", "equaliser": "يعادل النتيجة", "go_ahead": "يمنح {team} التقدم",
-           "extends_lead": "يعزز التقدم", "pulls_one_back": "يقلص الفارق"},
-    "pt": {"opener": "abre o placar", "equaliser": "empata a partida", "go_ahead": "coloca {team} na frente",
-           "extends_lead": "amplia a vantagem", "pulls_one_back": "diminui a diferença"},
+    "en": {"opener": "breaks the deadlock for {team}", "equaliser": "levels it for {team}", "go_ahead": "puts {team} in front",
+           "extends_lead": "extends {team}'s lead", "pulls_one_back": "pulls one back for {team}"},
+    "es": {"opener": "abre el marcador para {team}", "equaliser": "iguala el partido para {team}",
+           "go_ahead": "pone por delante a {team}", "extends_lead": "amplía la ventaja de {team}",
+           "pulls_one_back": "recorta distancias para {team}"},
+    "fr": {"opener": "ouvre le score pour {team}", "equaliser": "égalise pour {team}", "go_ahead": "donne l'avantage à {team}",
+           "extends_lead": "creuse l'écart pour {team}", "pulls_one_back": "réduit l'écart pour {team}"},
+    "ar": {"opener": "يفتتح التسجيل لصالح {team}", "equaliser": "يعادل النتيجة لصالح {team}", "go_ahead": "يمنح {team} التقدم",
+           "extends_lead": "يعزز تقدم {team}", "pulls_one_back": "يقلص الفارق لصالح {team}"},
+    "pt": {"opener": "abre o placar para o {team}", "equaliser": "empata a partida para o {team}",
+           "go_ahead": "coloca o {team} na frente", "extends_lead": "amplia a vantagem do {team}",
+           "pulls_one_back": "diminui a diferença para o {team}"},
+}
+
+# players left after a dismissal, as a commentator says it
+MEN = {
+    "en": {11: "eleven", 10: "ten", 9: "nine", 8: "eight", 7: "seven"},
+    "es": {11: "once", 10: "diez", 9: "nueve", 8: "ocho", 7: "siete"},
+    "fr": {11: "onze", 10: "dix", 9: "neuf", 8: "huit", 7: "sept"},
+    "ar": {11: "بأحد عشر لاعبًا", 10: "بعشرة لاعبين", 9: "بتسعة لاعبين", 8: "بثمانية لاعبين", 7: "بسبعة لاعبين"},
+    "pt": {11: "onze", 10: "dez", 9: "nove", 8: "oito", 7: "sete"},
 }
 
 OUTCOME = {
@@ -57,7 +69,7 @@ T: dict[str, dict[str, dict[str, str]]] = {
     "goal": {
         "en": {
             "caption": "GOAL · {player}", "fan_pos": "GET IN! {player}", "fan_neg": "{team} score · {score}",
-            "casual": "{player} {ctx} for {team}! It's {score}.",
+            "casual": "{player} {ctx}! It's {score}.",
             "analyst": "{player} finishes a {xg} xG chance at {speed} km/h from {dist} m. {team} win probability {wp_from}% → {wp_to}%.",
             "new_fan": "{player} scores for {team}! The score is now {score}.",
             "why_casual": "That goal moves {team}'s chance of winning from {wp_from}% to {wp_to}%.",
@@ -66,7 +78,7 @@ T: dict[str, dict[str, dict[str, str]]] = {
         },
         "es": {
             "caption": "GOL · {player}", "fan_pos": "¡GOLAZO! {player}", "fan_neg": "Marca {team} · {score}",
-            "casual": "¡{player} {ctx} para {team}! {score}.",
+            "casual": "¡{player} {ctx}! {score}.",
             "analyst": "{player} define una ocasión de {xg} xG a {speed} km/h desde {dist} m. Probabilidad de victoria de {team}: {wp_from}% → {wp_to}%.",
             "new_fan": "¡Gol de {player} para {team}! El marcador queda {score}.",
             "why_casual": "Con este gol, la probabilidad de victoria de {team} pasa del {wp_from}% al {wp_to}%.",
@@ -75,7 +87,7 @@ T: dict[str, dict[str, dict[str, str]]] = {
         },
         "fr": {
             "caption": "BUT · {player}", "fan_pos": "OUIII ! {player}", "fan_neg": "{team} marque · {score}",
-            "casual": "{player} {ctx} pour {team} ! {score}.",
+            "casual": "{player} {ctx} ! {score}.",
             "analyst": "{player} convertit une occasion à {xg} xG, frappe à {speed} km/h depuis {dist} m. Probabilité de victoire de {team} : {wp_from} % → {wp_to} %.",
             "new_fan": "But de {player} pour {team} ! Le score est de {score}.",
             "why_casual": "Ce but fait passer les chances de victoire de {team} de {wp_from} % à {wp_to} %.",
@@ -84,7 +96,7 @@ T: dict[str, dict[str, dict[str, str]]] = {
         },
         "ar": {
             "caption": "هدف · {player}", "fan_pos": "يااااه! {player}", "fan_neg": "{team} يسجل · {score}",
-            "casual": "{player} {ctx} لصالح {team}! النتيجة {score}.",
+            "casual": "{player} {ctx}! النتيجة {score}.",
             "analyst": "{player} يحوّل فرصة بقيمة {xg} xG بسرعة {speed} كم/س من مسافة {dist} م. احتمال فوز {team}: {wp_from}% ← {wp_to}%.",
             "new_fan": "{player} يسجل لـ{team}! النتيجة الآن {score}.",
             "why_casual": "هذا الهدف يرفع حظوظ {team} في الفوز من {wp_from}% إلى {wp_to}%.",
@@ -93,7 +105,7 @@ T: dict[str, dict[str, dict[str, str]]] = {
         },
         "pt": {
             "caption": "GOL · {player}", "fan_pos": "GOLAÇO! {player}", "fan_neg": "{team} marca · {score}",
-            "casual": "{player} {ctx} para o {team}! {score}.",
+            "casual": "{player} {ctx}! {score}.",
             "analyst": "{player} converte uma chance de {xg} xG a {speed} km/h de {dist} m. Probabilidade de vitória do {team}: {wp_from}% → {wp_to}%.",
             "new_fan": "Gol de {player} para o {team}! O placar agora é {score}.",
             "why_casual": "Com esse gol, a chance de vitória do {team} vai de {wp_from}% para {wp_to}%.",
@@ -340,11 +352,11 @@ T: dict[str, dict[str, dict[str, str]]] = {
         "pt": {"caption": "EMBALO · {team}", "line": "O embalo do jogo agora é do {team}.", "why": "Com base em chances, chegadas na área e recuperações altas nos últimos minutos."},
     },
     "red_card": {
-        "en": {"caption": "RED CARD · {player}", "line": "{player} is sent off! {team} down to ten.", "why": "{team}'s win probability drops from {wp_from}% to {wp_to}%."},
-        "es": {"caption": "ROJA · {player}", "line": "¡Expulsado {player}! {team} se queda con diez.", "why": "La probabilidad de victoria de {team} cae del {wp_from}% al {wp_to}%."},
-        "fr": {"caption": "CARTON ROUGE · {player}", "line": "{player} est expulsé ! {team} réduit à dix.", "why": "La probabilité de victoire de {team} passe de {wp_from} % à {wp_to} %."},
-        "ar": {"caption": "بطاقة حمراء · {player}", "line": "طرد {player}! {team} يكمل بعشرة لاعبين.", "why": "احتمال فوز {team} يتراجع من {wp_from}% إلى {wp_to}%."},
-        "pt": {"caption": "VERMELHO · {player}", "line": "{player} expulso! O {team} fica com dez.", "why": "A probabilidade de vitória do {team} cai de {wp_from}% para {wp_to}%."},
+        "en": {"caption": "RED CARD · {player}", "line": "{player} is sent off! {team} down to {men}.", "why": "{team}'s win probability drops from {wp_from}% to {wp_to}%."},
+        "es": {"caption": "ROJA · {player}", "line": "¡Expulsado {player}! {team} se queda con {men}.", "why": "La probabilidad de victoria de {team} cae del {wp_from}% al {wp_to}%."},
+        "fr": {"caption": "CARTON ROUGE · {player}", "line": "{player} est expulsé ! {team} réduit à {men}.", "why": "La probabilité de victoire de {team} passe de {wp_from} % à {wp_to} %."},
+        "ar": {"caption": "بطاقة حمراء · {player}", "line": "طرد {player}! {team} يكمل {men}.", "why": "احتمال فوز {team} يتراجع من {wp_from}% إلى {wp_to}%."},
+        "pt": {"caption": "VERMELHO · {player}", "line": "{player} expulso! O {team} fica com {men}.", "why": "A probabilidade de vitória do {team} cai de {wp_from}% para {wp_to}%."},
     },
     "period_end": {
         "en": {"half_time": "HALF TIME", "full_time": "FULL TIME", "line": "{home} {score} {away}. xG {home_xg} – {away_xg}, possession {home_poss}% – {away_poss}%.",
@@ -449,7 +461,9 @@ def _ctx(m: dict[str, Any], names: Names, lang: str, home: str, away: str) -> di
     elif kind == "red_card":
         idx = 0 if team == home else 2
         wb, wa = f.get("wp_before") or [0, 0, 0], f.get("wp_after") or [0, 0, 0]
-        c.update(wp_from=round(100 * wb[idx]), wp_to=round(100 * wa[idx]))
+        left = int(f.get("players_remaining") or 10)
+        c.update(wp_from=round(100 * wb[idx]), wp_to=round(100 * wa[idx]), players_remaining=left,
+                 men=MEN[lang].get(left, str(left)))
     elif kind in {"half_time", "full_time"}:
         teams = f["teams"]
         tp = (f.get("top_players") or [{}])[0]

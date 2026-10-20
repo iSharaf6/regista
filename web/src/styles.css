@@ -549,3 +549,18 @@ html.overlay-mode, html.overlay-mode body { background: transparent !important; 
   src: url(https://fonts.gstatic.com/s/lilitaone/v17/i7dPIFZ9Zz-WBtRtedDbYEF8RXi4EwQ.woff2) format("woff2");
   unicode-range: U+0025, U+0030-0039;
 }
+
+/* Explore and receipts on a phone: the trace stacks, long fact values wrap, nothing pushes the page sideways */
+.explore-note { margin: -4px 0 12px; color: var(--tint); font-size: 13px; max-width: 760px; }
+.fact { min-width: 0; }
+.fact .mono { overflow-wrap: anywhere; text-align: right; }
+.kv > * { min-width: 0; overflow-wrap: anywhere; }
+@media (max-width: 560px) {
+  .trace .step { grid-template-columns: minmax(0, 1fr) auto auto; }
+  .trace .step > :nth-child(3) { grid-column: 1 / -1; order: 1; }  /* agent · status · time, then the detail below */
+  .fact { grid-template-columns: minmax(0, 1fr) auto; }
+  .fact .mono { grid-column: 1 / -1; text-align: left; }
+  .explore-moment .raw { margin-left: 0; }
+}
+.versus.three { grid-template-columns: minmax(0, 1fr) auto auto auto; }
+@media (max-width: 560px) { .versus, .versus.three { font-size: 12.5px; } .versus > * { padding: 6px 6px; } }

@@ -109,7 +109,7 @@ export function Receipts({ moment, feed, onClose, lang }: { moment: Moment; feed
             )}
             <div className="tabs" role="group" aria-label="Language">{langs.map((l) => <button key={l} className={tab === l ? "on" : ""} aria-pressed={tab === l} onClick={() => setTab(l)}>{l.toUpperCase()}</button>)}</div>
             {narration[tab] && Object.entries(narration[tab]).map(([persona, c]: any) => (
-              <div className={`card ${tab === "ar" ? "rtl" : ""}`} style={{ padding: 10, marginBottom: 6 }} key={persona}>
+              <div className={`card ${tab === "ar" ? "rtl" : ""}`} lang={tab} style={{ padding: 10, marginBottom: 6 }} key={persona}>
                 <div className="kind" style={{ display: "inline-block", marginBottom: 4 }}>{persona.replace("_", " ")}</div>
                 <div className="cond" style={{ fontSize: 18, fontWeight: 700 }}>{c.caption}</div>
                 <div>{c.line}</div>
@@ -128,13 +128,18 @@ export function Receipts({ moment, feed, onClose, lang }: { moment: Moment; feed
 
 /** The Verifier's verdict on a story and the agent trace behind it. */
 export function HowChecked({ story }: { story: any }) {
+  // writer templates and the Analyst's insight are separate: an Analyst fallback is not a template in any language
+  const analystFell = (story.trace ?? []).some((s: any) => s.agent === "Analyst" && s.status === "fallback");
+  const analyst = analystFell ? "deterministic (the model's insight failed the fact check)" : story.models?.Analyst ?? "model";
   return (
     <>
       <div className="kv">
         <span className="k">Verdict</span><span className={story.verdict?.ok ? "verified" : ""}>{story.verdict?.ok ? "✓ passed" : "✗ rejected"}{story.verdict?.via ? ` (${story.verdict.via})` : ""}</span>
         <span className="k">Figures grounded in the facts</span><span className="mono">{story.verdict?.numbers_supported}/{story.verdict?.numbers_checked}</span>
         <span className="k">Drafts</span><span className="mono">{story.attempts}</span>
-        <span className="k">Template fallback</span><span>{story.fallback_langs?.length ? story.fallback_langs.join(", ") : "none"}</span>
+        <span className="k">Analyst insight</span><span>{analyst}</span>
+        <span className="k">Writer copy from templates</span>
+        <span>{story.fallback_langs?.length ? story.fallback_langs.join(", ").toUpperCase() : "none: every language model-written"}</span>
         <span className="k">End-to-end</span><span className="mono">{Math.round(story.latency_ms)} ms</span>
       </div>
       {story.verdict?.issues?.length > 0 && (

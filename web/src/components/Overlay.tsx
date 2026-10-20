@@ -104,7 +104,7 @@ export function OverlayCards({ feed, receipts, rtl }: { feed: Feed; receipts: bo
 
 function Ticker({ cue, rtl }: { cue: Cue; rtl: boolean }) {
   return (
-    <div className="ticker" dir={rtl ? "rtl" : "ltr"} style={accent(cue)}>
+    <div className="ticker" dir={rtl ? "rtl" : "ltr"} lang={cue.locale} style={accent(cue)}>
       <b>{cue.payload.moment_kind ? label(cue.locale, cue.payload.moment_kind) : cue.kind}</b>
       <span className={rtl ? "rtl" : ""}>{cue.body || cue.title}</span>
     </div>
@@ -180,7 +180,7 @@ function Lower({ cue, receipts, detail, dir, match }: CardProps) {
   const team = cue.payload.team === match?.home.id ? match?.home : cue.payload.team === match?.away.id ? match?.away : null;
   const rtl = dir === "rtl";
   return (
-    <div className="lower" key={cue.id} style={accent(cue)} dir={dir}>
+    <div className="lower" key={cue.id} style={accent(cue)} dir={dir} lang={cue.locale}>
       <div className="tag">{team?.abbr ?? label(cue.locale, "live")}</div>
       <div className={`content ${rtl ? "rtl" : ""}`}>
         <div className="caption">{cue.title}</div>
@@ -230,7 +230,7 @@ function Card({ cue, receipts, detail, dir, match }: CardProps) {
     );
   }
   return (
-    <div className="gcard g-glass" style={accent(cue)} dir={dir} key={cue.id}>
+    <div className="gcard g-glass" style={accent(cue)} dir={dir} lang={cue.locale} key={cue.id}>
       <div className="kicker">{kicker}</div>
       <div className={`title ${rtl ? "rtl" : ""}`}>{cue.title}</div>
       {cue.body && <div className={`body ${rtl ? "rtl" : ""}`}>{cue.body}</div>}

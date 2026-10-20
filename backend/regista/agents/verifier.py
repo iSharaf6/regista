@@ -5,12 +5,16 @@ and shirt numbers. Nothing a model produced (not even the Analyst's key numbers)
 
 What it checks, in every supported language:
 - every figure (digits, ordinals, written-out numbers) traces back to a fact, within rounding;
-- figures with a unit (km/h, metres, %, goals, the match minute) match a fact of that kind, so a 33 km/h
-  speed cannot support "33 goals";
+- figures with a unit (km/h, metres, %, goals, players, per-minute rates, the match minute) match a fact of that kind,
+  so a 33 km/h speed cannot support "33 goals" and a rate per 100 passes cannot be called "per minute";
+- a goal count attached to the scorer ("Valdane has scored two goals", "his 2nd goal", "a brace") must equal the
+  scorer's tally, and a team's manpower ("down to ten", "con diez") must equal the players it has left;
 - roster players outside the moment are not named; selected football claims (header, penalty, free kick)
   agree with the facts; copy fits its on-screen slot; brand-safety rules hold.
 
-What it does not check: invented names outside the roster, causal claims and tone. Failures come back as
+What it does not check: invented names outside the roster, causal claims and tone. A goal count is bound to the
+closest player named before it in the same sentence, so a pronoun in a later sentence ("He has two now") is checked
+only against the match's goal figures, not the scorer's tally. Failures come back as
 specific, actionable issues that the writer receives on its retry - that is the self-correcting loop.
 """
 
@@ -37,6 +41,14 @@ UNITS: dict[str, tuple[re.Pattern[str], tuple[str, ...], set[float], str]] = {
     "goals": (re.compile(_NUM + r"(?:st|nd|rd|th|º|ª|e|ème|er)?\s?(?:goals?\b|goles?\b|gol\b|buts?\b|gols?\b|أهداف|اهداف|هدف)",
                          re.I),
               ("goals", "score"), {0.0, 1.0}, "a goal count"),
+    "players": (re.compile(_NUM + r"\s?(?:-?man\b|men\b|players?\b|jugadores\b|hombres\b|joueurs\b|hommes\b|"
+                           r"jogadores\b|homens\b|لاعبين|لاعبا|لاعب)"
+                           r"|(?:down to|se queda con|se quedan con|réduits? à|fica com|ficam com)\s+(\d{1,2})(?!\d)", re.I),
+                ("players_remaining", "players_on_pitch", "players_near", "bypassed"), {1.0, 2.0, 3.0},
+                "a player count"),
+    "rate": (re.compile(_NUM + r"\s?(?:[^\W\d]+\s){0,3}?(?:per minute|each minute|every minute|por minuto|par minute|"
+                        r"à la minute|كل دقيقة|في الدقيقة الواحدة)", re.I),
+             ("per_min",), set(), "a per-minute rate"),
     "minute": (re.compile(r"(?:minute|minuto|الدقيقة)\s+(\d{1,3})|(\d{1,3})(?:st|nd|rd|th|e|ème|º)?\s+(?:minute|minuto)\b"
                           r"|(\d{1,3})\s?['’′]", re.I),
                ("clock", "minute"), set(), "the match minute"),
@@ -66,14 +78,45 @@ _WORDS: dict[str, dict[str, int]] = {
 }
 _UNITS_WORDS = {"en": {"one": 1, "two": 2, "three": 3}, "es": {"uno": 1, "una": 1, "dos": 2, "tres": 3},
                 "fr": {"un": 1, "une": 1, "deux": 2, "trois": 3}, "pt": {"um": 1, "uma": 1, "dois": 2, "duas": 2, "três": 3}}
+# small counts written out ("two goals", "tres goles"): the ones that are never an article
+_SMALL = {"en": {"one": 1, "two": 2, "three": 3}, "es": {"dos": 2, "tres": 3}, "fr": {"deux": 2, "trois": 3},
+          "pt": {"dois": 2, "duas": 2, "três": 3}, "ar": {"اثنان": 2, "اثنين": 2, "ثلاثة": 3}}
+# ordinals written out, rewritten with a digit and suffix so "his second goal" is checked like "his 2nd goal"
+_ORDINALS = {
+    "en": {"first": "1st", "second": "2nd", "third": "3rd", "fourth": "4th", "fifth": "5th"},
+    "es": {"primer": "1º", "primero": "1º", "primera": "1ª", "segundo": "2º", "segunda": "2ª", "tercer": "3º",
+           "tercero": "3º", "tercera": "3ª", "cuarto": "4º", "cuarta": "4ª"},
+    "fr": {"premier": "1er", "première": "1e", "deuxième": "2e", "second": "2e", "seconde": "2e", "troisième": "3e",
+           "quatrième": "4e"},
+    "pt": {"primeiro": "1º", "primeira": "1ª", "segundo": "2º", "segunda": "2ª", "terceiro": "3º", "terceira": "3ª",
+           "quarto": "4º", "quarta": "4ª"},
+}
 _JOIN = r"(?:-|\s+y\s+|\s+e\s+|-et-|\s+et\s+|\s+)"
 
 
 def _spell_out_digits(text: str, lang: str) -> str:
-    """Rewrite written-out numbers as digits ("ninety-seven" -> "97") so they get the same checks as digits."""
+    """Rewrite written-out numbers as digits ("ninety-seven" -> "97", "two goals" -> "2 goals", "second" -> "2nd") so
+    they get the same checks as digits. Arabic attaches prepositions to the word (بعشرة, "with ten"): they are kept,
+    split off by a space, so the digit can still be read."""
     words = _WORDS.get(lang)
     if not words:
         return text
+    if lang == "ar":
+        units = {"واحد": 1, "اثنان": 2, "اثنين": 2, "ثلاث": 3, "ثلاثة": 3, "أربع": 4, "أربعة": 4, "خمس": 5, "خمسة": 5,
+                 "ست": 6, "ستة": 6, "سبع": 7, "سبعة": 7, "ثماني": 8, "ثمانية": 8, "تسع": 9, "تسعة": 9}
+        tens = {w: n for w, n in words.items() if 20 <= n < 100 and n % 10 == 0}
+        text = re.sub(rf"(?<!\w)({'|'.join(sorted(units, key=len, reverse=True))})\s+و\s*"
+                      rf"({'|'.join(sorted(tens, key=len, reverse=True))})(?!\w)",
+                      lambda m: str(units[m.group(1)] + tens[m.group(2)]), text)
+        every = {**words, **_SMALL["ar"]}
+        alt = "|".join(map(re.escape, sorted(every, key=len, reverse=True)))
+        return re.sub(rf"(?<!\w)([وبلف]?)({alt})(?!\w)", lambda m: (m.group(1) + " " if m.group(1) else "") +
+                      str(every[m.group(2)]), text)
+    ords = _ORDINALS.get(lang, {})
+    if ords:
+        text = re.sub(rf"(?<!\w)({'|'.join(map(re.escape, sorted(ords, key=len, reverse=True)))})(?!\w)",
+                      lambda m: ords[m.group(1).lower()], text, flags=re.I)
+    words = {**_SMALL.get(lang, {}), **words}
     small = {**_UNITS_WORDS.get(lang, {}), **{w: n for w, n in words.items() if n < 10}}
     tens = {w: n for w, n in words.items() if n >= 20 and n % 10 == 0 and n < 100}
     if tens and small:
@@ -97,6 +140,10 @@ CLAIMS: dict[str, tuple[str, Any, str]] = {
                 lambda f: "set_piece" in f and f.get("set_piece") != "penalty", "it was not a penalty"),
     "free_kick": (r"free[- ]kick|tiro libre|coup franc|ركلة حرة|cobran[çc]a de falta",
                   lambda f: "set_piece" in f and f.get("set_piece") != "direct_free_kick", "it was not a direct free kick"),
+    "brace": (r"\bbrace\b|doblete|\bdoubl[ée]\b|dobradinha|ثنائية",
+              lambda f: "scorer_goals" in f and f.get("scorer_goals") != 2, "the scorer does not have two goals"),
+    "hat_trick": (r"hat[- ]?trick|triplete|tripleta|\btripl[ée]\b|ثلاثية",
+                  lambda f: "scorer_goals" in f and f.get("scorer_goals") != 3, "the scorer does not have three goals"),
 }
 
 
@@ -190,7 +237,19 @@ def unit_numbers(*sources: Any) -> dict[str, set[float]]:
     return out
 
 
-_SHIRT_BEFORE = re.compile(r"(?:رقم|no\.?|#|número|numéro|nº|n°|numero)\s*$", re.I)
+def _bound_to(text: str, at: int, name: str, names: set[str]) -> bool:
+    """Whether the figure at `at` belongs to `name`: that name is the closest player named before it in the same sentence."""
+    before = re.split(r"[.!?;؟]", text[max(0, at - 90):at])[-1]
+    best, where = "", -1
+    for n in names:
+        i = before.rfind(n)
+        if i > where:
+            best, where = n, i
+    return best == name
+
+
+# "No. 9" is a shirt number; a bare "no" is Portuguese for "in the" ("no minuto 45"), so the dot is required
+_SHIRT_BEFORE = re.compile(r"(?:رقم|(?<!\w)no\.|#|número|numéro|nº|n°|numero)\s*$", re.I)
 
 
 def _supported(n: float, allowed: set[float]) -> bool:
@@ -207,6 +266,10 @@ def verify_texts(texts: dict[str, dict[str, dict[str, str]]], facts: list[Any], 
     allowed = allowed_numbers(*facts)
     units = unit_numbers(*facts)
     allowed_names = {roster_names[p] for p in allowed_players if p in roster_names}
+    # the scorer's tally, so "Valdane has scored 2 goals" is held to Valdane's goals, not to any goal figure in the match
+    scorer = (claims or {}).get("scorer")
+    tally = (claims or {}).get("scorer_goals")
+    scorer_name = roster_names.get(scorer, "") if isinstance(scorer, str) else ""
     other_names = {n for pid, n in roster_names.items() if pid not in allowed_players and len(n) > 3}
     v = Verdict(ok=True)
     failed: set[str] = set()
@@ -255,7 +318,15 @@ def verify_texts(texts: dict[str, dict[str, dict[str, str]]], facts: list[Any], 
                         if _SHIRT_BEFORE.search(norm[max(0, m.start() - 9):m.start()]):
                             continue  # "No. 9" is a shirt number, not a figure of this kind
                         raw = next(g for g in m.groups() if g)
-                        if not _supported(float(raw.replace(",", ".")), units[unit]):
+                        n = float(raw.replace(",", "."))
+                        if unit == "goals" and tally is not None and scorer_name and _bound_to(norm, m.start(), scorer_name,
+                                                                                               allowed_names):
+                            if n != float(tally):
+                                v.issues.append(f"{where} '{m.group(0).strip()}' does not match {scorer_name}'s goals in "
+                                                f"this match ({tally}) - use the scorer's tally")
+                                failed.add(lang)
+                            continue
+                        if not _supported(n, units[unit]):
                             v.issues.append(f"{where} '{m.group(0).strip()}' does not match {what} in the facts - "
                                             f"remove it, or use the FIGURES value for that metric")
                             failed.add(lang)

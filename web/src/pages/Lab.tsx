@@ -11,7 +11,12 @@ function ModelEval({ llm, grounding }: { llm: any; grounding: any }) {
   const sample = (llm.pundit ?? [])[0];
   const wf = llm.workflow;
   const one = llm.single_agent_baseline;
+  const loop = llm.single_agent_with_checker;
   const planted = Object.values(llm.verifier_probe?.planted_errors ?? {}) as { planted: number; caught: number }[];
+  const believable = Object.values(llm.verifier_probe?.believable_errors ?? {}) as { planted: number; caught: number }[];
+  const sum = (xs: { planted: number; caught: number }[]) => `${xs.reduce((s, p) => s + p.caught, 0)}/${xs.reduce((s, p) => s + p.planted, 0)}`;
+  const share = (frac: string | undefined, v: number | undefined) => (frac ? `${frac} · ${pct(v)}` : pct(v));
+  const lead = wf && loop ? Math.round(100 * (wf.verified_without_fallback - loop.all_languages_verified)) : null;
   const seeds: number[] = llm.eval_seeds ?? [];
   return (
     <div className="card">
@@ -28,18 +33,36 @@ function ModelEval({ llm, grounding }: { llm: any; grounding: any }) {
           <div className="kpi"><span>Story latency p50 / p95</span><b>{secs(llm.story_latency_ms?.p50)} / {secs(llm.story_latency_ms?.p95)}</b></div>
           <div className="kpi"><span>Pundit answers from tools</span><b>{pct(llm.pundit_used_tools)}</b></div>
           {recaps.length > 0 && <div className="kpi"><span>Recaps verified</span><b>{recaps.filter((r) => r.verified).length}/{recaps.length}</b></div>}
-          {planted.length > 0 && <div className="kpi"><span>Planted errors caught</span><b>{planted.reduce((s, p) => s + p.caught, 0)}/{planted.reduce((s, p) => s + p.planted, 0)}</b></div>}
+          {believable.length > 0 && <div className="kpi"><span>Believable errors caught</span><b>{sum(believable)}</b></div>}
+          {planted.length > 0 && <div className="kpi"><span>Constructed probe caught</span><b>{sum(planted)}</b></div>}
           {grounding && <div className="kpi"><span>Fallbacks wrongly rejected</span><b>{grounding.rejected}/{grounding.outputs.toLocaleString("en")}</b></div>}
         </div>
         {wf && one && (
           <>
-            <div className="section-title">Workflow vs one big prompt · same model, facts and checker</div>
-            <div className="versus">
-              <span /><span className="head">Workflow</span><span className="head">Single agent</span>
-              <span>Every language written by the model and checked</span><b className="win">{pct(wf.verified_without_fallback)}</b><b>{pct(one.all_languages_verified)}</b>
-              <span>Story latency, median</span><b>{secs(wf.latency_ms?.p50)}</b><b>{secs(one.latency_ms?.p50)}</b>
-              <span>Model cost per moment</span><b>${wf.cost_usd_per_moment}</b><b>${one.cost_usd_per_moment}</b>
+            <div className="section-title">Workflow vs a single agent · same model, facts and Verifier</div>
+            <div className={`versus ${loop ? "three" : ""}`}>
+              <span /><span className="head">Workflow</span>{loop && <span className="head">1 agent + checker</span>}<span className="head">1 agent, one shot</span>
+              <span>Moments with every language model-written and checked</span>
+              <b className="win">{share(wf.moments_model_written, wf.verified_without_fallback)}</b>
+              {loop && <b>{share(loop.moments_all_languages, loop.all_languages_verified)}</b>}
+              <b>{share(one.moments_all_languages, one.all_languages_verified)}</b>
+              {typeof wf.language_outputs_model_written === "number" && (
+                <>
+                  <span>Language outputs model-written and checked</span><b>{pct(wf.language_outputs_model_written)}</b>
+                  {loop && <b>{pct(loop.language_outputs_verified)}</b>}<b>{pct(one.language_outputs_verified)}</b>
+                </>
+              )}
+              <span>Drafts per moment</span><b>{wf.mean_attempts}</b>{loop && <b>{loop.mean_attempts}</b>}<b>1</b>
+              <span>Story latency, median</span><b>{secs(wf.latency_ms?.p50)}</b>{loop && <b>{secs(loop.latency_ms?.p50)}</b>}<b>{secs(one.latency_ms?.p50)}</b>
+              <span>Model cost per moment</span><b>${wf.cost_usd_per_moment}</b>{loop && <b>${loop.cost_usd_per_moment}</b>}<b>${one.cost_usd_per_moment}</b>
             </div>
+            {loop && lead !== null && (
+              <div className="muted" style={{ fontSize: 13, marginTop: 6 }}>
+                Given the same Verifier feedback and the same {loop.mean_attempts > 1 ? "two-draft" : "draft"} budget, one agent reaches{" "}
+                {pct(loop.all_languages_verified)}: {lead > 0 ? `splitting the work across agents adds ${lead} points on top of the checker loop` :
+                  lead === 0 ? "the checker loop, not the split, makes the difference" : "the checker loop matters more than the split"}.
+              </div>
+            )}
             {typeof wf.first_draft_verified === "number" && (
               <div className="muted" style={{ fontSize: 13, marginTop: 6 }}>
                 The workflow's first drafts alone pass for {pct(wf.first_draft_verified)} of moments: the Verifier's notes, sent back to the

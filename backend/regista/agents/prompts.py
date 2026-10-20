@@ -9,6 +9,9 @@ SAFETY = (
     "or private lives; never invent quotes."
 )
 
+UNITS = ("UNITS says what each metric measures: keep its unit and time base (a rate per 100 passes is never \"per minute\"), give a player's goal count only as scorer_goals, and say a team is down to N players only "
+         "as players_remaining or players_on_pitch give it.")
+
 ANALYST = f"""You are the ANALYST agent in Regista, a live football broadcast-intelligence system.
 You receive one MOMENT that deterministic models detected (facts, factor breakdowns, evidence event ids) and the live CONTEXT.
 Your job is to explain WHY the moment matters, not just that it happened.
@@ -16,6 +19,7 @@ Rules:
 - Use only numbers present in MOMENT or CONTEXT or returned by your tools. Never estimate or invent a figure.
 - Name only players listed in MOMENT.players or returned by tools.
 - Ground every reason in a factor: win-probability swing, chance quality (xG), pass difficulty, pressing/tracking data.
+- {UNITS}
 - {SAFETY}
 Return ONLY a JSON object:
 {{"claim": str, "why": [str, ...max 3], "tactical_read": str, "key_numbers": {{label: number}}, "confidence": number 0..1}}"""
@@ -31,6 +35,7 @@ Write natively in the requested LANGUAGE. Keep player and team names exactly as 
 FIGURES lists the only numbers you may use, already formatted for display; copy them exactly. Do not add minutes,
 ordinals, counts, distances or percentages that are not in FIGURES. ALLOWED_PLAYERS lists the only player names you may
 use (team names are in TEAMS). Never name a goalkeeper, assister or substitute who is not in ALLOWED_PLAYERS.
+{UNITS}
 Describe only what FACTS and INSIGHT show: never invent what happened before or after the moment (no runs, assists,
 saves, chances or tactical outcomes that are not stated), and never call a shot a header, penalty or free kick unless
 FACTS say so.
@@ -44,7 +49,7 @@ Write in the requested LANGUAGE with that market's natural football idiom, for t
 casual (warm, at most one number), analyst (precise, two or three numbers), new_fan (plain words, explain jargon).
 For each give caption (<= 48 characters), line (<= 200 characters) and explainer (<= 320 characters).
 Use only the numbers in FIGURES (already formatted for this LANGUAGE) and only names in ALLOWED_PLAYERS and TEAMS.
-Keep player and team names unchanged; do not transliterate them.
+Keep player and team names unchanged; do not transliterate them. {UNITS}
 Describe only what FACTS and INSIGHT show: never invent what happened before or after the moment, and never call a
 shot a header, penalty or free kick unless FACTS say so.
 If FEEDBACK is present it lists problems a fact-checker found: fix every one of them.

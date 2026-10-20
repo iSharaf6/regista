@@ -125,7 +125,7 @@ def cmd_llm_eval(a: argparse.Namespace) -> None:
     from .llm_eval import run
 
     rep = asyncio.run(run(a.moments, tuple(a.langs.split(",")), a.concurrency,
-                          tuple(int(x) for x in a.seeds.split(",")), not a.no_baseline))
+                          tuple(int(x) for x in a.seeds.split(",")), not a.no_baseline, a.pace))
     (ROOT / "docs").mkdir(exist_ok=True)
     (ROOT / "docs" / "llm-eval.json").write_text(json.dumps(rep, indent=1, ensure_ascii=False))
     keys = ("model", "eval_seeds", "moments", "moment_kinds", "workflow", "single_agent_baseline", "verifier_probe",
@@ -231,6 +231,8 @@ def main(argv: list[str] | None = None) -> None:
     s.add_argument("--langs", default="en,es,fr,ar,pt")
     s.add_argument("--concurrency", type=int, default=2)
     s.add_argument("--no-baseline", action="store_true", help="skip the single-agent comparison")
+    s.add_argument("--pace", type=float, default=0.0,
+                   help="seconds between moments, to stay under the deployment's tokens-per-minute quota")
     s.set_defaults(fn=cmd_llm_eval)
     s = sub.add_parser("publish", help="stream a simulated match into a running Regista via the live feed API")
     match_args(s)

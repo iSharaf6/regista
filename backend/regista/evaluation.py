@@ -23,22 +23,33 @@ from .sim.engine import SimResult, simulate
 LANGS = ("en", "es", "fr", "ar", "pt")
 
 
-def replay(res: SimResult) -> tuple[MatchState, MomentDetector, list[Moment]]:
-    """Feed a finished simulation through the live pipeline exactly as the stream would."""
+def replay(res: SimResult, contexts: dict[str, dict[str, Any]] | None = None
+           ) -> tuple[MatchState, MomentDetector, list[Moment]]:
+    """Feed a finished simulation through the live pipeline exactly as the stream would. With `contexts`, also keep the
+    live CONTEXT each moment was detected in (score, manpower, ...), as a story job would see it then."""
+    from .runtime.session import match_context
+
     st = MatchState(res.info)
     det = MomentDetector(st)
     evs = sorted(res.events, key=lambda e: (e.qualifiers.get("t_end", e.t), e.seq))
     k = 0
     moments: list[Moment] = []
+
+    def add(ms: list[Moment]) -> None:
+        moments.extend(ms)
+        if contexts is not None:
+            for m in ms:
+                contexts[m.id] = match_context(st)
+
     for fi in range(len(res.frame_t)):
         ft = float(res.frame_t[fi])
         for sig in st.on_frame(res.frame(fi)):
-            moments += det.on_signal(sig, ft, st.clock)
+            add(det.on_signal(sig, ft, st.clock))
         while k < len(evs) and evs[k].qualifiers.get("t_end", evs[k].t) <= ft:
-            moments += det.on_enriched(st.on_event(evs[k]))
+            add(det.on_enriched(st.on_event(evs[k])))
             k += 1
     while k < len(evs):
-        moments += det.on_enriched(st.on_event(evs[k]))
+        add(det.on_enriched(st.on_event(evs[k])))
         k += 1
     return st, det, moments
 
@@ -69,7 +80,8 @@ def evaluate(seeds: list[int], home: str = "NOR", away: str = "CAL", scenario: s
     per_match = []
     for seed in seeds:
         res = simulate(home, away, seed, scenario)
-        st, _, moments = replay(res)
+        contexts: dict[str, dict[str, Any]] = {}
+        st, _, moments = replay(res, contexts)
         truth = _press_truth(res)
         detections = [m for m in moments if m.kind == "press_shift"]
         matched: set[str] = set()
@@ -98,7 +110,8 @@ def evaluate(seeds: list[int], home: str = "NOR", away: str = "CAL", scenario: s
         for m in moments:
             if m.lane != "story" or m.kind in {"half_time", "full_time"}:
                 continue
-            job = StoryJob(m.as_dict(), {"score": dict(st.score)}, list(LANGS), names, names["players"], st.home, st.away,
+            # the context at the moment, not the final whistle's: copy is checked against the match as it stood then
+            job = StoryJob(m.as_dict(), contexts[m.id], list(LANGS), names, names["players"], st.home, st.away,
                            shirts=shirts)
             grounding["moments"] += 1
             for lang in LANGS:

@@ -25,6 +25,7 @@ export function Explore({ query }: { query: URLSearchParams }) {
   const id = query.get("moment");
   const [data, setData] = useState<ExploreOut | null>(null);
   const [state, setState] = useState<State>("loading");
+  const [attempt, setAttempt] = useState(0);
   useEffect(() => {
     let live = true;
     setState("loading");
@@ -38,7 +39,8 @@ export function Explore({ query }: { query: URLSearchParams }) {
       })
       .catch(() => { if (live) setState("error"); });
     return () => { live = false; };
-  }, [id]);
+  }, [id, attempt]);
+  const retry = <button className="btn small" onClick={() => setAttempt((a) => a + 1)}>Try again</button>;
 
   const moments = data?.moments ?? [];
   const current = id ?? data?.moment.id;
@@ -80,9 +82,9 @@ export function Explore({ query }: { query: URLSearchParams }) {
           </div>
         </div>
       )}
-      {state === "busy" && <div className="empty">Lots of new replays from your network just now. Try again in a minute; moments already replayed still load instantly.</div>}
+      {state === "busy" && <div className="empty stack">Lots of new replays from your network just now: try again in a minute. Moments already replayed still load instantly.<div>{retry}</div></div>}
       {state === "missing" && <div className="empty">That moment isn't in the demo match. Pick one from the list.</div>}
-      {state === "error" && <div className="empty">Couldn't reach the replay. Check the connection and reload.</div>}
+      {state === "error" && <div className="empty stack">Couldn't reach the replay. Check the connection, then try again.<div>{retry}</div></div>}
 
       {state === "ok" && data && <Replay data={data} />}
     </div>
@@ -109,6 +111,8 @@ function Replay({ data }: { data: ExploreOut }) {
       </div>
 
       <div className="section-title on-sky">Same second, three broadcasts</div>
+      <p className="explore-note">Each fan's Director previewing this one moment: what it would show them and why. Live, it also
+        weighs timing and what is already on screen.</p>
       <div className="explore-fans">
         {data.fans.map((f) => <FanView key={f.name} fan={f} match={data.match} />)}
       </div>
@@ -156,7 +160,7 @@ function FanView({ fan, match }: { fan: ExploreFan; match: MatchInfo }) {
         {cue ? <CueView cue={cue} match={match} rtl={fan.profile.language === "ar"} /> : <div className="empty">Nothing for {fan.name} here.</div>}
       </div>
       <div className="fan-why">
-        <span className={fan.aired ? "on" : "off"}>{fan.aired ? "On air" : "Held back"}</span>
+        <span className={fan.aired ? "on" : "off"}>{fan.aired ? "Would air" : "Held back"}</span>
         {side && <span>{side === "for" ? `${fan.name}'s club` : `against ${fan.name}'s club`}</span>}
         {rel && <span>relevance {rel.score}{reasons.length ? `: ${reasons.join(", ")}` : ""}</span>}
       </div>

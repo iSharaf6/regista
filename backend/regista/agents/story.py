@@ -109,10 +109,35 @@ class StoryJob:
 
     def payload(self, task: str, **extra: Any) -> str:
         body = {"task": task, "moment": self.moment, "context": self.context, "names": self.names,
-                "home": self.home, "away": self.away, **extra}
+                "home": self.home, "away": self.away,
+                "UNITS": metric_units(self.moment.get("facts", {}), self.context), **extra}
         if task in {"narrate", "localize"}:
             body.update(self.grounding(extra.get("language", "en")))
         return json.dumps(body, ensure_ascii=False, default=str)
+
+
+# What each metric measures, sent with every task: the Verifier binds a figure to its unit, and a writer can only keep
+# the unit right if it knows it (a pressing rate is per 100 opponent passes; calling it "per minute" is rejected).
+METRIC_UNITS = {
+    "press_rate": "pressing actions in the opponent's half per 100 opponent passes from their own 60% of the pitch "
+                  "(a share of opportunities, not per minute)",
+    "ppda": "opponent passes allowed per defensive action",
+    "players_near_ball": "average number of the team's players within 8 m of the ball",
+    "line_height": "defensive line height in metres from the team's own goal",
+    "closing_distance": "average distance in metres from the nearest presser to the ball",
+    "high_regains": "ball recoveries in the opponent's half",
+    "players_remaining": "players the team has left on the pitch after this dismissal",
+    "players_on_pitch": "players each team has on the pitch now",
+    "scorer_goals": "the scorer's goals in this match so far, including this one",
+    "xg": "chance quality from 0 to 1: the probability a shot like it scores",
+    "wp": "win probability as home / draw / away",
+    "difficulty": "pass difficulty from 0 to 100",
+}
+
+
+def metric_units(*sources: dict[str, Any]) -> dict[str, str]:
+    keys = [str(k) for src in sources for k in (src or {})]
+    return {m: what for m, what in METRIC_UNITS.items() if any(m in k for k in keys)}
 
 
 class AgentRuntime:
@@ -150,6 +175,7 @@ class AgentRuntime:
             if self.telemetry.chaos_latency_ms:
                 await asyncio.sleep(self.telemetry.chaos_latency_ms / 1000)
             res = await asyncio.wait_for(agent.run(payload), timeout=self.cfg.timeout_s)
+            self.count_tokens(name, res)  # billable whether or not the reply parses
             data = parse_json(res.text)
         except TimeoutError as exc:
             self.breaker.failure()
@@ -162,15 +188,19 @@ class AgentRuntime:
                                        job.id if job else "", moment_id, attempt, str(exc)[:160], t_match))
             raise AgentFailure(str(exc)) from exc
         self.breaker.success()
-        usage = getattr(res, "usage_details", None) or {}
-        self.telemetry.tokens[name][0] += int(usage.get("input_token_count") or 0)
-        self.telemetry.tokens[name][1] += int(usage.get("output_token_count") or 0)
         span = self.telemetry.record(Span(name, "ok", (time.perf_counter() - t0) * 1000, self.model_name,
                                           job.id if job else "", moment_id, attempt, "", t_match))
         if job is not None:
             job.trace.append(span.as_dict())
             job.models[name] = self.model_name
         return data
+
+    def count_tokens(self, name: str, res: Any) -> tuple[int, int]:
+        usage = getattr(res, "usage_details", None) or {}
+        tin, tout = int(usage.get("input_token_count") or 0), int(usage.get("output_token_count") or 0)
+        self.telemetry.tokens[name][0] += tin
+        self.telemetry.tokens[name][1] += tout
+        return tin, tout
 
     def note(self, job: StoryJob, agent: str, status: str, detail: str = "", ms: float = 0.0) -> None:
         span = self.telemetry.record(Span(agent, status, ms, "deterministic", job.id, job.moment.get("id"),

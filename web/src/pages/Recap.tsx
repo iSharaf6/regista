@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { api } from "../lib/feed";
 import { LANGS, type Lang, type MatchInfo } from "../lib/types";
 
@@ -11,9 +11,13 @@ export function Recap({ lang: initial }: { lang: Lang }) {
   const [series, setSeries] = useState<any>(null);
   const [match, setMatch] = useState<MatchInfo | null>(null);
   const [err, setErr] = useState<string | null>(null);
+  const asked = useRef(0);
   useEffect(() => {
     setErr(null);
-    api(`/api/recap?language=${lang}&persona=${persona}`).then(setData).catch((e) => setErr(String(e)));
+    const mine = ++asked.current; // switching language or persona quickly: only the latest answer may render
+    api(`/api/recap?language=${lang}&persona=${persona}`)
+      .then((d) => { if (mine === asked.current) setData(d); })
+      .catch((e) => { if (mine === asked.current) setErr(String(e)); });
     api(`/api/series`).then(setSeries).catch(() => setSeries(null));
     api(`/api/match`).then((m) => setMatch(m.info)).catch(() => setMatch(null));
   }, [lang, persona]);
@@ -27,8 +31,8 @@ export function Recap({ lang: initial }: { lang: Lang }) {
       </div>
       {err && <div className="empty">{err}</div>}
       {r && (
-        <article className={rtl ? "rtl" : ""} dir={rtl ? "rtl" : "ltr"}>
-          <div className="section-title">{data.period === "live" ? "Live report so far" : data.period.replace("_", " ")} · automated by the Recap agent · {data.source}</div>
+        <article className={rtl ? "rtl" : ""} dir={rtl ? "rtl" : "ltr"} lang={lang}>
+          <div className="section-title">{data.period === "live" ? `Live report as of ${data.as_of?.clock ?? ""}` : data.period.replace("_", " ")} · automated by the Recap agent · {data.source}</div>
           <h1>{r.headline}</h1>
           <p className="lede">{r.summary}</p>
           <div className="receipt" style={{ fontSize: 12 }}>

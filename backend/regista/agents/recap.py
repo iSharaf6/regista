@@ -8,6 +8,7 @@ turning point carries its evidence ids.
 
 from __future__ import annotations
 
+import re
 from typing import Any
 
 from ..intel.moments import Moment
@@ -90,6 +91,54 @@ def recap_payload(state: MatchState, moments: list[Moment], names: dict[str, dic
         "moments": [m.as_dict() for m in sorted(ranked, key=lambda m: m.t)],
         "wp_path": list(state.wp_series),  # a copy: a stored report must not keep growing
     }
+
+
+_IDS_IN_PROSE = re.compile(r"\s*\((?:[me]\d{3,6})(?:\s*[,،]\s*[me]\d{3,6})*\)")
+
+
+def normalize_recap(data: dict[str, Any], p: dict[str, Any], roster: dict[str, str]) -> dict[str, Any]:
+    """The report as the screen shows it: evidence ids belong in turning_points[].evidence, not in the prose, and the
+    player of the match is bound to the roster (name and rating come from match data, never from the model)."""
+    out = dict(data)
+    for key in ("headline", "summary", "tactical_story", "closing_line"):
+        if isinstance(out.get(key), str):
+            out[key] = _IDS_IN_PROSE.sub("", out[key]).strip()
+    out["turning_points"] = [{**tp, "text": _IDS_IN_PROSE.sub("", str(tp.get("text", ""))).strip()}
+                             for tp in out.get("turning_points") or [] if isinstance(tp, dict)]
+    potm = dict(out.get("player_of_the_match") or {})
+    pid = potm.get("player_id")
+    potm.pop("rating", None)
+    if isinstance(pid, str) and pid in roster:
+        potm["name"] = roster[pid]
+        rated = next((t for t in p.get("top_players", []) if t.get("id") == pid), None)
+        if rated and rated.get("rating") is not None:
+            potm["rating"] = rated["rating"]
+    if isinstance(potm.get("reason"), str):
+        potm["reason"] = _IDS_IN_PROSE.sub("", potm["reason"]).strip()
+    out["player_of_the_match"] = potm
+    return out
+
+
+def recap_fields(data: dict[str, Any], p: dict[str, Any], roster: dict[str, str]) -> tuple[dict[str, str], list[str]]:
+    """Every text the Recap screen shows, for the Verifier, plus structural problems text checks cannot see: a player of
+    the match who is not in this match, turning points at a minute or with evidence the match data does not have."""
+    fields = {"headline": data.get("headline", ""), "summary": data.get("summary", ""),
+              "tactical": data.get("tactical_story", ""), "closing": data.get("closing_line", "")}
+    potm = data.get("player_of_the_match") or {}
+    fields["potm"] = str(potm.get("reason", ""))
+    issues: list[str] = []
+    if potm and potm.get("player_id") not in roster:
+        issues.append(f"player of the match {potm.get('player_id')!r} is not a player in this match")
+    clocks = {m.get("clock") for m in p.get("moments", [])}
+    known = {m["id"] for m in p.get("moments", [])} | {e for m in p.get("moments", []) for e in m.get("evidence", [])}
+    for i, tp in enumerate(data.get("turning_points") or []):
+        fields[f"tp{i}"] = str(tp.get("text", ""))
+        if tp.get("clock") not in clocks:
+            issues.append(f"turning point {i + 1}: {tp.get('clock')!r} is not the minute of a moment in this match")
+        bad = [e for e in tp.get("evidence") or [] if e not in known]
+        if bad:
+            issues.append(f"turning point {i + 1}: evidence {', '.join(map(str, bad[:3]))} is not in the match data")
+    return fields, issues
 
 
 def recap_evidence(p: dict[str, Any]) -> list[Any]:

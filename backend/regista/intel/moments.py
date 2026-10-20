@@ -153,11 +153,14 @@ class MomentDetector:
                     evidence=[ev.id],
                 ))
         elif ev.type == EventType.CARD and ev.outcome in {"red", "second_yellow"}:
+            left = 11 - st.red_cards.get(ev.team, 1) if ev.team else 10  # the state has already counted this card
             out.append(self._new(
                 t=ev.t, clock=ev.clock, kind="red_card", team=ev.team, players=[ev.player] if ev.player else [],
-                importance=75, headline=f"Red card: {self._name(ev.player)} ({self._team(ev.team)})",
-                facts={"wp_before": d.get("wp_before"), "wp_after": d.get("wp_after"), "reason": ev.outcome},
-                why=[{"label": "Numerical disadvantage", "value": 10, "detail": "Scoring rate drops ~25% with ten men"}],
+                importance=75 + 5 * (10 - left), headline=f"Red card: {self._name(ev.player)} ({self._team(ev.team)})",
+                facts={"wp_before": d.get("wp_before"), "wp_after": d.get("wp_after"), "reason": ev.outcome,
+                       "players_remaining": left},
+                why=[{"label": "Numerical disadvantage", "value": left, "unit": " players",
+                      "detail": f"{self._team(ev.team)} play on with {left}"}],
                 evidence=[ev.id] + ev.related,
             ))
         elif ev.type in {EventType.HALF_TIME, EventType.FULL_TIME}:

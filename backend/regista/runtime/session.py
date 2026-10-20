@@ -24,7 +24,7 @@ from ..agents.config import LLMConfig, load_config
 from ..agents.director import Director
 from ..agents.producer import Producer
 from ..agents.pundit import Pundit
-from ..agents.recap import offline_recap, recap_evidence, recap_payload
+from ..agents.recap import normalize_recap, offline_recap, recap_evidence, recap_fields, recap_payload
 from ..agents.story import AgentFailure, AgentRuntime, StoryJob, run_story
 from ..agents.telemetry import Span, Telemetry
 from ..agents.templates import LANGS, PERSONAS, Names, narrate
@@ -72,6 +72,7 @@ def match_context(state: MatchState) -> dict[str, Any]:
     """The live CONTEXT a story job sees: the match as it stands at the moment, frozen when the job is queued."""
     s = state.snapshot()
     return {"clock": s["clock"], "score": s["score"], "win_probability": s["win_probability"], "momentum": s["momentum"],
+            "players_on_pitch": {t: 11 - n for t, n in state.red_cards.items()},
             "teams": {t: {k: v for k, v in s["teams"][t].items() if k in {"name", "xg", "shots", "possession", "pass_accuracy",
                                                                           "pressures", "high_regains"}}
                       for t in s["teams"]}}
@@ -532,7 +533,23 @@ class MatchSession:
         return match_context(self.state)
 
     # ------------------------------------------------------------------ recap & Q&A
-    async def recap(self, lang: str, persona: str, period: str | None = None) -> dict[str, Any]:
+    def _revision(self) -> tuple[Any, ...]:
+        """What a report depends on: the timeline, the minute, the score, the moments so far and the manpower."""
+        return (self._gen, self.state.clock, tuple(self.state.score.values()), len(self.moments),
+                tuple(self.state.red_cards.values()))
+
+    def _check_recap(self, data: dict[str, Any], payload: dict[str, Any], lang: str, persona: str
+                     ) -> tuple[dict[str, Any], Any]:
+        data = normalize_recap(data, payload, self.roster_names)
+        fields, problems = recap_fields(data, payload, self.roster_names)
+        allowed = {p["id"] for p in payload["top_players"]} | {pid for m in payload["moments"] for pid in m["players"]}
+        verdict = verify_texts({lang: {persona: fields}}, recap_evidence(payload), allowed, self.roster_names)
+        if problems:  # a figure-perfect report about the wrong player or a minute that never happened is not verified
+            verdict.ok = False
+            verdict.issues = problems + verdict.issues
+        return data, verdict
+
+    async def recap(self, lang: str, persona: str, period: str | None = None, _retry: bool = True) -> dict[str, Any]:
         # default to what is true now: full time, half time (only during the break) or a live report
         period = period or ("full_time" if self.state.status == "full_time" else
                             "half_time" if self.state.status == "half_time" else "live")
@@ -543,9 +560,10 @@ class MatchSession:
         key = (period, lang, persona)
         if key in self.recaps and period != "live":
             return self.recaps[key]
+        rev = self._revision()
         cached = self._live_recaps.get((lang, persona))
-        if period == "live" and cached and cached[0] == self.state.clock:
-            return cached[1]  # one model call per match minute, however many viewers ask
+        if period == "live" and cached and cached[0] == rev:
+            return cached[1]  # one model call per state of the match, however many viewers ask; a goal makes a new one
         if period == "half_time":
             payload = {**self._ht_base, "language": lang, "persona": persona}  # type: ignore[dict-item]
         else:
@@ -568,25 +586,22 @@ class MatchSession:
             data = offline_recap(payload)
             self.telemetry.record(Span("Recap", "ok" if self.cfg.is_offline else "fallback",
                                        (time.perf_counter() - t0) * 1000, "deterministic", detail=f"{period}/{lang}/{persona}"))
-        fields = {"headline": data.get("headline", ""), "summary": data.get("summary", ""),
-                  "tactical": data.get("tactical_story", "")}
-        for i, tp in enumerate(data.get("turning_points", [])):
-            fields[f"tp{i}"] = tp.get("text", "")
-        allowed = {p["id"] for p in payload["top_players"]} | {pid for m in payload["moments"] for pid in m["players"]}
-        verdict = verify_texts({lang: {persona: fields}}, recap_evidence(payload), allowed, self.roster_names)
+        data, verdict = self._check_recap(data, payload, lang, persona)
         if not verdict.ok and source != "deterministic":
-            data = offline_recap(payload)
+            data, verdict = self._check_recap(offline_recap(payload), payload, lang, persona)
             source = "deterministic (verifier rejected model recap)"
-            fields = {"headline": data.get("headline", ""), "summary": data.get("summary", ""),
-                      "tactical": data.get("tactical_story", "")}
-            fields.update({f"tp{i}": tp.get("text", "") for i, tp in enumerate(data.get("turning_points", []))})
-            verdict = verify_texts({lang: {persona: fields}}, recap_evidence(payload), allowed, self.roster_names)
         out = {"period": period, "language": lang, "persona": persona, "source": source, "verdict": verdict.as_dict(),
-               "recap": data, "ms": round((time.perf_counter() - t0) * 1000, 1)}
-        if gen != self._gen:
-            return out  # the timeline changed while the model wrote: never cache or broadcast it
+               "recap": data, "ms": round((time.perf_counter() - t0) * 1000, 1),
+               "match_id": self.res.info.match_id, "as_of": {"clock": payload.get("clock"), "score": payload.get("score")}}
+        if gen != self._gen or (period == "live" and self._revision() != rev):
+            # the match moved on while the model wrote (a seek, a new match, a goal): never cache, broadcast or hand
+            # back the old report as current - write it again for the match as it stands now
+            if _retry:
+                return await self.recap(lang, persona, None if period == "live" else period, _retry=False)
+            out["superseded"] = True
+            return out
         if period == "live":
-            self._live_recaps[(lang, persona)] = (payload.get("clock", self.state.clock), out)
+            self._live_recaps[(lang, persona)] = (rev, out)
         if period != "live":
             self.recaps[key] = out
             self.broadcast({"type": "recap", "recap": out})
