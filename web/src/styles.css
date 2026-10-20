@@ -31,7 +31,7 @@
   --warn: #a85a00;
   --bad: #c4003f;
   --line: var(--tint-2);
-  --px: "Silkscreen", "Lilita One", system-ui, sans-serif;
+  --px: "Px Digits", "Silkscreen", "Lilita One", system-ui, sans-serif;
   --round: "Lilita One", "Arial Rounded MT Bold", system-ui, sans-serif;
   --font-ui: "Nunito", system-ui, -apple-system, "Segoe UI", sans-serif;
   --font-cond: var(--round);
@@ -541,3 +541,11 @@ html.overlay-mode, html.overlay-mode body { background: transparent !important; 
 .kpi b { font-size: 24px; line-height: 1.15; }
 .hero-stat b { font-size: 34px; }
 .gcard .metric b { font-size: 1.3em; }
+
+/* The pixel font's 4 reads as a Y and its % as a Z, so every pixel-font label takes just its digits and % from Lilita One:
+   clocks, chips, badges and chart axes read at a glance while the letters stay pixel. */
+@font-face {
+  font-family: "Px Digits"; font-style: normal; font-weight: 400 700; font-display: swap;
+  src: url(https://fonts.gstatic.com/s/lilitaone/v17/i7dPIFZ9Zz-WBtRtedDbYEF8RXi4EwQ.woff2) format("woff2");
+  unicode-range: U+0025, U+0030-0039;
+}

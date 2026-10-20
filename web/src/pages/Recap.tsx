@@ -95,13 +95,13 @@ function WpChart({ series, match }: { series: any[]; match: MatchInfo | null }) 
         {[0, 0.25, 0.5, 0.75, 1].map((p) => (
           <g key={p}>
             <line x1={x0} x2={w} y1={y(p)} y2={y(p)} stroke="rgba(31,0,36,0.14)" strokeDasharray={p === 0.5 ? "6 4" : "2 4"} />
-            <text x={x0 - 8} y={y(p) + 4} textAnchor="end" fill="#5f3a64" fontSize="11" fontFamily="Silkscreen, monospace" fontWeight="700">{Math.round(p * 100)}%</text>
+            <text x={x0 - 8} y={y(p) + 4} textAnchor="end" fill="#5f3a64" fontSize="13" fontFamily="'Lilita One', sans-serif">{Math.round(p * 100)}%</text>
           </g>
         ))}
         {events.map((e, i) => (
           <g key={i}>
             <line x1={x(e.t)} x2={x(e.t)} y1="0" y2={h} stroke="#e90052" strokeWidth="3" />
-            <text x={x(e.t) + 4} y={h + 16} fill="#1f0024" fontSize="11" fontFamily="Silkscreen, monospace" fontWeight="700">{e.clock}</text>
+            <text x={x(e.t) + 4} y={h + 16} fill="#1f0024" fontSize="13" fontFamily="'Lilita One', sans-serif">{e.clock}</text>
           </g>
         ))}
         <polyline points={line("draw")} fill="none" stroke="#9a968a" strokeWidth="2" strokeDasharray="5 4" />
