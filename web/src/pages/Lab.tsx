@@ -40,6 +40,12 @@ function ModelEval({ llm, grounding }: { llm: any; grounding: any }) {
               <span>Story latency, median</span><b>{secs(wf.latency_ms?.p50)}</b><b>{secs(one.latency_ms?.p50)}</b>
               <span>Model cost per moment</span><b>${wf.cost_usd_per_moment}</b><b>${one.cost_usd_per_moment}</b>
             </div>
+            {typeof wf.first_draft_verified === "number" && (
+              <div className="muted" style={{ fontSize: 13, marginTop: 6 }}>
+                The workflow's first drafts alone pass for {pct(wf.first_draft_verified)} of moments: the Verifier's notes, sent back to the
+                writers, are what lift it to {pct(wf.verified_without_fallback)}.
+              </div>
+            )}
           </>
         )}
         <div className="muted" style={{ fontSize: 13, marginTop: 10 }}>

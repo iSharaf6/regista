@@ -3,6 +3,8 @@ import type { Control, Cue, Frame, MatchInfo, Moment, Profile, Snapshot, Span, S
 
 export interface Feed {
   connected: boolean;
+  /** this viewer's language, for the fixed labels around the graphics */
+  language: string;
   match: MatchInfo | null;
   snap: Snapshot | null;
   control: Control | null;
@@ -148,6 +150,10 @@ export function useFeed(profile: Profile, opts: { ops?: boolean } = {}): Feed {
   }, []);
   const control$ = useCallback((action: string, value?: any) => send({ type: "control", action, value }), [send]);
   const ask = useCallback((question: string) => new Promise<any>((resolve) => {
+    if (ws.current?.readyState !== WebSocket.OPEN) {
+      resolve({ answer: "Reconnecting to the match: ask again in a moment.", tools: [] });
+      return;
+    }
     const id = Math.random().toString(36).slice(2);
     pending.current.set(id, resolve);
     send({ type: "ask", id, question });
@@ -157,7 +163,7 @@ export function useFeed(profile: Profile, opts: { ops?: boolean } = {}): Feed {
   }), [send]);
 
   const cues = useMemo(() => Object.values(cueMap), [cueMap]);
-  return { connected, match, snap, control, llm, moments, cues, stories, spans, ops, recaps, frame, trail, clock,
+  return { connected, language: profile.language, match, snap, control, llm, moments, cues, stories, spans, ops, recaps, frame, trail, clock,
     lastSpanByAgent, send, control$, ask };
 }
 

@@ -3,7 +3,8 @@
 Judges should not have to wait in the shared 90-minute broadcast for something to happen, so this replays the demo
 match privately up to the chosen moment, runs the same story workflow on it (Analyst, Narrator and Localizers,
 Verifier) and shows what Tom, Amira and Lucía would each get. It never touches the shared broadcast, and each moment is
-computed once per process, so it costs at most one story job per moment.
+computed once per process, so it costs at most one story job per moment. The replay itself is CPU work, so it runs in a
+worker thread (never with live=False side effects on the event loop) and the shared broadcast keeps streaming meanwhile.
 """
 
 from __future__ import annotations
@@ -34,17 +35,24 @@ class Explore:
     def _session(self) -> MatchSession:
         return MatchSession(self.cfg, story_workers=0, bus=InMemoryBus())  # private: never the shared broadcast
 
-    def catalogue(self) -> list[dict[str, Any]]:
+    async def catalogue(self) -> list[dict[str, Any]]:
         """The demo match's story moments, in match order: what the page can explore."""
         if self._catalogue is None:
             s = self._session()
-            s.advance(float(s.res.frame_t[-1]) - s.clock_t + 1, live=False)
+            await asyncio.to_thread(s.advance, float(s.res.frame_t[-1]) - s.clock_t + 1, live=False)
             self._catalogue = [{"id": m.id, "kind": m.kind, "clock": m.clock, "headline": m.headline}
                                for m in s.moments if m.lane == "story" and m.kind not in {"half_time", "full_time"}]
         return self._catalogue
 
+    async def warm(self) -> None:
+        """Replay the demo's goals before anyone asks, so the judges' fast path answers at once even after a cold start:
+        the default moment first, then the late winner the submission links to, then the rest (a few story jobs)."""
+        goals = [m["id"] for m in await self.catalogue() if m["kind"] == "goal"]
+        for moment_id in dict.fromkeys(goals[:1] + goals[-1:] + goals[1:-1]):
+            await self.get(moment_id)
+
     async def get(self, moment_id: str | None = None) -> dict[str, Any] | None:
-        cat = self.catalogue()
+        cat = await self.catalogue()
         if moment_id is None:
             moment_id = next((m["id"] for m in cat if m["kind"] == "goal"), cat[0]["id"] if cat else None)
         if moment_id not in {m["id"] for m in cat}:
@@ -54,11 +62,15 @@ class Explore:
                 self.cache[moment_id] = await self._build(moment_id)
         return {**self.cache[moment_id], "moments": cat}
 
+    @staticmethod
+    def _replay_to(s: MatchSession, moment_id: str) -> None:
+        while s.fi < len(s.res.frame_t) and not any(m.id == moment_id for m in s.moments):
+            s.advance(5.0, live=False)
+
     async def _build(self, moment_id: str) -> dict[str, Any]:
         s = self._session()
         viewers = [s.connect(profile) for _, _, profile in FANS]  # so the story is written in their languages
-        while s.fi < len(s.res.frame_t) and not any(m.id == moment_id for m in s.moments):
-            s.advance(5.0, live=False)
+        await asyncio.to_thread(self._replay_to, s, moment_id)
         m = next(x for x in s.moments if x.id == moment_id)
         await s._run_story(m, s._gen, s._context())
         cue = s.producer.by_moment.get(m.id)

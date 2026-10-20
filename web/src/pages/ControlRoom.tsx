@@ -83,8 +83,8 @@ export function ControlRoom() {
                 <input type="range" min={0} max={5000} step={100} value={lat} onChange={(e) => chaos(fail, Number(e.target.value))} />
               </label>
               <div className="row">
-                <button className="btn danger" onClick={() => chaos(100, 800)}>Simulate model outage</button>
-                <button className="btn" onClick={() => chaos(0, 0)}>Restore</button>
+                <button className="btn danger" disabled={!feed.connected} onClick={() => chaos(100, 800)}>Simulate model outage</button>
+                <button className="btn" disabled={!feed.connected} onClick={() => chaos(0, 0)}>Restore</button>
               </div>
               {breaker && (
                 <div className="kv">

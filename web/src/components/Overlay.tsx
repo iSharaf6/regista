@@ -1,12 +1,7 @@
 import { forwardRef, useEffect, useState } from "react";
 import { type Feed, isLive } from "../lib/feed";
+import { label } from "../lib/i18n";
 import type { Cue, MatchInfo, Snapshot } from "../lib/types";
-
-const KICKER: Record<string, string> = {
-  goal: "Goal", red_card: "Red card", big_chance: "Big chance", thunderbolt: "Shot speed", master_pass: "Pass quality",
-  press_shift: "Tactical shift", control_chaos: "Control vs chaos", rhythm: "Game rhythm", momentum_swing: "Momentum",
-  half_time: "Half time", full_time: "Full time", milestone: "Milestone", speed: "Top speed",
-};
 
 function active(cues: Cue[], t: number) {
   const now = performance.now();
@@ -54,7 +49,7 @@ export const Overlay = forwardRef<HTMLDivElement, OverlayProps>(
       <div className="overlay" ref={ref}>
         <div className="slot-ul">
           {feed.match && <ScoreBug match={feed.match} snap={feed.snap} cue={air.bug} />}
-          {showMomentum && feed.match && feed.snap && <WinProb match={feed.match} snap={feed.snap} />}
+          {showMomentum && feed.match && feed.snap && <WinProb match={feed.match} snap={feed.snap} locale={feed.language} />}
         </div>
         {cards && <CueSlots air={air} match={feed.match} receipts={receipts} rtl={rtl} detail={detail} />}
         {air.follow.map((c) => (
@@ -110,7 +105,7 @@ export function OverlayCards({ feed, receipts, rtl }: { feed: Feed; receipts: bo
 function Ticker({ cue, rtl }: { cue: Cue; rtl: boolean }) {
   return (
     <div className="ticker" dir={rtl ? "rtl" : "ltr"} style={accent(cue)}>
-      <b>{KICKER[cue.payload.moment_kind] ?? cue.kind}</b>
+      <b>{cue.payload.moment_kind ? label(cue.locale, cue.payload.moment_kind) : cue.kind}</b>
       <span className={rtl ? "rtl" : ""}>{cue.body || cue.title}</span>
     </div>
   );
@@ -133,11 +128,11 @@ function ScoreBug({ match, snap, cue }: { match: MatchInfo; snap: Snapshot | nul
   );
 }
 
-function WinProb({ match, snap }: { match: MatchInfo; snap: Snapshot }) {
+function WinProb({ match, snap, locale }: { match: MatchInfo; snap: Snapshot; locale?: string }) {
   const wp = snap.win_probability;
   return (
     <div className="momentum g-glass">
-      <div className="lbl"><span>Win probability</span><span className="mono">{Math.round(wp.home * 100)} · {Math.round(wp.draw * 100)} · {Math.round(wp.away * 100)}</span></div>
+      <div className="lbl"><span>{label(locale, "win_probability")}</span><span className="mono">{Math.round(wp.home * 100)} · {Math.round(wp.draw * 100)} · {Math.round(wp.away * 100)}</span></div>
       <div className="wpbar">
         <div style={{ flexGrow: wp.home, background: match.home.primary }} />
         <div style={{ flexGrow: wp.draw, background: "#ddcbe0" }} />
@@ -151,12 +146,13 @@ function WinProb({ match, snap }: { match: MatchInfo; snap: Snapshot }) {
 function Receipt({ cue, detail }: { cue: Cue; detail: boolean }) {
   const p = cue.provenance;
   const v = cue.payload.verdict;
-  const checked = v?.numbers_checked ? `CHECKED · ${v.numbers_supported}/${v.numbers_checked} FIGURES`
-    : p.agent === "Producer" && !cue.moment_id ? "FROM THE MATCH DATA" : "CHECKED";
+  const l = cue.locale;
+  const checked = v?.numbers_checked ? label(l, "checked_n", { a: v.numbers_supported, b: v.numbers_checked })
+    : p.agent === "Producer" && !cue.moment_id ? label(l, "from_data") : label(l, "checked");
   return (
     <div className="receipt">
-      {p.verified ? <span className="ok">✓ {checked}</span> : <span className="fb">NOT CHECKED</span>}
-      {p.fallback && <span className="fb">TEMPLATE</span>}
+      {p.verified ? <span className="ok">✓ {checked}</span> : <span className="fb">{label(l, "not_checked")}</span>}
+      {p.fallback && <span className="fb">{label(l, "template")}</span>}
       {detail && (
         <>
           <span>{p.agent}</span>
@@ -185,7 +181,7 @@ function Lower({ cue, receipts, detail, dir, match }: CardProps) {
   const rtl = dir === "rtl";
   return (
     <div className="lower" key={cue.id} style={accent(cue)} dir={dir}>
-      <div className="tag">{team?.abbr ?? "LIVE"}</div>
+      <div className="tag">{team?.abbr ?? label(cue.locale, "live")}</div>
       <div className={`content ${rtl ? "rtl" : ""}`}>
         <div className="caption">{cue.title}</div>
         {cue.body && <div className="line">{cue.body}</div>}
@@ -200,11 +196,12 @@ function Card({ cue, receipts, detail, dir, match }: CardProps) {
   const p = cue.payload;
   const f = p.facts ?? {};
   const rtl = dir === "rtl";
-  const kicker = KICKER[p.moment_kind] ?? (cue.kind === "pass_card" ? "Pass quality" : cue.kind.replace("_", " "));
+  const l = cue.locale;
+  const kicker = p.moment_kind ? label(l, p.moment_kind) : cue.kind === "pass_card" ? label(l, "master_pass") : cue.kind.replace("_", " ");
   if (cue.kind === "shot_card" && !p.moment_kind) {
     return (
       <div className="gcard g-glass" style={accent(cue)}>
-        <div className="kicker">Shot · {String(p.outcome).replace("_", " ")}</div>
+        <div className="kicker">{label(l, "shot")} · {label(l, String(p.outcome))}</div>
         <div className="title">{cue.title}</div>
         <div className="metrics">
           <div className="metric"><b>{Number(p.xg).toFixed(2)}</b><span>xG</span></div>
@@ -219,15 +216,15 @@ function Card({ cue, receipts, detail, dir, match }: CardProps) {
     const v = p.player;
     return (
       <div className="gcard g-glass">
-        <div className="kicker">Player cam</div>
+        <div className="kicker">{label(l, "player_cam")}</div>
         <div className="title">{v.name}</div>
         <div className="metrics">
-          <div className="metric"><b>{v.rating}</b><span>rating</span></div>
+          <div className="metric"><b>{v.rating}</b><span>{label(l, "rating")}</span></div>
           <div className="metric"><b>{v.distance_km}</b><span>km</span></div>
-          <div className="metric"><b>{v.top_speed_kmh}</b><span>top km/h</span></div>
-          <div className="metric"><b>{v.passes}</b><span>passes</span></div>
-          <div className="metric"><b>{v.pass_accuracy}%</b><span>accuracy</span></div>
-          <div className="metric"><b>{v.avg_pass_difficulty}</b><span>avg difficulty</span></div>
+          <div className="metric"><b>{v.top_speed_kmh}</b><span>{label(l, "top_kmh")}</span></div>
+          <div className="metric"><b>{v.passes}</b><span>{label(l, "passes")}</span></div>
+          <div className="metric"><b>{v.pass_accuracy}%</b><span>{label(l, "accuracy")}</span></div>
+          <div className="metric"><b>{v.avg_pass_difficulty}</b><span>{label(l, "avg_difficulty")}</span></div>
         </div>
       </div>
     );
@@ -238,14 +235,14 @@ function Card({ cue, receipts, detail, dir, match }: CardProps) {
       <div className={`title ${rtl ? "rtl" : ""}`}>{cue.title}</div>
       {cue.body && <div className={`body ${rtl ? "rtl" : ""}`}>{cue.body}</div>}
       {cue.kind === "pass_card" && f.passer_accuracy !== undefined && !p.moment_kind && (
-        <div className="body mono" style={{ fontSize: "0.78em" }}>{Math.round(f.ball_speed_kmh)} km/h · passer {f.passer_accuracy}% accurate</div>
+        <div className="body mono" style={{ fontSize: "0.78em" }}>{Math.round(f.ball_speed_kmh)} km/h · {label(l, "passer_acc", { n: f.passer_accuracy })}</div>
       )}
       {cue.kind === "pass_card" && (
         <>
           <div className="metrics">
-            <div className="metric"><b>{Math.round(f.difficulty)}</b><span>difficulty</span></div>
-            <div className="metric"><b>{Math.round(f.length_m)}</b><span>metres</span></div>
-            <div className="metric"><b>{f.opponents_bypassed}</b><span>bypassed</span></div>
+            <div className="metric"><b>{Math.round(f.difficulty)}</b><span>{label(l, "difficulty")}</span></div>
+            <div className="metric"><b>{Math.round(f.length_m)}</b><span>{label(l, "metres")}</span></div>
+            <div className="metric"><b>{f.opponents_bypassed}</b><span>{label(l, "bypassed")}</span></div>
           </div>
           <div className="meter"><i style={{ width: `${f.difficulty}%` }} /></div>
         </>
@@ -257,7 +254,7 @@ function Card({ cue, receipts, detail, dir, match }: CardProps) {
           <div className="metric"><b>{Math.round(f.distance_m ?? 0)}</b><span>m</span></div>
         </div>
       )}
-      {p.moment_kind === "press_shift" && <PressViz f={f} />}
+      {p.moment_kind === "press_shift" && <PressViz f={f} locale={l} />}
       {p.moment_kind === "control_chaos" && <FactorViz factors={f.factors ?? []} />}
       {p.moment_kind === "momentum_swing" && <Spark series={(f.series ?? []).map((s: any) => s.value)} color={match?.home.primary} />}
       {p.explainer && <div className={`body ${rtl ? "rtl" : ""}`} style={{ opacity: 0.85 }}>{p.explainer}</div>}
@@ -266,7 +263,7 @@ function Card({ cue, receipts, detail, dir, match }: CardProps) {
   );
 }
 
-function PressViz({ f }: { f: any }) {
+function PressViz({ f, locale }: { f: any; locale: string }) {
   const nb = f.players_near_ball_before ?? 0;
   const na = f.players_near_ball_after ?? 0;
   const lb = f.line_height_before_m ?? 0;
@@ -275,13 +272,13 @@ function PressViz({ f }: { f: any }) {
   const maxL = Math.max(lb, la, 1);
   return (
     <div className="beforeafter">
-      <span className="muted">Near ball</span>
+      <span className="muted">{label(locale, "near_ball")}</span>
       <div style={{ display: "grid", gap: "0.2em" }}>
         <div className="b" style={{ width: `${(nb / maxN) * 100}%` }} />
         <div className="a" style={{ width: `${(na / maxN) * 100}%` }} />
       </div>
       <span className="mono">{nb.toFixed(1)}→{na.toFixed(1)}</span>
-      <span className="muted">Line (m)</span>
+      <span className="muted">{label(locale, "line_m")}</span>
       <div style={{ display: "grid", gap: "0.2em" }}>
         <div className="b" style={{ width: `${(lb / maxL) * 100}%` }} />
         <div className="a" style={{ width: `${(la / maxL) * 100}%` }} />

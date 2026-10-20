@@ -36,7 +36,9 @@ AI fails.
   saw, in 5 languages, with the same model, facts and checker: the workflow put checked copy in every language on air
   for 100% of moments (92% written by the model, the rest by grounded fallback). A single agent writing
   all languages in one call got every language through the same checker for 54% of moments, with nothing to
-  catch the rest. The price is latency and tokens: 13.4 s vs 12.3 s median, $0.0073 vs $0.0034 per moment.
+  catch the rest. The workflow's own first drafts also pass for only 54%: the Verifier's notes, sent back to the
+  writers, are what lift it to 92%. The price is latency and tokens: 13.4 s vs 12.3 s median, $0.0073 vs $0.0034 per
+  moment.
 - **A checker you can audit.** The Verifier uses match data only, never anything a model produced (the Analyst's
   insight is checked before writers see it). It caught 691 of 691 errors planted in real model
   copy: invented figures, figures with the wrong unit, wrong minutes, wrong goal counts, written-out numbers, uninvolved
@@ -46,7 +48,7 @@ AI fails.
   0.6 false alarms per match, median detection delay 5 minutes, median onset-estimation error 2 minutes; live xG bias
   −0.007 over 607 shots. Receipts label each fact as observed or a model estimate.
 - **Two lanes.** Deterministic graphics in milliseconds, generative copy upgraded in place only once it is checked; a
-  chaos switch proves the broadcast survives a model outage.
+  chaos switch shows the broadcast staying on air through a model outage.
 - **Shared generation, per-viewer selection.** From 1 to 1,000 simultaneous personalised viewers, Director work grows
   from about 0.7 to 7 ms per match-second while model work stays one story job per moment (at most 5 languages).
 - **A synthetic league that passes a sanity check:** 14 of 14 aggregate match statistics inside generous top-flight
@@ -65,24 +67,26 @@ Container Registry + managed identity · Azure Developer CLI (Bicep) · Model Co
 - Live demo: https://ca-registaednsnlttycm2o.calmsea-720b2319.koreacentral.azurecontainerapps.io
 
 ## Testing instructions
-1. **Live demo:** open https://ca-registaednsnlttycm2o.calmsea-720b2319.koreacentral.azurecontainerapps.io; it plays
-   the demo match automatically and pauses itself when nobody is watching. Try the Fan Studio presets, the **Two fans**
-   tab, **Control room → Simulate model outage** (it switches itself off after 90 s), click any key moment for its
-   receipts, and ask the Pundit a question. Playback is shared by everyone on the site.
-   **Short on time?** Open **Explore a moment**
-   (https://ca-registaednsnlttycm2o.calmsea-720b2319.koreacentral.azurecontainerapps.io/#/explore?moment=m055, the 74'
-   winner): a curated replay of one moment that shows Tom's, Amira's and Lucía's broadcasts side by side, with the facts and
-   the Verifier's verdict. It runs privately through the same agents (10–30 s the first time, instant after that).
-2. **Locally, no keys:** `cd backend && uv venv --python 3.12 && uv pip install -e ".[dev]" && .venv/bin/regista serve`,
+1. **Start here (1 minute):** open
+   https://ca-registaednsnlttycm2o.calmsea-720b2319.koreacentral.azurecontainerapps.io/#/explore?moment=m055 . This
+   **Explore a moment** page is a curated replay of the demo's 74th-minute winner: Tom's (English analyst), Amira's
+   (Arabic, supports the side that conceded) and Lucía's (Spanish, first match) broadcasts side by side, with the facts
+   behind them and the Verifier's verdict. It runs privately through the same agents; pick any other moment from the list.
+   The first page load after a quiet spell can take about 20 s while the container wakes.
+2. **The live broadcast:** open the **Broadcast** tab; it plays the demo match automatically and pauses itself when
+   nobody is watching. Try the Fan Studio presets, the **Two fans** tab, **Control room → Simulate model outage** (it
+   switches itself off after 90 s), click any key moment for its receipts, and ask the Pundit a question. Playback is
+   shared by everyone on the site; a match loaded in the Data lab returns to the demo once the room is empty.
+3. **Locally, no keys:** `cd backend && uv venv --python 3.12 && uv pip install -e ".[dev]" && .venv/bin/regista serve`,
    then `cd web && npm install && npm run dev` and open http://localhost:5173.
-3. **With a model:** `REGISTA_LLM=foundry` with `FOUNDRY_PROJECT_ENDPOINT` and `FOUNDRY_MODEL` (Entra ID), then
+4. **With a model:** `REGISTA_LLM=foundry` with `FOUNDRY_PROJECT_ENDPOINT` and `FOUNDRY_MODEL` (Entra ID), then
    `regista llm-eval` to score the workflow against the single-agent baseline on held-out matches.
-4. **Tests and evaluation:** `pytest -q` (36 tests), `regista evaluate --matches 20` and `regista fanout`.
-5. **Real-world integrations:** with the local server from step 2, `regista publish --url http://localhost:8000`
+5. **Tests and evaluation:** `pytest -q` (39 tests), `regista evaluate --matches 20` and `regista fanout`.
+6. **Real-world integrations:** with the local server from step 3, `regista publish --url http://localhost:8000`
    streams a match through the live feed API (the public site locks that API so nobody can replace its broadcast);
    `https://ca-registaednsnlttycm2o.calmsea-720b2319.koreacentral.azurecontainerapps.io/api/onair?mode=casual&lang=es`
    is the vMix/CasparCG feed. See `docs/real-world.md`.
-6. **Copilot:** open the repo in VS Code with the API running, enable the `regista` MCP server and use the
+7. **Copilot:** open the repo in VS Code with the API running, enable the `regista` MCP server and use the
    **match-analyst** agent.
 
 All data is synthetic; all clubs, players and venues are fictional.

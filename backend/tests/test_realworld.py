@@ -98,6 +98,18 @@ def test_pundit_is_rate_limited(client, monkeypatch):
     assert "minute" in answers[2]["answer"]
 
 
+def test_rate_limits_trust_only_the_address_the_ingress_appends(client, monkeypatch):
+    """Behind Container Apps the ingress appends the caller's real address to X-Forwarded-For; earlier entries are the
+    caller's own and could be forged, so forging them must not buy more Pundit questions."""
+    monkeypatch.setattr(api, "ask_limit", api.RateLimit(2))
+    ask = {"question": "Who is the best player?", "language": "en"}
+    models = [client.post("/api/ask", json=ask, headers={"X-Forwarded-For": f"10.0.0.{i}, 203.0.113.7"}).json()["model"]
+              for i in range(3)]
+    assert models[2] == "rate-limit"  # three forged first hops, one real address: limited together
+    other = client.post("/api/ask", json=ask, headers={"X-Forwarded-For": "198.51.100.4"}).json()
+    assert other["model"] != "rate-limit"  # a different real caller is not affected
+
+
 def test_webhook_payload_works_for_slack_teams_and_discord(match, monkeypatch):
     from regista.agents.templates import Names
     from regista.evaluation import replay
@@ -289,3 +301,50 @@ def test_explore_one_moment_shows_three_fans_without_touching_the_broadcast(clie
     assert client.get("/api/explore").json()["fans"] == out["fans"]  # cached: one story job per moment
     assert client.get("/api/explore", params={"moment": "nope"}).status_code == 404
     assert client.get("/api/state").json()["clock"] == before["clock"]  # the shared broadcast did not move
+
+
+def test_an_empty_room_puts_a_visitors_custom_match_back_to_the_demo():
+    """A judge who loads another match in the Data lab must not leave it for the next judge."""
+    from regista.runtime.session import DEMO
+
+    async def run():
+        s = api.MatchSession()
+        s.autoplay = True
+        await s.control("load", {"home": "ASH", "away": "KES", "seed": 3, "scenario": "press"})
+        assert s.params != DEMO
+        s._unwatched_since = time.monotonic() - s.empty_pause_s - 1
+        await s._housekeeping()
+        assert s.params == DEMO and not s.playing and s.control_state()["paused_for_empty_room"]
+        s.connect(FanProfile())
+        await s._housekeeping()
+        assert s.playing  # the next judge gets the demo match, playing
+    asyncio.run(run())
+
+
+def test_explore_warms_the_demo_goals_without_blocking_the_broadcast():
+    """After a cold start the goals are replayed ahead of the first visitor, in a worker thread: the shared
+    broadcast's event loop keeps ticking while the match is replayed."""
+    from regista.agents.config import LLMConfig
+    from regista.runtime.explore import Explore
+
+    async def run():
+        ex = Explore(LLMConfig())
+        ex._session()  # simulate the demo match once, as the live session already has in production
+        gaps: list[float] = []
+        last = time.monotonic()
+
+        async def tick():
+            nonlocal last
+            while True:
+                await asyncio.sleep(0.02)
+                now = time.monotonic()
+                gaps.append(now - last)
+                last = now
+
+        ticker = asyncio.create_task(tick())
+        await ex.warm()
+        ticker.cancel()
+        goals = [m["id"] for m in await ex.catalogue() if m["kind"] == "goal"]
+        assert len(goals) >= 2 and set(goals) <= set(ex.cache)
+        assert max(gaps) < 1.0, max(gaps)
+    asyncio.run(run())

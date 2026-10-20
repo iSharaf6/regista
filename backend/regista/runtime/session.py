@@ -300,7 +300,11 @@ class MatchSession:
             elif self._unwatched_since is None:
                 self._unwatched_since = mono
             empty = self._unwatched_since is not None and mono - self._unwatched_since > self.empty_pause_s
-            if self.playing and empty:
+            if empty and self.params != DEMO:
+                # a visitor's custom match (Data lab) must not greet the next judge: an empty room returns to the demo
+                self.load(**DEMO)
+                self.playing, self._paused_at, self._empty_paused = False, None, True
+            elif self.playing and empty:
                 # nobody is watching: an always-on replica idles instead of spending model calls on an empty room
                 await self.control("pause")
                 self._paused_at, self._empty_paused = None, True

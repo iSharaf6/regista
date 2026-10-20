@@ -18,6 +18,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, JSONResponse, PlainTextResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
+from starlette.requests import HTTPConnection
 
 from .. import __version__
 from ..mcp_server import build_mcp
@@ -46,10 +47,15 @@ async def lifespan(app: FastAPI):
     session = MatchSession()
     session_ref["session"] = session
     await session.start()
+    warm: asyncio.Task[None] | None = None
     if os.getenv("REGISTA_AUTOPLAY", "0") == "1":
         await session.control("play")
+        # the public demo: replay the demo's goals for Explore now, so the first judge after a cold start isn't kept waiting
+        warm = asyncio.create_task(warm_explore())
     async with mcp.session_manager.run():
         yield
+    if warm is not None:
+        warm.cancel()
     await session.stop()
 
 
@@ -96,6 +102,9 @@ class RateLimit:
 
     def allow(self, key: str) -> bool:
         now = time.monotonic()
+        if len(self.hits) > 5000:  # many clients: forget everyone idle for a minute, so the table stays small
+            for k in [k for k, q in self.hits.items() if not q or q[-1] < now - 60]:
+                del self.hits[k]
         q = self.hits[key]
         while q and q[0] < now - 60:
             q.popleft()
@@ -106,7 +115,19 @@ class RateLimit:
 
 
 ask_limit = RateLimit(int(os.getenv("REGISTA_ASK_PER_MINUTE", "8")))
+ask_total = RateLimit(int(os.getenv("REGISTA_ASK_TOTAL_PER_MINUTE", "40")))  # every Pundit question, all clients
 recap_limit = RateLimit(int(os.getenv("REGISTA_RECAP_PER_MINUTE", "30")))  # live recaps call the model
+
+
+def client_ip(conn: HTTPConnection) -> str:
+    """The caller's address for rate limits. Behind the Container Apps ingress, Envoy appends the real peer address as
+    the last X-Forwarded-For entry; anything before it was sent by the caller and could be forged, so it is ignored."""
+    hops = [h.strip() for h in conn.headers.get("x-forwarded-for", "").split(",") if h.strip()]
+    return hops[-1] if hops else (conn.client.host if conn.client else "anon")
+
+
+def may_ask(key: str) -> bool:
+    return ask_limit.allow(key) and ask_total.allow("all")
 SLOW_DOWN = {"en": "One moment - you have asked a lot of questions. Try again in a minute.",
              "es": "Un momento: has hecho muchas preguntas. Vuelve a intentarlo en un minuto.",
              "fr": "Un instant : vous avez posé beaucoup de questions. Réessayez dans une minute.",
@@ -199,7 +220,7 @@ async def control(body: ControlBody, x_regista_token: str | None = Header(None))
 
 @app.post("/api/ask")
 async def ask(body: AskBody, request: Request) -> dict[str, Any]:
-    if not ask_limit.allow(request.client.host if request.client else "anon"):
+    if not may_ask(client_ip(request)):
         return {"answer": SLOW_DOWN.get(body.language, SLOW_DOWN["en"]), "tools": [], "model": "rate-limit", "ms": 0}
     return await S().ask(body.question[:500], body.language, body.persona)
 
@@ -252,7 +273,7 @@ async def onair(mode: Mode = Mode.CASUAL, lang: str = "en", team: str | None = N
 
 @app.get("/api/recap")
 async def recap(request: Request, language: str = "en", persona: str = "analyst", period: str | None = None) -> dict[str, Any]:
-    if not recap_limit.allow(request.client.host if request.client else "anon"):
+    if not recap_limit.allow(client_ip(request)):
         raise HTTPException(429, "too many recap requests: try again in a minute")
     return await S().recap(language, persona, period)
 
@@ -260,14 +281,25 @@ async def recap(request: Request, language: str = "en", persona: str = "analyst"
 explore_ref: dict[str, Explore] = {}
 
 
+def explore_engine() -> Explore:
+    if "x" not in explore_ref:
+        explore_ref["x"] = Explore(S().cfg)
+    return explore_ref["x"]
+
+
+async def warm_explore() -> None:
+    try:
+        await explore_engine().warm()
+    except Exception:  # a failed warm-up only means the first visitor waits for their replay
+        log.exception("explore warm-up failed")
+
+
 @app.get("/api/explore")
 async def explore(request: Request, moment: str | None = None) -> dict[str, Any]:
     """Explore one moment: a curated, private replay of a demo-match moment as Tom, Amira and Lucía see it, with the
     facts (observed vs model estimate), the checked story and the agent trace. Defaults to the first goal."""
-    if "x" not in explore_ref:
-        explore_ref["x"] = Explore(S().cfg)
-    ex = explore_ref["x"]
-    if (moment or "") not in ex.cache and not recap_limit.allow(request.client.host if request.client else "anon"):
+    ex = explore_engine()
+    if (moment or "") not in ex.cache and not recap_limit.allow(client_ip(request)):
         raise HTTPException(429, "too many requests: try again in a minute")
     out = await ex.get(moment)
     if out is None:
@@ -321,6 +353,7 @@ async def ws(socket: WebSocket, profile: str = Query("{}"), ops: int = Query(0))
     except Exception:  # noqa: BLE001
         prof = FanProfile()
     viewer = s.connect(prof, ops=bool(ops))
+    ip = client_ip(socket)  # per address, not per socket: reconnecting must not reset the Pundit's limit
 
     async def pump() -> None:
         while True:
@@ -345,7 +378,7 @@ async def ws(socket: WebSocket, profile: str = Query("{}"), ops: int = Query(0))
                 else:
                     viewer.send({"type": "error", "error": "producer token required"})
             elif kind == "ask":
-                if not ask_limit.allow(f"ws:{viewer.id}"):
+                if not may_ask(ip):
                     viewer.send({"type": "answer", "id": msg.get("id"), "answer": SLOW_DOWN.get(viewer.profile.language,
                                  SLOW_DOWN["en"]), "tools": [], "model": "rate-limit", "ms": 0})
                     continue
