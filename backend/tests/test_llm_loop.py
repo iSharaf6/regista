@@ -173,3 +173,35 @@ def test_fallback_is_never_marked_verified_when_its_copy_fails(goal_job_parts, m
     rt = AgentRuntime(LLMConfig(provider="test", model="flaky"), client=FlakyWriter(stubborn=True), model_name="flaky-writer")
     job = asyncio.run(run_story(rt, _job(goal_job_parts, ["en"])))
     assert job.verdict["via"] == "fallback" and not job.verdict["ok"]
+
+
+class SlowFirstNarrator(BaseChatClient):
+    """The English Narrator's first call is slower than the timeout (a model latency spike); the second is normal."""
+    OTEL_PROVIDER_NAME = "regista.test"
+
+    def __init__(self, **kw: Any) -> None:
+        super().__init__(**kw)
+        self.narrate_calls = 0
+
+    async def _respond(self, messages: list[Message]) -> ChatResponse:
+        payload = parse_json(next(m.text for m in reversed(messages) if m.role == "user"))
+        if payload.get("task") == "narrate":
+            self.narrate_calls += 1
+            if self.narrate_calls == 1:
+                await asyncio.sleep(1.0)
+        out = OfflineChatClient.run_task(payload)
+        return ChatResponse(messages=[Message("assistant", [Content.from_text(json.dumps(out, ensure_ascii=False))])],
+                            model="slow-first")
+
+    def _inner_get_response(self, *, messages: Any, stream: bool, options: Any, **kwargs: Any) -> Any:
+        return self._respond(list(messages))
+
+
+def test_a_timed_out_writer_gets_its_second_draft_instead_of_a_template(goal_job_parts):
+    client = SlowFirstNarrator()
+    rt = AgentRuntime(LLMConfig(provider="test", model="slow", timeout_s=0.3), client=client, model_name="slow-first")
+    job = asyncio.run(run_story(rt, _job(goal_job_parts, ["en", "es"])))
+    assert client.narrate_calls == 2 and job.attempts == 2
+    assert not job.fallback_langs and job.verdict["ok"] and not job.verdict.get("via")
+    statuses = [s["status"] for s in job.trace if s["agent"] == "Verifier"]
+    assert statuses == ["retry", "ok"]  # the first pass is not counted as a clean first draft

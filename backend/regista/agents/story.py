@@ -66,6 +66,7 @@ class StoryJob:
     feedback: dict[str, list[str]] = field(default_factory=dict)
     attempts: int = 0
     fallback_langs: list[str] = field(default_factory=list)
+    retry_langs: list[str] = field(default_factory=list)  # writers that failed (timeout, bad JSON) and get a second draft
     models: dict[str, str] = field(default_factory=dict)
     trace: list[dict[str, Any]] = field(default_factory=list)
     started: float = field(default_factory=time.perf_counter)
@@ -262,11 +263,16 @@ async def _write(rt: AgentRuntime, job: StoryJob, lang: str) -> None:
     payload = job.payload(task, language=lang, insight=job.insight, feedback=job.feedback.get(lang))
     try:
         job.narration[lang] = _shape(await rt.call(agent, name, payload, job, job.attempts + 1))
+        if lang in job.fallback_langs:  # a second draft after a failed first one: model-written after all
+            job.fallback_langs.remove(lang)
     except AgentFailure as exc:
-        job.narration[lang] = _template(job, lang)
+        job.narration[lang] = _template(job, lang)  # on air meanwhile, so nothing waits on the retry
         if lang not in job.fallback_langs:
             job.fallback_langs.append(lang)
-        rt.note(job, name, "fallback", f"{lang}: {str(exc)[:100]}")
+        retry = job.attempts + 1 < rt.cfg.max_attempts  # a slow or malformed reply gets the same second draft as a rejection
+        if retry and lang not in job.retry_langs:
+            job.retry_langs.append(lang)
+        rt.note(job, name, "retry" if retry else "fallback", f"{lang}: {str(exc)[:100]}")
 
 
 class NarratorExecutor(Executor):
@@ -315,6 +321,7 @@ def _merge(jobs: list[StoryJob]) -> StoryJob:
         base.trace += [t for t in other.trace if t["id"] not in seen]
         base.models.update(other.models)
         base.fallback_langs = sorted(set(base.fallback_langs) | set(other.fallback_langs))
+        base.retry_langs = sorted(set(base.retry_langs) | set(other.retry_langs))
     return base
 
 
@@ -335,17 +342,20 @@ class VerifierExecutor(Executor):
         allowed_players = set(job.moment.get("players", []))
         verdict = verify_texts(check, job.evidence(), allowed_players, job.roster_names, claims=job.moment.get("facts", {}))
         job.verdict = verdict.as_dict()
-        job.failed = verdict.failed_langs
-        job.redo = list(verdict.failed_langs)
+        retry, job.retry_langs = [lang for lang in job.retry_langs if lang not in verdict.failed_langs], []
+        job.failed = sorted(set(verdict.failed_langs) | set(retry))
+        job.redo = list(job.failed)
         job.feedback = {}
         for issue in verdict.issues:
             lang = issue[1:3]
             job.feedback.setdefault(lang, []).append(issue)
         ms = (time.perf_counter() - t0) * 1000
-        status = "ok" if verdict.ok else "rejected"
+        status = "rejected" if not verdict.ok else "retry" if retry else "ok"
         detail = f"{verdict.numbers_supported}/{verdict.numbers_checked} figures grounded"
         if not verdict.ok:
             detail += f"; {len(verdict.issues)} issue(s) in {','.join(verdict.failed_langs)}: {verdict.issues[0][:90]}"
+        if retry:
+            detail += f"; second draft for {','.join(retry)} after a failed writer call"
         self.rt.note(job, "Verifier", status, detail, ms)
         await ctx.send_message(job)
 
@@ -406,7 +416,7 @@ def build_story_workflow(rt: AgentRuntime) -> Workflow:
         .add_fan_out_edges(analyst, [narrator, localizer])
         .add_fan_in_edges([narrator, localizer], verifier)
         .add_switch_case_edge_group(verifier, [
-            Case(lambda j: j.verdict_ok, producer),
+            Case(lambda j: j.verdict_ok and not j.failed, producer),  # nothing waiting for a second draft
             Case(lambda j: bool(j.failed) and j.attempts < max_attempts, rewriter),
             Default(fallback),
         ])

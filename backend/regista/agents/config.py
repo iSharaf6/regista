@@ -19,7 +19,7 @@ class LLMConfig:
     provider: str = "offline"
     model: str = "regista-offline"
     endpoint: str | None = None
-    timeout_s: float = 12.0
+    timeout_s: float = 20.0  # gpt-4.1-mini calls spike past 15 s at busy hours; the fast lane airs meanwhile
     max_attempts: int = 2
     breaker_threshold: int = 3
     breaker_cooldown_s: float = 45.0
@@ -31,7 +31,7 @@ class LLMConfig:
 
 def load_config() -> LLMConfig:
     provider = os.getenv("REGISTA_LLM", "offline").strip().lower()
-    timeout = float(os.getenv("REGISTA_LLM_TIMEOUT", "12"))
+    timeout = float(os.getenv("REGISTA_LLM_TIMEOUT", "20"))
     if provider == "foundry":
         return LLMConfig("foundry", os.getenv("FOUNDRY_MODEL", "gpt-4.1-mini"), os.getenv("FOUNDRY_PROJECT_ENDPOINT"), timeout)
     if provider == "azure_openai":
