@@ -1,4 +1,4 @@
-"""Score the live agents on held-out matches with whatever model is configured.
+"""Score the live agents on fixed evaluation matches with whatever model is configured.
 
     REGISTA_LLM=foundry FOUNDRY_PROJECT_ENDPOINT=... FOUNDRY_MODEL=gpt-4.1-mini regista llm-eval
 
@@ -46,7 +46,9 @@ from .intel.state import MatchState
 from .runtime.session import _event_order, match_context
 from .sim.engine import simulate
 
-EVAL_SEEDS = (101, 202, 303, 404)  # held out: the prompts were developed on the demo seed 16
+# Fixed evaluation matches, separate from the demo seed 16 the prompts were developed on. Their failures have guided
+# later repairs, so they are a fixed benchmark, not an untouched final holdout.
+EVAL_SEEDS = (101, 202, 303, 404)
 PRICE_PER_M = (0.40, 1.60)  # gpt-4.1-mini Global Standard list price, USD per million input / output tokens
 
 QUESTIONS = [
@@ -140,7 +142,7 @@ def _cost(tokens_in: int, tokens_out: int) -> float:
 
 
 def detect(seed: int) -> dict[str, Any]:
-    """Replay a held-out match, capturing each story moment with the context at the instant it was detected."""
+    """Replay an evaluation match, capturing each story moment with the context at the instant it was detected."""
     res = simulate("NOR", "CAL", seed, "derby")
     st = MatchState(res.info)
     det = MomentDetector(st)
@@ -237,6 +239,8 @@ async def baseline(rt: AgentRuntime, job: StoryJob, max_attempts: int = 1) -> di
     tokens = [0, 0]
     error = ""
     pending, feedback, attempts = list(job.languages), {}, 0
+    copies: dict[str, Any] = {}
+    issues: dict[str, list[str]] = {}
     while pending and attempts < max_attempts:
         attempts += 1
         body = {"task": "narrate_all", "moment": job.moment, "context": job.context, "names": job.names, "home": job.home,
@@ -257,6 +261,7 @@ async def baseline(rt: AgentRuntime, job: StoryJob, max_attempts: int = 1) -> di
                 except AgentFailure:
                     failed[lang] = [f"[{lang}] missing or malformed output"]
                     continue
+                copies[lang] = copy
                 v = verify_texts({lang: copy}, job.evidence(), set(job.moment.get("players", [])), job.roster_names,
                                  claims=job.moment.get("facts", {}))
                 if v.ok:
@@ -266,13 +271,17 @@ async def baseline(rt: AgentRuntime, job: StoryJob, max_attempts: int = 1) -> di
         except Exception as exc:  # noqa: BLE001 - a failed baseline call counts as unverified, it must not stop the run
             error = str(exc)[:120]
             failed = {lang: ["no reply"] for lang in pending}
+        issues.update(failed)
+        for lang in ok_langs:
+            issues.pop(lang, None)
         pending, feedback = list(failed), failed
     return {"ok_langs": ok_langs, "all_ok": len(ok_langs) == len(job.languages), "ms": round((time.perf_counter() - t0) * 1000),
-            "tokens": tokens, "attempts": attempts, "error": error}
+            "tokens": tokens, "attempts": attempts, "error": error, "copy": {k: v.get("analyst", {}) for k, v in copies.items()},
+            "issues": issues}
 
 
 async def recap_checks(rt: AgentRuntime, cfg: Any, matches: list[dict[str, Any]]) -> list[dict[str, Any]]:
-    """Model recaps of held-out matches, checked field by field like the live Recap screen."""
+    """Model recaps of the evaluation matches, checked field by field like the live Recap screen."""
     recaps = []
     for mt, lang in ((matches[0], "en"), (matches[0], "ar"), (matches[1 % len(matches)], "es")):
         payload = recap_payload(mt["state"], mt["detector"].moments, mt["names"], lang, "analyst", "full_time")
@@ -354,6 +363,7 @@ async def run(moments: int = 24, langs: tuple[str, ...] = ("en", "es", "fr", "ar
         async def b(item: dict[str, Any], attempts: int) -> dict[str, Any]:
             async with sem:
                 r = await baseline(rt, make_job(item, list(langs)), attempts)
+                r.update(seed=item["match"]["seed"], moment=item["m"].kind, clock=item["m"].clock)
                 await asyncio.sleep(pace_s)
             print(f"baseline x{attempts} {item['m'].kind:14} {r['ms']:>6} ms ok_langs={len(r['ok_langs'])} {r['error'][:60]}",
                   file=sys.stderr, flush=True)
@@ -409,7 +419,10 @@ async def run(moments: int = 24, langs: tuple[str, ...] = ("en", "es", "fr", "ar
         "pundit_used_tools": round(sum(1 for a in answers if a["tools"]) / len(answers), 2),
         "recaps": recaps,
         "wall_s": round(time.perf_counter() - t_all, 1),
-        "run": {"concurrency": concurrency, "pace_s": pace_s, "timeout_s": cfg.timeout_s, "max_attempts": cfg.max_attempts},
+        "run": {"concurrency": concurrency, "pace_s": pace_s, "timeout_s": cfg.timeout_s, "max_attempts": cfg.max_attempts,
+                "baseline_timeout_s": 90,
+                "note": "latency is as observed under these timeouts: workflow calls give up after timeout_s and get "
+                        "a second draft, a single-agent call writes every language and is allowed baseline_timeout_s"},
         "jobs": rows,
     }
     def summarise(rs: list[dict[str, Any]]) -> dict[str, Any]:
@@ -426,10 +439,11 @@ async def run(moments: int = 24, langs: tuple[str, ...] = ("en", "es", "fr", "ar
             "errors": sum(1 for r in rs if r["error"]),
         }
     if base_rows:
-        report["single_agent_baseline"] = {**summarise(base_rows), "setup": "one call, every language, no checker loop"}
+        report["single_agent_baseline"] = {**summarise(base_rows), "setup": "one call, every language, no checker loop, "
+                                           "90 s timeout", "jobs": base_rows}
         report["single_agent_with_checker"] = {**summarise(loop_rows), "setup":
                                                f"one agent, same Verifier feedback, up to {cfg.max_attempts} drafts, "
-                                               "rewrites only failing languages"}
+                                               "rewrites only failing languages, 90 s timeout per call", "jobs": loop_rows}
     else:
         report["single_agent_baseline"] = {"skipped": "offline model" if cfg.is_offline else "disabled"}
     return report

@@ -4,6 +4,14 @@ import { LANGS, type Lang, type MatchInfo } from "../lib/types";
 
 const PERSONAS = [{ id: "casual", label: "Casual" }, { id: "analyst", label: "Analyst" }, { id: "new_fan", label: "New fan" }];
 
+// the match phase a live report was written in, in the report's own language
+const PHASE: Record<string, Record<string, string>> = {
+  first_half: { en: "first half", es: "primera parte", fr: "première période", ar: "الشوط الأول", pt: "primeiro tempo" },
+  half_time: { en: "half time", es: "descanso", fr: "mi-temps", ar: "بين الشوطين", pt: "intervalo" },
+  second_half: { en: "second half", es: "segunda parte", fr: "seconde période", ar: "الشوط الثاني", pt: "segundo tempo" },
+  full_time: { en: "full time", es: "final del partido", fr: "fin du match", ar: "نهاية المباراة", pt: "fim de jogo" },
+};
+
 export function Recap({ lang: initial }: { lang: Lang }) {
   const [lang, setLang] = useState<Lang>(initial);
   const [persona, setPersona] = useState("analyst");
@@ -12,6 +20,7 @@ export function Recap({ lang: initial }: { lang: Lang }) {
   const [match, setMatch] = useState<MatchInfo | null>(null);
   const [err, setErr] = useState<string | null>(null);
   const asked = useRef(0);
+  const [again, setAgain] = useState(0);
   useEffect(() => {
     setErr(null);
     const mine = ++asked.current; // switching language or persona quickly: only the latest answer may render
@@ -20,9 +29,16 @@ export function Recap({ lang: initial }: { lang: Lang }) {
       .catch((e) => { if (mine === asked.current) setErr(String(e)); });
     api(`/api/series`).then(setSeries).catch(() => setSeries(null));
     api(`/api/match`).then((m) => setMatch(m.info)).catch(() => setMatch(null));
-  }, [lang, persona]);
-  const r = data?.recap;
-  const rtl = lang === "ar";
+  }, [lang, persona, again]);
+  // a report for another match never renders (the match changed under it); while a new language or persona loads,
+  // the previous report keeps its own language and direction, marked as updating, instead of borrowing the new ones
+  const foreign = !!(data?.match_id && match?.match_id && data.match_id !== match.match_id);
+  const r = foreign ? null : data?.recap;
+  const shown = (data?.language as Lang) ?? lang;
+  const updating = !!data && (data.language !== lang || data.persona !== persona || foreign);
+  const rtl = shown === "ar";
+  useEffect(() => { if (foreign) setAgain((n) => n + 1); }, [foreign]); // the match changed: ask for its report
+  const phase = data?.as_of?.phase ? PHASE[data.as_of.phase]?.[shown] ?? data.as_of.phase.replace("_", " ") : "";
   return (
     <div className="page recap">
       <div className="row" style={{ justifyContent: "space-between" }}>
@@ -30,9 +46,10 @@ export function Recap({ lang: initial }: { lang: Lang }) {
         <div className="seg">{PERSONAS.map((p) => <button key={p.id} className={persona === p.id ? "on" : ""} aria-pressed={persona === p.id} onClick={() => setPersona(p.id)}>{p.label}</button>)}</div>
       </div>
       {err && <div className="empty">{err}</div>}
+      {updating && <div className="muted" role="status" style={{ margin: "10px 0" }}>Updating…</div>}
       {r && (
-        <article className={rtl ? "rtl" : ""} dir={rtl ? "rtl" : "ltr"} lang={lang}>
-          <div className="section-title">{data.period === "live" ? `Live report as of ${data.as_of?.clock ?? ""}` : data.period.replace("_", " ")} · automated by the Recap agent · {data.source}</div>
+        <article className={`${rtl ? "rtl" : ""} ${updating ? "updating" : ""}`} dir={rtl ? "rtl" : "ltr"} lang={shown}>
+          <div className="section-title">{data.period === "live" ? `Live report as of ${data.as_of?.clock ?? ""}${phase ? ` · ${phase}` : ""}` : data.period.replace("_", " ")} · automated by the Recap agent · {data.source}</div>
           <h1>{r.headline}</h1>
           <p className="lede">{r.summary}</p>
           <div className="receipt" style={{ fontSize: 12 }}>

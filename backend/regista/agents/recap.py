@@ -73,14 +73,23 @@ R = {
 }
 
 
+def match_phase(state: MatchState) -> str:
+    """Where the match stands: pre_match, first_half, half_time, second_half or full_time."""
+    if state.status in {"pre_match", "half_time", "full_time"}:
+        return state.status
+    return "second_half" if state.period >= 2 else "first_half"
+
+
 def recap_payload(state: MatchState, moments: list[Moment], names: dict[str, dict[str, str]], language: str,
                   persona: str, period: str) -> dict[str, Any]:
+    """period: full_time (the match is over), half_time (the break) or live (still being played; phase says which half)."""
     ranked = sorted((m for m in moments if m.kind in STORY_KINDS and m.importance >= 45), key=lambda m: -m.importance)[:8]
     return {
         "task": "recap",
         "language": language,
         "persona": persona,
         "period": period,
+        "phase": match_phase(state),
         "clock": state.clock,
         "home": state.home,
         "away": state.away,
@@ -91,6 +100,60 @@ def recap_payload(state: MatchState, moments: list[Moment], names: dict[str, dic
         "moments": [m.as_dict() for m in sorted(ranked, key=lambda m: m.t)],
         "wp_path": list(state.wp_series),  # a copy: a stored report must not keep growing
     }
+
+
+_TEXT_FIELDS = ("headline", "summary", "tactical_story", "closing_line")
+
+
+def recap_shape_problems(data: Any) -> list[str]:
+    """A model reply must have the documented shape before anything normalises it: text fields are strings, turning
+    points a list of objects, the player of the match an object. Anything else is treated as a failed model call."""
+    if not isinstance(data, dict):
+        return ["the recap is not a JSON object"]
+    problems = [f"{k} is not text" for k in _TEXT_FIELDS if k in data and not isinstance(data[k], str)]
+    if not isinstance(data.get("headline"), str) or not data.get("headline", "").strip():
+        problems.append("the headline is missing")
+    tps = data.get("turning_points", [])
+    if not isinstance(tps, list) or any(not isinstance(tp, dict) for tp in tps):
+        problems.append("turning_points is not a list of objects")
+    potm = data.get("player_of_the_match")
+    if potm is not None and not isinstance(potm, dict):
+        problems.append("player_of_the_match is not an object")
+    return problems
+
+
+# Claims about where the match stands; each must agree with the report's period and phase (en, es, fr, ar, pt).
+_ENDED = re.compile(
+    r"\b(at|after) (the )?(full[- ]time|final whistle)\b|\bfull[- ]time (score|result|whistle)\b|\bfinal score\b"
+    r"|\bthe (match|game) (has )?(ended|finished|is over)\b|\bended (in|with) an? \b"
+    r"|\bresultado final\b|\btras el pitazo final\b|\b(el partido|el encuentro) (terminó|acabó)\b"
+    r"|\bau coup de sifflet final\b|\bscore final\b|\ble match s'est (terminé|achevé)\b"
+    r"|\bapós o apito final\b|\bo jogo (terminou|acabou)\b"
+    r"|انتهت المباراة|النتيجة النهائية|بعد صافرة النهاية|مع نهاية المباراة", re.I)
+_BREAK_AHEAD = re.compile(
+    r"\b(as|with) (the )?(half[- ]time|second half|interval|break) (approach|loom|near|beckon)"
+    r"|\b(approaching|heading (in)?to|going (in)?to|ahead of|before) (the )?(half[- ]time|second half|interval|break)\b"
+    r"|\bsecond half (approaches|is about to|awaits|is to come|lies ahead)\b|\bfirst half (ends|is ending|draws to|closes)\b"
+    r"|\bantes del descanso\b|\bse acerca el descanso\b|\b(segunda parte|segundo tiempo) (se acerca|por comenzar|está por)"
+    r"|\bavant la pause\b|\bà l'approche de la (pause|mi-temps|seconde période)\b|\bseconde période (approche|à venir)\b"
+    r"|\bantes do intervalo\b|\bsegundo tempo (se aproxima|está para começar|vem aí)\b"
+    r"|مع اقتراب (الشوط الثاني|نهاية الشوط الأول|الاستراحة)|قبل (الاستراحة|بداية الشوط الثاني)|الشوط الثاني (يقترب|على الأبواب)",
+    re.I)
+
+
+def phase_problems(fields: dict[str, str], period: str, phase: str) -> list[str]:
+    """A live report must not say the match is over, and once the second half is under way it must not say half-time or
+    the second half is still to come; a final report must not look ahead to a second half."""
+    problems = []
+    for key, text in fields.items():
+        if not isinstance(text, str):
+            continue
+        if period in {"live", "half_time"} and _ENDED.search(text):
+            problems.append(f"[{key}] says the match is over, but it is still being played ({phase}) - describe it as ongoing")
+        if (period == "full_time" or (period == "live" and phase == "second_half")) and _BREAK_AHEAD.search(text):
+            problems.append(f"[{key}] looks ahead to half-time or the second half, which have already been played - "
+                            f"write about the match as it stands ({phase})")
+    return problems
 
 
 _IDS_IN_PROSE = re.compile(r"\s*\((?:[me]\d{3,6})(?:\s*[,،]\s*[me]\d{3,6})*\)")
@@ -105,7 +168,7 @@ def normalize_recap(data: dict[str, Any], p: dict[str, Any], roster: dict[str, s
             out[key] = _IDS_IN_PROSE.sub("", out[key]).strip()
     out["turning_points"] = [{**tp, "text": _IDS_IN_PROSE.sub("", str(tp.get("text", ""))).strip()}
                              for tp in out.get("turning_points") or [] if isinstance(tp, dict)]
-    potm = dict(out.get("player_of_the_match") or {})
+    potm = dict(out["player_of_the_match"]) if isinstance(out.get("player_of_the_match"), dict) else {}
     pid = potm.get("player_id")
     potm.pop("rating", None)
     if isinstance(pid, str) and pid in roster:
@@ -135,13 +198,17 @@ def recap_fields(data: dict[str, Any], p: dict[str, Any], roster: dict[str, str]
         if isinstance(v, str) and re.fullmatch(r"\d{1,3}(\+\d{1,2})?['’′]", v)}
     known = {m["id"] for m in p.get("moments", [])} | {e for m in p.get("moments", []) for e in m.get("evidence", [])}
     for i, tp in enumerate(data.get("turning_points") or []):
-        fields[f"tp{i}"] = str(tp.get("text", ""))
+        fields[f"tp{i}"] = str(tp.get("text", "")) if isinstance(tp, dict) else ""
+        if not isinstance(tp, dict):
+            issues.append(f"turning point {i + 1} is not an object")
+            continue
         ends = [c.strip() for c in re.split(r"\s*[-–]\s*", str(tp.get("clock", "")))]  # a span: "61'-64'"
         if not ends or any((c if c.endswith(("'", "’", "′")) else c + "'") not in clocks for c in ends):
             issues.append(f"turning point {i + 1}: {tp.get('clock')!r} is not the minute of a moment in this match")
         bad = [e for e in tp.get("evidence") or [] if e not in known]
         if bad:
             issues.append(f"turning point {i + 1}: evidence {', '.join(map(str, bad[:3]))} is not in the match data")
+    issues += phase_problems(fields, p.get("period", ""), p.get("phase", ""))
     return fields, issues
 
 
@@ -192,7 +259,7 @@ def offline_recap(p: dict[str, Any]) -> dict[str, Any]:
     summary = R["summary"][lang].format(
         hxg=num(teams[h]["xg"], lang, 2), axg=num(teams[a]["xg"], lang, 2), hs=teams[h]["shots"], as_=teams[a]["shots"],
         hp=num(teams[h]["possession"], lang), ap=num(teams[a]["possession"], lang))
-    if wp and sh != sa and p["period"] != "half_time":
+    if wp and sh != sa and p["period"] not in {"half_time", "live"}:
         wid = h if sh > sa else a
         key = "home" if wid == h else "away"
         low = min(wp, key=lambda x: x[key])

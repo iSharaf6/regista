@@ -564,3 +564,11 @@ html.overlay-mode, html.overlay-mode body { background: transparent !important; 
 }
 .versus.three { grid-template-columns: minmax(0, 1fr) auto auto auto; }
 @media (max-width: 560px) { .versus, .versus.three { font-size: 12.5px; } .versus > * { padding: 6px 6px; } }
+
+/* receipts on a phone: each label sits above its value instead of squeezing both into a narrow column */
+@media (max-width: 560px) {
+  .kv { grid-template-columns: minmax(0, 1fr); gap: 0; }
+  .kv .k { margin-top: 8px; font-size: 12px; }
+  .kv .k:first-child { margin-top: 0; }
+}
+.recap article.updating { opacity: 0.6; }

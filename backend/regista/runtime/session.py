@@ -24,7 +24,14 @@ from ..agents.config import LLMConfig, load_config
 from ..agents.director import Director
 from ..agents.producer import Producer
 from ..agents.pundit import Pundit
-from ..agents.recap import normalize_recap, offline_recap, recap_evidence, recap_fields, recap_payload
+from ..agents.recap import (
+    normalize_recap,
+    offline_recap,
+    recap_evidence,
+    recap_fields,
+    recap_payload,
+    recap_shape_problems,
+)
 from ..agents.story import AgentFailure, AgentRuntime, StoryJob, run_story
 from ..agents.telemetry import Span, Telemetry
 from ..agents.templates import LANGS, PERSONAS, Names, narrate
@@ -549,7 +556,7 @@ class MatchSession:
             verdict.issues = problems + verdict.issues
         return data, verdict
 
-    async def recap(self, lang: str, persona: str, period: str | None = None, _retry: bool = True) -> dict[str, Any]:
+    def _recap_period(self, period: str | None) -> str:
         # default to what is true now: full time, half time (only during the break) or a live report
         period = period or ("full_time" if self.state.status == "full_time" else
                             "half_time" if self.state.status == "half_time" else "live")
@@ -557,6 +564,29 @@ class MatchSession:
             period = "live"  # no half time yet: report the match so far instead of inventing one
         if period == "full_time" and self.state.status != "full_time":
             period = "live"
+        return period
+
+    def _recap_input(self, period: str, lang: str, persona: str) -> dict[str, Any]:
+        if period == "half_time":
+            payload = {**self._ht_base, "language": lang, "persona": persona}  # type: ignore[dict-item]
+        else:
+            payload = recap_payload(self.state, self.moments, self.names_dict, lang, persona, period)
+        payload["live"] = period == "live"
+        payload["match_id"] = self.res.info.match_id  # identity travels with the input, never re-read afterwards
+        return payload
+
+    def _snapshot_recap(self, lang: str, persona: str) -> dict[str, Any]:
+        """The match as it stands right now, written deterministically: instant, so nothing can overtake it."""
+        period = self._recap_period(None)
+        payload = self._recap_input(period, lang, persona)
+        data, verdict = self._check_recap(offline_recap(payload), payload, lang, persona)
+        return {"period": period, "language": lang, "persona": persona,
+                "source": "deterministic (the match changed while the model was writing)", "verdict": verdict.as_dict(),
+                "recap": data, "ms": 0.0, "match_id": payload["match_id"],
+                "as_of": {"clock": payload.get("clock"), "score": payload.get("score"), "phase": payload.get("phase")}}
+
+    async def recap(self, lang: str, persona: str, period: str | None = None, _retry: bool = True) -> dict[str, Any]:
+        period = self._recap_period(period)
         key = (period, lang, persona)
         if key in self.recaps and period != "live":
             return self.recaps[key]
@@ -564,12 +594,7 @@ class MatchSession:
         cached = self._live_recaps.get((lang, persona))
         if period == "live" and cached and cached[0] == rev:
             return cached[1]  # one model call per state of the match, however many viewers ask; a goal makes a new one
-        if period == "half_time":
-            payload = {**self._ht_base, "language": lang, "persona": persona}  # type: ignore[dict-item]
-        else:
-            payload = recap_payload(self.state, self.moments, self.names_dict, lang, persona,
-                                    "half_time" if period == "live" else period)
-        payload["live"] = period == "live"
+        payload = self._recap_input(period, lang, persona)
         gen = self._gen
         t0 = time.perf_counter()
         source = "deterministic"
@@ -579,8 +604,9 @@ class MatchSession:
             import json
 
             data = await self.rt.call(self.rt.recapper, "Recap", json.dumps(payload, ensure_ascii=False, default=str))
-            if not isinstance(data, dict) or "headline" not in data:
-                raise AgentFailure("bad recap")
+            shape = recap_shape_problems(data)
+            if shape:  # validated before anything normalises it: a malformed reply is a failed call, not a crash
+                raise AgentFailure(f"recap has the wrong shape: {shape[0]}")
             source = self.rt.model_name
         except AgentFailure:
             data = offline_recap(payload)
@@ -592,14 +618,14 @@ class MatchSession:
             source = "deterministic (verifier rejected model recap)"
         out = {"period": period, "language": lang, "persona": persona, "source": source, "verdict": verdict.as_dict(),
                "recap": data, "ms": round((time.perf_counter() - t0) * 1000, 1),
-               "match_id": self.res.info.match_id, "as_of": {"clock": payload.get("clock"), "score": payload.get("score")}}
+               "match_id": payload["match_id"],
+               "as_of": {"clock": payload.get("clock"), "score": payload.get("score"), "phase": payload.get("phase")}}
         if gen != self._gen or (period == "live" and self._revision() != rev):
             # the match moved on while the model wrote (a seek, a new match, a goal): never cache, broadcast or hand
             # back the old report as current - write it again for the match as it stands now
             if _retry:
                 return await self.recap(lang, persona, None if period == "live" else period, _retry=False)
-            out["superseded"] = True
-            return out
+            return self._snapshot_recap(lang, persona)  # moved again: the current match, never another match's report
         if period == "live":
             self._live_recaps[(lang, persona)] = (rev, out)
         if period != "live":

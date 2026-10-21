@@ -65,7 +65,7 @@ function ModelEval({ llm, grounding }: { llm: any; grounding: any }) {
               <div className="muted" style={{ fontSize: 13, marginTop: 6 }}>
                 Given the same Verifier feedback and the same {loop.mean_attempts > 1 ? "two-draft" : "draft"} budget, one agent reaches{" "}
                 {pct(loop.all_languages_verified)}: {lead > 0 ? `splitting the work across agents adds ${lead} points on top of the checker loop` :
-                  `the checker loop is what lifts accuracy; splitting the work across agents adds speed (median ${secs(wf.latency_ms?.p50)} vs ${secs(loop.latency_ms?.p50)}, slowest ${secs(wf.latency_ms?.p95)} vs ${secs(loop.latency_ms?.p95)}) and keeps a failure to one language instead of the whole moment`}.
+                  `the checker loop is what lifts accuracy; splitting the work across agents adds speed (median ${secs(wf.latency_ms?.p50)} vs ${secs(loop.latency_ms?.p50)}, p95 ${secs(wf.latency_ms?.p95)} vs ${secs(loop.latency_ms?.p95)}; workflow calls time out at ${llm.run?.timeout_s ?? 20} s, single-agent calls at ${llm.run?.baseline_timeout_s ?? 90} s) and keeps a failure to one language instead of the whole moment`}.
               </div>
             )}
             {typeof wf.first_draft_verified === "number" && (
@@ -77,7 +77,7 @@ function ModelEval({ llm, grounding }: { llm: any; grounding: any }) {
           </>
         )}
         <div className="muted" style={{ fontSize: 13, marginTop: 10 }}>
-          {llm.moments} story-lane moments{seeds.length ? ` from ${seeds.length} held-out matches the prompts never saw` : ""}, in{" "}
+          {llm.moments} story-lane moments{seeds.length ? ` from ${seeds.length} fixed evaluation matches` : ""}, in{" "}
           {(llm.languages ?? []).join(", ").toUpperCase()}, the figures, players and selected football claims checked by the deterministic
           Verifier before air. Rejected drafts go back to the agents with the fact-checker's notes; the Verifier itself was tested by
           planting errors in real model copy.

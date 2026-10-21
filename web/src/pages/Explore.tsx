@@ -83,7 +83,11 @@ export function Explore({ query }: { query: URLSearchParams }) {
         </div>
       )}
       {state === "busy" && <div className="empty stack">Lots of new replays from your network just now: try again in a minute. Moments already replayed still load instantly.<div>{retry}</div></div>}
-      {state === "missing" && <div className="empty">That moment isn't in the demo match. Pick one from the list.</div>}
+      {state === "missing" && (
+        <div className="empty stack">That moment isn't in the demo match.
+          <div><a className="btn small" href="#/explore">Open the first goal instead</a></div>
+        </div>
+      )}
       {state === "error" && <div className="empty stack">Couldn't reach the replay. Check the connection, then try again.<div>{retry}</div></div>}
 
       {state === "ok" && data && <Replay data={data} />}

@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import asyncio
 import dataclasses
+import json
 
 from regista.agents.templates import LANGS, PERSONAS
 from regista.runtime.session import DEMO, MatchSession
@@ -116,3 +117,77 @@ def test_a_report_written_for_an_old_timeline_is_rewritten_not_returned():
         assert calls[0] == 2 and out["match_id"] == s.res.info.match_id and not out.get("superseded")
         assert out["period"] == "live"  # the new match has not reached full time: no old full-time report
     asyncio.run(run())
+
+
+def test_a_live_report_follows_the_match_phase():
+    """The observed defect: a model report "as of 69'" closed with "As the second half approaches"."""
+    from regista.agents.recap import offline_recap
+
+    async def run():
+        s = MatchSession(story_workers=0)
+        s.seek(69)
+        _model(s, lambda p: {**offline_recap(p), "closing_line": "As the second half approaches, it is all to play for."})
+        bad = await s.recap("en", "analyst")
+        assert bad["period"] == "live" and bad["as_of"]["phase"] == "second_half"
+        assert bad["source"].startswith("deterministic") and bad["verdict"]["ok"]
+        assert "second half approaches" not in json.dumps(bad["recap"]).lower()
+        # the same wording is true in the first half, so it is not over-blocked there
+        s2 = MatchSession(story_workers=0)
+        s2.seek(30)
+        _model(s2, lambda p: {**offline_recap(p), "closing_line": "As half-time approaches, it is all to play for."})
+        ok = await s2.recap("en", "analyst")
+        assert ok["as_of"]["phase"] == "first_half" and ok["source"] == "test-model" and ok["verdict"]["ok"]
+    asyncio.run(run())
+
+
+def test_a_second_change_of_match_returns_the_current_match_never_a_relabelled_report():
+    async def run():
+        s = MatchSession(story_workers=0)
+        s.advance(float(s.res.frame_t[-1]), live=False)
+        s.cfg = dataclasses.replace(s.cfg, provider="test")
+        asked: list[str] = []
+
+        async def call(agent, name, payload, **_):
+            asked.append(json.loads(payload)["match_id"])
+            s.load("NOR", "CAL", 16 + len(asked), "derby")  # every model call is overtaken by a new match
+            return {"headline": "OLD REPORT", "summary": "", "tactical_story": "", "turning_points": [],
+                    "player_of_the_match": {}, "closing_line": ""}
+        s.rt.call = call  # type: ignore[method-assign]
+        out = await s.recap("en", "casual", "full_time")
+        assert len(asked) == 2 and asked[0] != asked[1]  # one bounded retry, then no more model calls
+        assert out["match_id"] == s.res.info.match_id and out["as_of"]["score"] == dict(s.state.score)
+        assert "OLD REPORT" not in json.dumps(out) and not out.get("superseded")
+        assert out["source"].startswith("deterministic (the match changed") and out["verdict"]["ok"]
+    asyncio.run(run())
+
+
+def test_a_malformed_model_recap_falls_back_instead_of_crashing():
+    from regista.agents.recap import offline_recap
+
+    async def run():
+        s = MatchSession(story_workers=0)
+        s.advance(float(s.res.frame_t[-1]), live=False)
+        _model(s, lambda p: {**offline_recap(p), "player_of_the_match": "Valdane", "turning_points": ["61'"]})
+        out = await s.recap("en", "casual", "full_time")
+        assert out["source"] == "deterministic" and out["verdict"]["ok"]
+        assert isinstance(out["recap"]["player_of_the_match"], dict)
+    asyncio.run(run())
+
+
+def test_phase_claims_are_checked_in_every_language():
+    from regista.agents.recap import phase_problems
+
+    def second(text: str) -> list[str]:
+        return phase_problems({"summary": text}, "live", "second_half")
+
+    for text in ["As the second half approaches, Northbridge lead.", "Antes del descanso, el partido sigue abierto.",
+                 "À l'approche de la seconde période, rien n'est joué.", "مع اقتراب الشوط الثاني",
+                 "O segundo tempo se aproxima.", "The first half draws to a close."]:
+        assert second(text), text
+    for text in ["At half-time it was 1-0; since then Port Calder have pressed higher.",
+                 "It is far from over until the final whistle."]:
+        assert not second(text), text
+    assert phase_problems({"summary": "The final score was 2-1."}, "live", "first_half")
+    assert phase_problems({"summary": "El partido terminó con empate."}, "half_time", "half_time")
+    assert phase_problems({"summary": "Ahead of the second half, they must push."}, "full_time", "full_time")
+    assert not phase_problems({"summary": "Ahead of the second half, they must push."}, "half_time", "half_time")

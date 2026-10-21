@@ -129,8 +129,11 @@ export function Receipts({ moment, feed, onClose, lang }: { moment: Moment; feed
 /** The Verifier's verdict on a story and the agent trace behind it. */
 export function HowChecked({ story }: { story: any }) {
   // writer templates and the Analyst's insight are separate: an Analyst fallback is not a template in any language
-  const analystFell = (story.trace ?? []).some((s: any) => s.agent === "Analyst" && s.status === "fallback");
-  const analyst = analystFell ? "deterministic (the model's insight failed the fact check)" : story.models?.Analyst ?? "model";
+  // say why only when the trace says why: a timeout or a malformed reply falls back too, and is not a failed check
+  const fell = (story.trace ?? []).find((s: any) => s.agent === "Analyst" && s.status === "fallback");
+  const analyst = !fell ? story.models?.Analyst ?? "model"
+    : /fact check/i.test(fell.detail ?? "") ? "deterministic (the model's insight failed the fact check)"
+    : "deterministic fallback";
   return (
     <>
       <div className="kv">
