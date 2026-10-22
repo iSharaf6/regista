@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { FactTable, HowChecked } from "../components/Moments";
+import { FactTable, HowChecked, TRUST } from "../components/Moments";
 import { CueView } from "../components/Overlay";
 import type { Cue, MatchInfo, Moment, Story } from "../lib/types";
 
@@ -9,27 +9,45 @@ interface ExploreFan {
 }
 interface ExploreMoment { id: string; kind: string; clock: string; headline: string }
 interface ExploreOut {
-  curated: boolean; note: string; match: MatchInfo; moment: Moment; fans: ExploreFan[]; story: Partial<Story>;
+  curated: boolean; note: string; match: MatchInfo; moment: Moment; fans: ExploreFan[]; story: Partial<Story> & { drafts?: any };
   evidence: string[]; moments: ExploreMoment[];
+  drill?: { lang: string; drafts: number; name: string; note: string } | null; drills?: string[];
 }
 type State = "loading" | "ok" | "busy" | "missing" | "error";
 
 const KIND: Record<string, string> = {
   goal: "Goal", red_card: "Red card", master_pass: "Pass of quality", press_shift: "Tactical shift", momentum_swing: "Momentum swing",
 };
-const pick = (id: string) => { location.hash = `#/explore?moment=${encodeURIComponent(id)}`; };
+// labelled recovery drills: a wrong goal count planted in Arabic, caught by the Verifier, fixed or replaced by the template
+const DRILLS: { id: string | null; label: string }[] = [
+  { id: null, label: "Normal run" },
+  { id: "ar", label: "Recovery drill: Arabic fails once" },
+  { id: "ar2", label: "Recovery drill: Arabic exhausts its drafts" },
+];
+
+/** Move to another moment, drill or view; everything lives in the link so a view can be shared. */
+function go(next: { moment?: string | null; drill?: string | null; view?: string | null }) {
+  const q = new URLSearchParams();
+  for (const [k, v] of Object.entries(next)) if (v) q.set(k, v);
+  location.hash = `#/explore?${q}`;
+}
 
 /** Explore one moment: a curated, private replay of one demo-match moment as Tom, Amira and Lucía each get it, with the
  *  facts and how every figure was checked. Nobody should have to sit through the live 90 minutes to see a goal. */
 export function Explore({ query }: { query: URLSearchParams }) {
   const id = query.get("moment");
+  const drill = query.get("drill");
+  const view = query.get("view") === "same" ? "same" : null;
   const [data, setData] = useState<ExploreOut | null>(null);
   const [state, setState] = useState<State>("loading");
   const [attempt, setAttempt] = useState(0);
   useEffect(() => {
     let live = true;
     setState("loading");
-    fetch(`/api/explore${id ? `?moment=${encodeURIComponent(id)}` : ""}`, { cache: "no-cache" })
+    const q = new URLSearchParams();
+    if (id) q.set("moment", id);
+    if (drill) q.set("drill", drill);
+    fetch(`/api/explore${q.toString() ? `?${q}` : ""}`, { cache: "no-cache" })
       .then(async (r) => {
         const next: State = r.status === 429 ? "busy" : r.status === 404 ? "missing" : r.ok ? "ok" : "error";
         const body = next === "ok" ? await r.json() : null;
@@ -39,12 +57,13 @@ export function Explore({ query }: { query: URLSearchParams }) {
       })
       .catch(() => { if (live) setState("error"); });
     return () => { live = false; };
-  }, [id, attempt]);
+  }, [id, drill, attempt]);
   const retry = <button className="btn small" onClick={() => setAttempt((a) => a + 1)}>Try again</button>;
 
   const moments = data?.moments ?? [];
   const current = id ?? data?.moment.id;
   const pending = moments.find((m) => m.id === id);
+  const pick = (moment: string) => go({ moment, view }); // a drill belongs to its moment: a new moment starts clean
   return (
     <div className="page">
       <div className="page-head">
@@ -70,6 +89,20 @@ export function Explore({ query }: { query: URLSearchParams }) {
               </button>
             ))}
           </div>
+          <div className="chips" role="group" aria-label="Who to compare">
+            <button aria-pressed={!view} className={!view ? "on" : ""} onClick={() => go({ moment: current, drill, view: null })}>Three fans</button>
+            <button aria-pressed={view === "same"} className={view === "same" ? "on" : ""} onClick={() => go({ moment: current, drill, view: "same" })}>
+              Same language: Tom vs Sam
+            </button>
+          </div>
+          {(data?.drills ?? []).includes("ar") && (
+            <div className="chips" role="group" aria-label="Recovery drill">
+              {DRILLS.map((d) => (
+                <button key={d.label} aria-pressed={drill === d.id} className={drill === d.id ? "on" : ""}
+                  onClick={() => go({ moment: current, drill: d.id, view })}>{d.label}</button>
+              ))}
+            </div>
+          )}
         </div>
       )}
 
@@ -90,23 +123,28 @@ export function Explore({ query }: { query: URLSearchParams }) {
       )}
       {state === "error" && <div className="empty stack">Couldn't reach the replay. Check the connection, then try again.<div>{retry}</div></div>}
 
-      {state === "ok" && data && <Replay data={data} />}
+      {state === "ok" && data && <Replay data={data} same={view === "same"} />}
     </div>
   );
 }
 
-function Replay({ data }: { data: ExploreOut }) {
+function Replay({ data, same }: { data: ExploreOut; same: boolean }) {
   const m = data.moment;
   const story = data.story;
   const v = story.verdict;
   const why = (m.why ?? []).filter((w: any) => w.detail || (w.value !== null && w.value !== undefined && typeof w.value !== "object"));
+  const fans = data.fans.filter((f) => (same ? ["Tom", "Sam"].includes(f.name) : f.name !== "Sam"));
   return (
     <>
       <div className="card explore-moment">
         <div className="body">
           <div className="row">
             <span className={`kind ${m.kind === "goal" ? "goal" : ""}`}>{KIND[m.kind] ?? m.kind} · {m.clock}</span>
-            {v?.numbers_checked ? <span className="verified">✓ checked · {v.numbers_supported}/{v.numbers_checked} figures · {v.names_checked} names</span> : null}
+            {v?.numbers_checked ? (
+              <span className="verified" title={`${TRUST} Figures in this moment's copy, across every language and audience, matched to the match data.`}>
+                ✓ checked · {v.numbers_supported}/{v.numbers_checked} figures · {v.names_checked} names
+              </span>
+            ) : null}
             <a className="raw" href={`/api/explore?moment=${encodeURIComponent(m.id)}`} target="_blank" rel="noreferrer">raw JSON ↗</a>
           </div>
           <h3 className="cond">{m.headline}</h3>
@@ -114,11 +152,20 @@ function Replay({ data }: { data: ExploreOut }) {
         </div>
       </div>
 
-      <div className="section-title on-sky">Same second, three broadcasts</div>
-      <p className="explore-note">Each fan's Director previewing this one moment: what it would show them and why. Live, it also
-        weighs timing and what is already on screen.</p>
-      <div className="explore-fans">
-        {data.fans.map((f) => <FanView key={f.name} fan={f} match={data.match} />)}
+      {data.drill && (
+        <div className="card drill-note" role="note">
+          <span className="drill-badge">Drill · {data.drill.lang.toUpperCase()} · {data.drill.drafts === 1 ? "fails once" : "fails every draft"}</span>
+          <p>{data.drill.note} {data.drill.drafts === 1
+            ? "Watch the Arabic drafts below: the Verifier rejects the planted figure, only Arabic is rewritten, and the second draft airs."
+            : "Watch the Arabic drafts below: both carry the planted figure, both are rejected, and Arabic airs its grounded template."}</p>
+        </div>
+      )}
+      <div className="section-title on-sky">{same ? "Same language, two fans" : "Same second, three broadcasts"}</div>
+      <p className="explore-note">{same
+        ? "Both in English: what changes is the viewer, not the translation. Tom gets the analyst's read, Sam (at a first match) the plain-words version."
+        : "Each fan's Director previewing this one moment: what it would show them and why. Live, it also weighs timing and what is already on screen."}</p>
+      <div className={`explore-fans n${fans.length}`}>
+        {fans.map((f) => <FanView key={f.name} fan={f} match={data.match} />)}
       </div>
 
       <div className="ops-grid">

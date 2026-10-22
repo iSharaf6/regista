@@ -20,6 +20,12 @@ export function Broadcast({ profile, setProfile }: { profile: Profile; setProfil
   return (
     <div className="page grid-broadcast">
       <section>
+        <a className="start-here" href="#/explore?moment=m055">
+          <span className="replay-badge">Start here</span>
+          <span><b>See one goal through three fans</b>
+            <small>The 74th-minute winner as Tom, Amira and Lucía get it, with every draft and every check · about a minute</small></span>
+          <span className="go" aria-hidden>→</span>
+        </a>
         <Welcome />
         <Stage feed={feed} favorite={profile.favorite_player} cam={cam} lens={lens} receipts={receipts} rtl={profile.language === "ar"}
           label={`${profile.mode.replace("_", " ")} · ${profile.language.toUpperCase()}`} />

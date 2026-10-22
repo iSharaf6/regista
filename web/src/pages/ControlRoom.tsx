@@ -3,10 +3,11 @@ import { AgentGraph } from "../components/AgentGraph";
 import { Transport } from "../components/Transport";
 import { UseLive } from "../components/UseLive";
 import { useFeed } from "../lib/feed";
-import { defaultProfile } from "../lib/types";
+import { defaultProfile, type Profile } from "../lib/types";
 
 
-export function ControlRoom() {
+export function ControlRoom({ fan, setFan }: { fan: Profile; setFan: (p: Profile) => void }) {
+  // the control room watches as an analyst; the exports follow the fan profile chosen in Fan Studio (or picked here)
   const profile = useMemo(() => defaultProfile({ id: "ops", mode: "analyst" }), []);
   const feed = useFeed(profile, { ops: true });
   const [fail, setFail] = useState(0);
@@ -71,7 +72,7 @@ export function ControlRoom() {
           </div>
         </section>
         <section className="stack">
-          <UseLive profile={profile} />
+          <UseLive profile={fan} setProfile={setFan} match={feed.match} />
           <div className="card">
             <header><h3>Chaos engineering</h3></header>
             <div className="body stack">

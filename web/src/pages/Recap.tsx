@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { TRUST } from "../components/Moments";
 import { api } from "../lib/feed";
 import { LANGS, type Lang, type MatchInfo } from "../lib/types";
 
@@ -56,6 +57,8 @@ export function Recap({ lang: initial }: { lang: Lang }) {
             <span className={data.verdict.ok ? "ok" : "fb"}>{data.verdict.ok ? "✓ VERIFIED" : "✗ CHECK"} {data.verdict.numbers_supported}/{data.verdict.numbers_checked} figures</span>
             <span>{data.ms} ms</span>
           </div>
+          <p className="trust">{TRUST} {data.verdict.numbers_supported}/{data.verdict.numbers_checked}: the figures in this report matched to
+            the match data.</p>
           {series && <WpChart series={series.wp_series} match={match} />}
           <div className="section-title">Turning points</div>
           {r.turning_points.map((tp: any, i: number) => (

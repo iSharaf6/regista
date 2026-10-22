@@ -294,8 +294,11 @@ def test_explore_one_moment_shows_three_fans_without_touching_the_broadcast(clie
     before = client.get("/api/state").json()
     out = client.get("/api/explore").json()
     assert out["curated"] and out["moment"]["kind"] == "goal" and out["moments"]
-    assert [f["name"] for f in out["fans"]] == ["Tom", "Amira", "Lucía"]
-    assert [f["cue"]["locale"] for f in out["fans"]] == ["en", "ar", "es"]
+    assert [f["name"] for f in out["fans"]] == ["Tom", "Amira", "Lucía", "Sam"]  # Sam: Tom's same-language pair
+    assert [f["cue"]["locale"] for f in out["fans"]] == ["en", "ar", "es", "en"]
+    tom, sam = out["fans"][0]["cue"], out["fans"][3]["cue"]
+    assert tom["body"] != sam["body"] or tom["payload"]["explainer"] != sam["payload"]["explainer"]  # audience, not language
+    assert all(d[-1]["status"] == "passed" and d[-1]["source"] == "model" for d in out["story"]["drafts"].values())
     assert out["story"]["verdict"]["ok"] and set(out["moment"]["fact_kinds"].values()) == {"observed", "model estimate"}
     assert out["fans"][1]["cue"]["payload"].get("partisan") == "against"  # Amira supports the side that conceded
     assert client.get("/api/explore").json()["fans"] == out["fans"]  # cached: one story job per moment
@@ -348,3 +351,31 @@ def test_explore_warms_the_demo_goals_without_blocking_the_broadcast():
         assert len(goals) >= 2 and set(goals) <= set(ex.cache)
         assert max(gaps) < 1.0, max(gaps)
     asyncio.run(run())
+
+
+def _seen(cue: dict) -> str:
+    """What a fan actually reads on a cue."""
+    return " ".join([cue.get("title") or "", cue.get("body") or "", cue["payload"].get("explainer") or ""])
+
+
+def test_a_recovery_drill_retries_only_the_drilled_language(client):
+    """The correction receipt, from a labelled drill: Arabic's first draft carries a planted wrong goal count, the
+    Verifier rejects it with its real finding, only Arabic is rewritten, and nothing rejected reaches the fans."""
+    out = client.get("/api/explore", params={"drill": "ar"}).json()
+    drafts = out["story"]["drafts"]
+    ar = drafts["ar"]
+    assert [d["status"] for d in ar] == ["rejected", "passed"] and ar[0]["drill"] and "97" in ar[0]["copy"]["analyst"]["explainer"]
+    assert any("goal count" in issue for issue in ar[0]["issues"])  # the finding comes from that attempt's own verdict
+    assert all(len(drafts[lang]) == 1 and drafts[lang][0]["status"] == "passed" for lang in ("en", "es"))
+    assert out["story"]["fallback_langs"] == [] and out["drill"]["lang"] == "ar"
+    assert all("97" not in _seen(f["cue"]) for f in out["fans"])  # rejected text never airs
+
+
+def test_an_exhausted_drill_ends_on_a_template_for_that_language_only(client):
+    out = client.get("/api/explore", params={"drill": "ar2"}).json()
+    ar = out["story"]["drafts"]["ar"]
+    assert [(d["source"], d["status"]) for d in ar] == [("model", "rejected"), ("model", "rejected"), ("template", "passed")]
+    assert out["story"]["fallback_langs"] == ["ar"] and out["story"]["verdict"]["ok"]
+    assert all(out["story"]["drafts"][lang][-1]["source"] == "model" for lang in ("en", "es"))
+    assert all("97" not in _seen(f["cue"]) for f in out["fans"])
+    assert client.get("/api/explore", params={"drill": "zz"}).status_code == 404

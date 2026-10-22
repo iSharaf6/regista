@@ -56,6 +56,14 @@ AI fails.
   story job per moment (at most 5 languages).
 - **A synthetic league that passes a sanity check:** 14 of 14 aggregate match statistics inside generous top-flight
   bands (consistency of the synthetic data, not a claim that it predicts real football).
+- **Correction receipts and a recovery drill.** Every draft is kept with the Verifier's actual finding. A labelled
+  drill on Explore (`?drill=ar`) plants a wrong goal count in the Arabic draft: the Verifier rejects it, only Arabic
+  is rewritten, and every other language keeps its copy (`?drill=ar2`: Arabic ends on its template).
+- **Limits, stated up front.** The Pundit answers from tool calls, but its answers are not run through the story
+  Verifier. Graphics are instant; checked AI copy upgrades them a median of about 19 s later, and healthy languages
+  wait for the whole story before that upgrade. Event Hubs mirrors the feed (no downstream consumer is built yet).
+  The fan-out figure is in-process, not a network load test. The Producer schedules cues automatically; there is no
+  human approve, hold or retract console yet.
 
 ## Microsoft and GitHub technologies
 Microsoft Agent Framework (agents, workflow with fan-out/fan-in and switch-case retry edges, function tools,
@@ -84,7 +92,7 @@ Container Registry + managed identity · Azure Developer CLI (Bicep) · Model Co
    then `cd web && npm install && npm run dev` and open http://localhost:5173.
 4. **With a model:** `REGISTA_LLM=foundry` with `FOUNDRY_PROJECT_ENDPOINT` and `FOUNDRY_MODEL` (Entra ID), then
    `regista llm-eval` to score the workflow against the single-agent baselines on the fixed evaluation matches.
-5. **Tests and evaluation:** `pytest -q` (65 tests), `regista evaluate --matches 20` and `regista fanout`.
+5. **Tests and evaluation:** `pytest -q` (71 tests), `regista evaluate --matches 20` and `regista fanout`.
 6. **Real-world integrations:** with the local server from step 3, `regista publish --url http://localhost:8000`
    streams a match through the live feed API (the public site locks that API so nobody can replace its broadcast);
    `https://ca-registaednsnlttycm2o.calmsea-720b2319.koreacentral.azurecontainerapps.io/api/onair?mode=casual&lang=es`

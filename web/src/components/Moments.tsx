@@ -127,7 +127,10 @@ export function Receipts({ moment, feed, onClose, lang }: { moment: Moment; feed
 }
 
 /** The Verifier's verdict on a story and the agent trace behind it. */
-export function HowChecked({ story }: { story: any }) {
+export const TRUST = "Supported numbers and selected football claims are checked against match facts. Estimates remain " +
+  "estimates; narrative interpretation is not independently checked.";
+
+export function HowChecked({ story, persona }: { story: any; persona?: string }) {
   // writer templates and the Analyst's insight are separate: an Analyst fallback is not a template in any language
   // say why only when the trace says why: a timeout or a malformed reply falls back too, and is not a failed check
   const fell = (story.trace ?? []).find((s: any) => s.agent === "Analyst" && s.status === "fallback");
@@ -145,6 +148,11 @@ export function HowChecked({ story }: { story: any }) {
         <span>{story.fallback_langs?.length ? story.fallback_langs.join(", ").toUpperCase() : "none: every language model-written"}</span>
         <span className="k">End-to-end</span><span className="mono">{Math.round(story.latency_ms)} ms</span>
       </div>
+      <p className="trust">
+        {TRUST} {story.verdict?.numbers_supported}/{story.verdict?.numbers_checked} counts the figures in this moment's copy, across every
+        language and audience, that matched the match data.
+      </p>
+      {story.drafts && Object.keys(story.drafts).length > 0 && <DraftsReceipt drafts={story.drafts} persona={persona} />}
       {story.verdict?.issues?.length > 0 && (
         <ul className="muted" style={{ fontSize: 12 }}>{story.verdict.issues.map((i: string) => <li key={i}>{i}</li>)}</ul>
       )}
@@ -159,6 +167,58 @@ export function HowChecked({ story }: { story: any }) {
         ))}
       </div>
     </>
+  );
+}
+
+const LANG_ORDER = ["en", "es", "fr", "ar", "pt"];
+
+/** The correction receipt: every draft of every language, in order, as the Verifier judged it. Rejected drafts never
+ *  aired; a drill draft carries the error that was planted in it on purpose. */
+export function DraftsReceipt({ drafts, persona = "analyst" }: { drafts: Record<string, any[]>; persona?: string }) {
+  const langs = Object.keys(drafts).sort((a, b) => LANG_ORDER.indexOf(a) - LANG_ORDER.indexOf(b));
+  return (
+    <div className="drafts">
+      <div className="section-title" style={{ marginTop: 14 }}>Every draft, in order</div>
+      {langs.map((lang) => {
+        const list = drafts[lang] ?? [];
+        const last = list[list.length - 1];
+        const aired = !last ? "nothing" : last.source === "template" ? "the grounded template" : `model draft ${last.attempt}`;
+        const eventful = list.length > 1 || list.some((d) => d.drill || d.status !== "passed");
+        const rtl = lang === "ar";
+        return (
+          <details key={lang} open={eventful} className="lang-drafts">
+            <summary><b>{lang.toUpperCase()}</b> · {list.length} draft{list.length === 1 ? "" : "s"} · aired {aired}</summary>
+            <ol>
+              {list.map((d, i) => {
+                const c = d.copy?.[persona] ?? d.copy?.analyst;
+                const ok = d.status === "passed";
+                return (
+                  <li key={i} className={`draft ${ok ? "ok" : "bad"}`}>
+                    <div className="draft-head">
+                      <span>Draft {d.attempt} · {d.agent} · {d.source === "template" ? "template" : "model"}</span>
+                      <span className={`status ${ok ? "ok" : "rejected"}`}>
+                        {ok ? "passed" : d.status === "rejected" ? "rejected · never aired" : "no usable reply · never aired"}
+                      </span>
+                      {d.drill && <span className="drill-badge">Drill: planted error</span>}
+                    </div>
+                    {c && (
+                      <div className={rtl ? "rtl" : ""} dir={rtl ? "rtl" : "ltr"} lang={lang}>
+                        <div className="draft-line">{c.line}</div>
+                        {c.explainer && <div className="muted draft-why">{c.explainer}</div>}
+                      </div>
+                    )}
+                    {d.drill && <div className="drill-text" lang={lang} dir="auto">Planted on purpose: “{d.drill}”</div>}
+                    {d.issues?.length > 0 && (
+                      <ul className="draft-issues" aria-label="The Verifier's findings">{d.issues.map((x: string) => <li key={x}>{x}</li>)}</ul>
+                    )}
+                  </li>
+                );
+              })}
+            </ol>
+          </details>
+        );
+      })}
+    </div>
   );
 }
 

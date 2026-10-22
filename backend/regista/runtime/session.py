@@ -500,14 +500,15 @@ class MatchSession:
             except Exception:  # noqa: BLE001
                 log.exception("story job failed for %s", m.id)
 
-    async def _run_story(self, m: Moment, gen: int | None = None, ctx: dict[str, Any] | None = None) -> None:
+    async def _run_story(self, m: Moment, gen: int | None = None, ctx: dict[str, Any] | None = None,
+                         drill: dict[str, Any] | None = None) -> None:
         gen = self._gen if gen is None else gen
         if gen != self._gen:
             return  # queued before a seek, restart or new match
         t0 = time.perf_counter()
         job = StoryJob(moment=m.as_dict(), context=ctx or self._context(), languages=self.languages(), names=self.names_dict,
                        roster_names=self.roster_names, home=self.state.home, away=self.state.away,
-                       shirts={pid: p.info.number for pid, p in self.state.players.items()})
+                       shirts={pid: p.info.number for pid, p in self.state.players.items()}, drill=drill)
         job = await run_story(self.rt, job)
         if gen != self._gen:
             log.info("discarded story for %s: the timeline changed while it was being written", m.id)
@@ -524,7 +525,8 @@ class MatchSession:
         )
         self.story[m.id] = {"job": job.id, "insight": job.insight, "verdict": job.verdict, "attempts": job.attempts,
                             "fallback_langs": job.fallback_langs, "latency_ms": round(latency, 1), "models": job.models,
-                            "trace": job.trace, "narration": job.narration if job.verdict_ok else {}}  # never show unchecked copy
+                            "trace": job.trace, "narration": job.narration if job.verdict_ok else {},  # never unchecked copy
+                            "drafts": job.drafts}  # the correction receipt: every draft, labelled with how it was judged
         self.broadcast({"type": "story", "moment_id": m.id, "story": self.story[m.id]})
         if not job.verdict_ok:
             return  # unverified copy never reaches air: the deterministic fast-lane cue stays up

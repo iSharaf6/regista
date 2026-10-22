@@ -71,6 +71,9 @@ class StoryJob:
     trace: list[dict[str, Any]] = field(default_factory=list)
     started: float = field(default_factory=time.perf_counter)
     shirts: dict[str, int] = field(default_factory=dict)
+    # every draft per language, as written and as judged: the correction receipt (never on air)
+    drafts: dict[str, list[dict[str, Any]]] = field(default_factory=dict)
+    drill: dict[str, Any] | None = None  # a labelled recovery drill: {"lang": "ar", "drafts": 1 or 2}
 
     def shirt_numbers(self) -> dict[str, int]:
         """Shirt numbers of this moment's players: commentators in many markets say "el 9" rather than a name."""
@@ -257,15 +260,39 @@ def _checked_insight(job: StoryJob, data: dict[str, Any]) -> dict[str, Any]:
     return data
 
 
+# The recovery drill plants one wrong, clearly labelled claim in a draft so the Verifier really rejects it and only that
+# language is rewritten (or, after the last draft, falls back to its template). Nothing else about the run changes.
+DRILL_CLAIM = {"en": "He now has 97 goals.", "es": "Ya suma 97 goles.", "fr": "Il compte désormais 97 buts.",
+               "ar": "رصيده الآن 97 هدفاً.", "pt": "Ele já soma 97 gols."}
+
+
+def _drill(job: StoryJob, lang: str, copy: dict[str, dict[str, str]], attempt: int) -> str | None:
+    d = job.drill
+    if not d or d.get("lang") != lang or attempt > int(d.get("drafts", 1)) or lang not in DRILL_CLAIM:
+        return None
+    claim = DRILL_CLAIM[lang]
+    copy["analyst"]["explainer"] = f"{copy['analyst']['explainer']} {claim}".strip()
+    return claim
+
+
 async def _write(rt: AgentRuntime, job: StoryJob, lang: str) -> None:
     """One language, one agent: the Narrator owns English, the Localizer writes every other market natively."""
     agent, name, task = (rt.narrator, "Narrator", "narrate") if lang == "en" else (rt.localizer, "Localizer", "localize")
     payload = job.payload(task, language=lang, insight=job.insight, feedback=job.feedback.get(lang))
+    attempt = job.attempts + 1
     try:
-        job.narration[lang] = _shape(await rt.call(agent, name, payload, job, job.attempts + 1))
+        copy = _shape(await rt.call(agent, name, payload, job, attempt))
+        planted = _drill(job, lang, copy, attempt)
+        if planted:
+            rt.note(job, "Drill", "injected", f"{lang} draft {attempt}: a labelled wrong goal count was planted (drill)")
+        job.narration[lang] = copy
+        job.drafts.setdefault(lang, []).append({"attempt": attempt, "agent": name, "source": "model", "status": "pending",
+                                                "copy": copy, **({"drill": planted} if planted else {})})
         if lang in job.fallback_langs:  # a second draft after a failed first one: model-written after all
             job.fallback_langs.remove(lang)
     except AgentFailure as exc:
+        job.drafts.setdefault(lang, []).append({"attempt": attempt, "agent": name, "source": "model",
+                                                "status": "no usable reply", "copy": None, "issues": [str(exc)[:120]]})
         job.narration[lang] = _template(job, lang)  # on air meanwhile, so nothing waits on the retry
         if lang not in job.fallback_langs:
             job.fallback_langs.append(lang)
@@ -349,6 +376,12 @@ class VerifierExecutor(Executor):
         for issue in verdict.issues:
             lang = issue[1:3]
             job.feedback.setdefault(lang, []).append(issue)
+        for lang in check:  # judge each language's latest draft with its own findings
+            draft = (job.drafts.get(lang) or [None])[-1]
+            if draft and draft["status"] == "pending":
+                draft["status"] = "rejected" if lang in verdict.failed_langs else "passed"
+                if draft["status"] == "rejected":
+                    draft["issues"] = job.feedback.get(lang, [])[:6]
         ms = (time.perf_counter() - t0) * 1000
         status = "rejected" if not verdict.ok else "retry" if retry else "ok"
         detail = f"{verdict.numbers_supported}/{verdict.numbers_checked} figures grounded"
@@ -375,6 +408,10 @@ class FallbackExecutor(Executor):
         verdict = verify_texts(check, job.evidence(), set(job.moment.get("players", [])), job.roster_names,
                                claims=job.moment.get("facts", {}))
         job.verdict = {**verdict.as_dict(), "via": "fallback"}  # the templates' own verdict, never overridden
+        for lang in job.failed:
+            job.drafts.setdefault(lang, []).append({
+                "attempt": job.attempts, "agent": "Fallback", "source": "template", "copy": job.narration[lang],
+                "status": "rejected" if lang in verdict.failed_langs else "passed"})
         await ctx.send_message(job)
 
 

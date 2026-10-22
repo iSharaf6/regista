@@ -150,7 +150,7 @@ function Receipt({ cue, detail }: { cue: Cue; detail: boolean }) {
   const checked = v?.numbers_checked ? label(l, "checked_n", { a: v.numbers_supported, b: v.numbers_checked })
     : p.agent === "Producer" && !cue.moment_id ? label(l, "from_data") : label(l, "checked");
   return (
-    <div className="receipt">
+    <div className="receipt" title="Supported numbers and selected football claims are checked against match facts; estimates remain estimates.">
       {p.verified ? <span className="ok">✓ {checked}</span> : <span className="fb">{label(l, "not_checked")}</span>}
       {p.fallback && <span className="fb">{label(l, "template")}</span>}
       {detail && (

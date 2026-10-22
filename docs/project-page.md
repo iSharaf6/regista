@@ -47,6 +47,8 @@ Built with **Microsoft Agent Framework** (agents + a workflow graph with fan-out
 - **A checker you can audit.** It caught **235 of 235** hand-written believable mistakes in five languages (a wrong goal tally in digits or words, a false brace, "down to ten" with nine left, a rate per 100 passes called "per minute", a wrong minute) and wrongly rejected **0 of 3,425** fallback outputs. Its limits are documented: it doesn't judge causal claims or catch invented names from outside the squad.
 - **Graded explainability.** The simulator logs ground truth, so tactical detection is measured: press-shift recall 52%, 0.6 false alarms per match. Every receipt labels each fact as observed or a model estimate.
 - **Scales by sharing.** In an in-process selection microbenchmark (no network, no generation), 1 to 1,000 personalised viewers cost about 0.7 to 7 ms of Director work per match-second, while model work stays one story job per moment.
+- **Correction receipts and a recovery drill.** Every draft is kept with the Verifier's actual finding. A labelled drill on Explore (`?drill=ar`) plants a wrong goal count in the Arabic draft: the Verifier rejects it, only Arabic is rewritten, and every other language keeps its copy (`?drill=ar2`: Arabic ends on its template).
+- **Limits, stated up front.** The Pundit answers from tool calls, but its answers are not run through the story Verifier. Graphics are instant; checked AI copy upgrades them a median of about 19 s later, and healthy languages wait for the whole story before that upgrade. Event Hubs mirrors the feed (no downstream consumer is built yet). The fan-out figure is in-process, not a network load test. The Producer schedules cues automatically; there is no human approve, hold or retract console yet.
 
 ### Who it's for
 A **producer running one match for several markets**: push the feed to `POST /api/feed`, drive existing vMix, CasparCG or OBS graphics from `GET /api/onair` (already personalised per market), open any graphic's receipt, and stay on air through a model outage. Fans get it as a second screen (scan the QR code), and club media teams as checked posts in Slack, Teams or Discord.
@@ -56,7 +58,7 @@ Microsoft Agent Framework · Microsoft Foundry (gpt-4.1-mini, Entra ID, no keys)
 
 ### Links and testing
 - **Live demo:** https://ca-registaednsnlttycm2o.calmsea-720b2319.koreacentral.azurecontainerapps.io (the first load after a quiet spell takes about 20 s). Start with **Explore a moment**, then **Broadcast**, **Two fans**, **Control room → Simulate model outage** (it switches itself off after 90 s), **Recap** and **Data lab**.
-- **Code:** https://github.com/iSharaf6/regista (runs locally with no keys; 65 offline tests; full testing steps in `docs/submission.md`)
+- **Code:** https://github.com/iSharaf6/regista (runs locally with no keys; 71 offline tests; full testing steps in `docs/submission.md`)
 - **Video (under 2 minutes):** <VIDEO URL>
 
 All data is synthetic; all clubs, players and venues are fictional.

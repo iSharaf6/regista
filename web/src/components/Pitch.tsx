@@ -351,8 +351,13 @@ export function Pitch({ feed, favorite, cam, lens, overlay }: {
     let disp: ([number, number] | null)[] = [];
     let ball: [number, number, number] = [L / 2, W / 2, 0];
     let scene: { key: string; canvas: HTMLCanvasElement } | null = null;
+    const reduce = typeof matchMedia === "function" ? matchMedia("(prefers-reduced-motion: reduce)") : null;
+    let painted = 0;
     const draw = (now: number) => {
       raf = requestAnimationFrame(draw);
+      // reduced motion: repaint twice a second, so players step instead of gliding (CSS alone can't slow a canvas loop)
+      if (reduce?.matches && now - painted < 500) return;
+      painted = now;
       const el = canvas.current;
       if (!el) return;
       const dt = Math.min(0.1, (now - last) / 1000);

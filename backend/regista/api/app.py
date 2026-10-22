@@ -22,7 +22,7 @@ from starlette.requests import HTTPConnection
 
 from .. import __version__
 from ..mcp_server import build_mcp
-from ..runtime.explore import Explore
+from ..runtime.explore import Explore, cache_key
 from ..runtime.observability import setup_observability
 from ..runtime.session import MatchSession
 from ..schema.cues import Cue
@@ -295,15 +295,17 @@ async def warm_explore() -> None:
 
 
 @app.get("/api/explore")
-async def explore(request: Request, moment: str | None = None) -> dict[str, Any]:
-    """Explore one moment: a curated, private replay of a demo-match moment as Tom, Amira and Lucía see it, with the
-    facts (observed vs model estimate), the checked story and the agent trace. Defaults to the first goal."""
+async def explore(request: Request, moment: str | None = None, drill: str | None = None) -> dict[str, Any]:
+    """Explore one moment: a curated, private replay of a demo-match moment as Tom, Amira and Lucía (and Sam, Tom's
+    same-language pair) see it, with the facts (observed vs model estimate), the checked story, every draft and how it
+    was judged, and the agent trace. Defaults to the first goal. `drill` (ar, ar2, es, es2) runs a labelled recovery
+    drill: a wrong goal count planted in that language's draft(s), so only that language is rewritten or falls back."""
     ex = explore_engine()
-    if (moment or "") not in ex.cache and not recap_limit.allow(client_ip(request)):
+    if cache_key(moment or "", drill) not in ex.cache and not recap_limit.allow(client_ip(request)):
         raise HTTPException(429, "too many requests: try again in a minute")
-    out = await ex.get(moment)
+    out = await ex.get(moment, drill)
     if out is None:
-        raise HTTPException(404, "unknown moment: pick one of /api/explore's `moments`")
+        raise HTTPException(404, "unknown moment or drill: pick from /api/explore's `moments` and `drills`")
     return out
 
 

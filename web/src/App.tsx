@@ -89,7 +89,7 @@ export function App() {
         {path === "/" && <Broadcast profile={profile} setProfile={setProfile} />}
         {path === "/explore" && <Explore query={query} />}
         {path === "/compare" && <Compare />}
-        {path === "/ops" && <ControlRoom />}
+        {path === "/ops" && <ControlRoom fan={profile} setFan={setProfile} />}
         {path === "/recap" && <Recap lang={profile.language} />}
         {path === "/lab" && <Lab />}
       </main>
