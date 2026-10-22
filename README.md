@@ -113,7 +113,7 @@ Reproduce: `regista realism --matches 20`, `regista evaluate --matches 20`, `reg
 ## Use it for real, not just as a demo
 
 Regista plugs into an actual production chain, with no simulator required. Full guide: [docs/real-world.md](docs/real-world.md).
-- **Live feed API:** any data provider pushes events and 5 Hz tracking to `POST /api/feed`. Ingestion is idempotent and
+- **Live feed API:** a provider pushes events and 5 Hz tracking in Regista's schema to `POST /api/feed` (a real provider would need an adapter for its ids, event types and coordinates; this entry uses synthetic data only, as the rules require, and accuracy on real matches is not established). Ingestion is idempotent and
   validated against JSON Schema, and `regista publish` is a working reference provider.
 - **Your own graphics:** `GET /api/onair?mode=casual&lang=ar&team=CAL` returns what that viewer should see right now as
   one flat JSON row. Bind it to vMix Data Sources or CasparCG templates, or add `/#/overlay` as an OBS browser source.
