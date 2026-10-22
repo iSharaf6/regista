@@ -363,7 +363,13 @@ class MatchSession:
 
     def _after_batch(self, batch: list[dict[str, Any]], live: bool) -> None:
         if live and batch:
-            self.broadcast({"type": "frames", "frames": batch[-12:]})
+            # at high replay speeds a tick covers many frames: send an even sample of them, ending on the newest, so
+            # the viewer's playback has the whole stretch to move through rather than a jump to its last second
+            step = -(-len(batch) // 12)
+            sent = batch[::step]
+            if sent[-1] is not batch[-1]:
+                sent.append(batch[-1])
+            self.broadcast({"type": "frames", "frames": sent})
             for v in self.viewers.values():
                 focus = v.director.player_focus(self.clock_t)
                 if focus:

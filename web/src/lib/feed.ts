@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { Playback } from "./playback";
 import type { Control, Cue, Frame, MatchInfo, Moment, Profile, Snapshot, Span, Story } from "./types";
 
 export interface Feed {
@@ -16,7 +17,8 @@ export interface Feed {
   ops: any;
   recaps: any[];
   frame: React.MutableRefObject<Frame | null>;
-  trail: React.MutableRefObject<[number, number, number][]>;
+  /** recent frames, played back on a steady clock by the pitch */
+  playback: Playback;
   clock: React.MutableRefObject<number>;
   lastSpanByAgent: Record<string, Span>;
   send: (msg: any) => void;
@@ -54,7 +56,7 @@ export function useFeed(profile: Profile, opts: { ops?: boolean } = {}): Feed {
   const [ops, setOps] = useState<any>(null);
   const [recaps, setRecaps] = useState<any[]>([]);
   const frame = useRef<Frame | null>(null);
-  const trail = useRef<[number, number, number][]>([]);
+  const [playback] = useState(() => new Playback());
   const clock = useRef(0);
   const ws = useRef<WebSocket | null>(null);
   const pending = useRef(new Map<string, (v: any) => void>());
@@ -79,16 +81,16 @@ export function useFeed(profile: Profile, opts: { ops?: boolean } = {}): Feed {
           case "hello":
             setMatch(msg.match); setSnap(msg.snapshot); setControl(msg.control); setLlm(msg.llm);
             setMoments(msg.moments ?? []); setCueMap({});
+            playback.reset(msg.frame);
             if (msg.frame) { frame.current = msg.frame; clock.current = msg.frame.t; }
             break;
           case "reset":
-            setSnap(msg.snapshot); setMoments(msg.moments ?? []); setCueMap({}); trail.current = [];
+            setSnap(msg.snapshot); setMoments(msg.moments ?? []); setCueMap({}); playback.reset(msg.frame);
             if (msg.frame) { frame.current = msg.frame; clock.current = msg.frame.t; }
             break;
           case "frames": {
             const fs: Frame[] = msg.frames;
-            for (const f of fs) { trail.current.push(f.b); }
-            if (trail.current.length > 24) trail.current.splice(0, trail.current.length - 24);
+            playback.push(fs);
             const last = fs[fs.length - 1];
             frame.current = last; clock.current = last.t;
             break;
@@ -163,7 +165,7 @@ export function useFeed(profile: Profile, opts: { ops?: boolean } = {}): Feed {
   }), [send]);
 
   const cues = useMemo(() => Object.values(cueMap), [cueMap]);
-  return { connected, language: profile.language, match, snap, control, llm, moments, cues, stories, spans, ops, recaps, frame, trail, clock,
+  return { connected, language: profile.language, match, snap, control, llm, moments, cues, stories, spans, ops, recaps, frame, playback, clock,
     lastSpanByAgent, send, control$, ask };
 }
 

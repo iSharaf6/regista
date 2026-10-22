@@ -67,6 +67,8 @@ export interface Story {
 
 export interface Control {
   playing: boolean; speed: number; clock: string; t: number; t_end: number;
+  /** "replay" plays the stored match; "live" follows a provider feed in real time */
+  mode?: "replay" | "live";
   params: { home: string; away: string; seed: number; scenario: string };
   chaos: { fail_rate: number; latency_ms: number }; breaker: any; bus: string;
 }

@@ -342,8 +342,8 @@ export function Pitch({ feed, favorite, cam, lens, overlay }: {
   feed: Feed; favorite?: string | null; cam: Cam; lens: boolean; overlay: React.RefObject<HTMLDivElement | null>;
 }) {
   const canvas = useRef<HTMLCanvasElement>(null);
-  const props = useRef({ favorite, cam, lens, match: feed.match });
-  props.current = { favorite, cam, lens, match: feed.match };
+  const props = useRef({ favorite, cam, lens, match: feed.match, control: feed.control });
+  props.current = { favorite, cam, lens, match: feed.match, control: feed.control };
 
   useEffect(() => {
     let raf = 0;
@@ -360,7 +360,7 @@ export function Pitch({ feed, favorite, cam, lens, overlay }: {
       painted = now;
       const el = canvas.current;
       if (!el) return;
-      const dt = Math.min(0.1, (now - last) / 1000);
+      const dt = Math.min(0.6, (now - last) / 1000);
       last = now;
       const cw = el.clientWidth;
       const ch = el.clientHeight;
@@ -371,7 +371,7 @@ export function Pitch({ feed, favorite, cam, lens, overlay }: {
         el.height = Math.round(ch * dpr);
       }
       const ctx = el.getContext("2d")!;
-      const { favorite, cam, lens, match } = props.current;
+      const { favorite, cam, lens, match, control } = props.current;
       const P = projection(cam, cw, ch);
       // the scene is cached; redraw it once the pixel font arrives so the board lettering is crisp
       const fontsReady = document.fonts?.check?.(`700 12px ${PX}`) ? 1 : 0;
@@ -388,17 +388,13 @@ export function Pitch({ feed, favorite, cam, lens, overlay }: {
       ctx.setTransform(1, 0, 0, 1, 0, 0);
       ctx.drawImage(scene.canvas, 0, 0);
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-      const f = feed.frame.current;
-      if (!f || !match) return;
-      const a = 1 - Math.exp(-dt * 9);
-      disp = f.p.map((p, i) => {
-        const d = disp[i];
-        if (!p) return null;
-        if (!d) return [p[0], p[1]];
-        return [d[0] + (p[0] - d[0]) * a, d[1] + (p[1] - d[1]) * a];
-      });
-      ball = [ball[0] + (f.b[0] - ball[0]) * Math.min(1, a * 1.6), ball[1] + (f.b[1] - ball[1]) * Math.min(1, a * 1.6),
-        ball[2] + (f.b[2] - ball[2]) * a];
+      // the feed plays at the replay speed (a live provider feed runs in real time and arrives in bigger bursts)
+      const live = control?.mode === "live";
+      const rate = !control || live ? 1 : control.playing ? control.speed : 0;
+      const pose = feed.playback.step(dt, rate, live ? 1 : 0.25);
+      if (!pose || !match) return;
+      disp = pose.players;
+      ball = pose.ball;
       const roster = match.roster;
       const homeIds = new Set(match.home.players.map((p) => p.id));
       const gk = new Set([...match.home.players, ...match.away.players].filter((p) => p.position === "GK").map((p) => p.id));
@@ -408,7 +404,7 @@ export function Pitch({ feed, favorite, cam, lens, overlay }: {
       if (lens) drawLens(ctx, P, disp, roster, homeIds, gk, ball, match.home.primary, match.away.primary);
 
       // ball trail
-      const tr = feed.trail.current;
+      const tr = pose.trail;
       if (tr.length > 2) {
         ctx.lineCap = "square";
         for (let i = 1; i < tr.length; i++) {
@@ -464,7 +460,7 @@ export function Pitch({ feed, favorite, cam, lens, overlay }: {
     };
     raf = requestAnimationFrame(draw);
     return () => cancelAnimationFrame(raf);
-  }, [feed.frame, feed.trail, overlay]);
+  }, [feed.playback, overlay]);
 
   return <canvas ref={canvas} aria-label="Live synthetic match: player and ball tracking" role="img" />;
 }
