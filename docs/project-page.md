@@ -79,13 +79,16 @@ Select **The Synthetic Match Insights Engine for Premier League Studio**.
 |---|---|---|
 | 1 | `docs/media/cover.png` | One match. Every fan. Every figure checked. |
 | 2 | `docs/img/explore.jpg` | Same second, three broadcasts: Tom (English analyst), Amira (Arabic, Port Calder fan) and Lucía (Spanish, first match) |
-| 3 | `docs/img/explore-checks.jpg` | The receipts: each fact tagged observed or model estimate, the Verifier's verdict and the agent trace |
-| 4 | `docs/img/broadcast.jpg` | The live broadcast with tracked players and timed graphics |
-| 5 | `docs/img/compare.jpg` | Two fans, two broadcasts, the same second |
-| 6 | `docs/img/control-room.jpg` | Control room: the real agent workflow, live, with the outage switch |
-| 7 | `docs/img/lab.jpg` | Data lab: the workflow against a single agent with and without the checker, and 235/235 believable errors caught |
-| 8 | `docs/img/recap.jpg` | Full-time recap, written by an agent and checked figure by figure |
-| 9 | `docs/img/receipts.jpg` | A graphic's receipt, opened from the broadcast |
+| 3 | `docs/img/correction-receipt.jpg` | A correction receipt from a labelled drill: a wrong goal count planted in the Arabic draft is rejected with the Verifier's exact findings, never airs, and only Arabic is rewritten |
+| 4 | `docs/img/explore-same.jpg` | Same language, two fans: Tom (analyst) and Sam (first match) get different English broadcasts of the same goal |
+| 5 | `docs/img/overlay-amira.jpg` | Amira's OBS / vMix overlay export, in Arabic and right to left (shown over a plain backdrop) |
+| 6 | `docs/img/explore-checks.jpg` | The receipts: each fact tagged observed or model estimate, the Verifier's verdict and the agent trace |
+| 7 | `docs/img/broadcast.jpg` | The live broadcast at the 74th-minute goal, with tracked players and timed graphics |
+| 8 | `docs/img/compare.jpg` | Two fans, two broadcasts, the same second |
+| 9 | `docs/img/control-room.jpg` | Control room: the real agent workflow, live, with the outage switch |
+| 10 | `docs/img/lab.jpg` | Data lab: the workflow against a single agent with and without the checker, and 235/235 believable errors caught |
+| 11 | `docs/img/recap.jpg` | Full-time recap, written by an agent and checked figure by figure |
+| 12 | `docs/img/receipts.jpg` | A graphic's receipt, opened from the broadcast |
 
 Video: paste the YouTube URL wherever the page asks for it, and in the Description's Links section.
 

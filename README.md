@@ -25,6 +25,8 @@ It is built on **Microsoft Agent Framework** (agents + workflow), runs models on
 | **Receipts**: every fact tagged observed or model estimate, the Verifier's verdict and the agent trace | **Data lab**: the workflow against a single agent with and without the same checker, and 235/235 believable errors caught |
 | ![Control room](docs/img/control-room.jpg) | ![Recap](docs/img/recap.jpg) |
 | **Control room**: the real agent workflow live, the chaos switch, the circuit breaker, spans and Director decisions | **Recap**: the full-time report written by the Recap agent, checked figure by figure, with the win-probability path |
+| ![A correction receipt](docs/img/correction-receipt.jpg) | ![Amira's overlay export](docs/img/overlay-amira.jpg) |
+| **Correction receipt**: in a labelled drill a wrong goal count planted in the Arabic draft is rejected with the Verifier's exact findings and never airs; only Arabic is rewritten | **Overlay export**: Amira's OBS / vMix browser source, in Arabic and right to left, from the Control room's export links |
 
 ---
 
