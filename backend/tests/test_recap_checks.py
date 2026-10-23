@@ -189,5 +189,47 @@ def test_phase_claims_are_checked_in_every_language():
         assert not second(text), text
     assert phase_problems({"summary": "The final score was 2-1."}, "live", "first_half")
     assert phase_problems({"summary": "El partido terminó con empate."}, "half_time", "half_time")
+    assert phase_problems({"summary": "Le match s’est terminé."}, "live", "second_half")
+    assert phase_problems({"summary": "At full‑time, the score was level."}, "live", "second_half")
     assert phase_problems({"summary": "Ahead of the second half, they must push."}, "full_time", "full_time")
     assert not phase_problems({"summary": "Ahead of the second half, they must push."}, "half_time", "half_time")
+
+
+def test_nested_malformed_model_recaps_fall_back_without_type_errors():
+    """Injected JSON only: malformed model IDs/evidence must not crash the recap endpoint or gain a verified badge."""
+    from regista.agents.recap import offline_recap
+
+    async def run():
+        s = MatchSession(story_workers=0)
+        s.advance(float(s.res.frame_t[-1]), live=False)
+        clock = s.moments[0].clock
+        changes = [
+            {"player_of_the_match": {key: bad}}
+            for key in ("player_id", "reason", "name") for bad in ([], {}, True)
+        ] + [
+            {"turning_points": [{"clock": clock, "text": "A moment.", "evidence": bad}]}
+            for bad in (17, "e001", {}, [None], [[]], [{}])
+        ] + [
+            {"turning_points": [{"clock": [], "text": "A moment.", "evidence": []}]},
+            {"turning_points": [{"clock": clock, "text": {"claim": "999 goals"}, "evidence": []}]},
+            {"turning_points": [{"clock": clock, "text": "A moment.", "evidence": [], "moment_id": {}}]},
+        ]
+        for change in changes:
+            s.recaps.clear()
+            _model(s, lambda p, change=change: {**offline_recap(p), **change})
+            out = await s.recap("en", "analyst", "full_time")
+            assert out["source"] == "deterministic" and out["verdict"]["ok"], change
+    asyncio.run(run())
+
+
+def test_recap_evidence_accepts_equivalent_clocks_but_rejects_unknown_moment_links():
+    from regista.agents.recap import recap_fields
+
+    p = {"moments": [{"id": "m001", "clock": "61'", "facts": {}, "evidence": ["e001"]}],
+         "period": "full_time", "phase": "full_time"}
+    for clock in ("61'", "61’", "61′", "٦١′", "６１′"):
+        data = {"headline": "Match report", "turning_points": [{"clock": clock, "text": "A goal.",
+                                                                 "evidence": ["e001"], "moment_id": "m001"}]}
+        assert not recap_fields(data, p, {})[1], clock
+        data["turning_points"][0]["moment_id"] = "m999"
+        assert any("moment_id" in issue for issue in recap_fields(data, p, {})[1])

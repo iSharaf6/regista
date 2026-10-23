@@ -14,6 +14,7 @@ from __future__ import annotations
 import asyncio
 import contextlib
 import logging
+import math
 import os
 import time
 import uuid
@@ -34,7 +35,7 @@ from ..agents.recap import (
 )
 from ..agents.story import AgentFailure, AgentRuntime, StoryJob, run_story
 from ..agents.telemetry import Span, Telemetry
-from ..agents.templates import LANGS, PERSONAS, Names, narrate
+from ..agents.templates import LANGS, PERSONAS, Names, narrate, rtl_safe_all
 from ..agents.tools import MatchTools
 from ..agents.verifier import verify_texts
 from ..intel.moments import Moment, MomentDetector
@@ -42,6 +43,8 @@ from ..intel.state import MatchState
 from ..schema.cues import Cue, Provenance
 from ..schema.profiles import FanProfile
 from ..sim.engine import SimResult, simulate
+from ..sim.scenarios import SCENARIOS
+from ..sim.squads import TEAMS
 from .bus import make_bus
 from .live import CaptureViewer, LiveRecording, onair_payload, profile_key
 from .webhooks import Webhooks
@@ -123,8 +126,18 @@ class MatchSession:
 
     # ------------------------------------------------------------------ lifecycle
     def load(self, home: str, away: str, seed: int, scenario: str) -> None:
+        if not isinstance(home, str) or not isinstance(away, str) or home not in TEAMS or away not in TEAMS:
+            raise ValueError("Choose home and away clubs from the available teams")
+        if home == away:
+            raise ValueError("Home and away clubs must differ")
+        if isinstance(seed, bool) or not isinstance(seed, int) or not 0 <= seed <= 4294967295:
+            raise ValueError("Seed must be a whole number between 0 and 4294967295")
+        if not isinstance(scenario, str) or scenario not in SCENARIOS:
+            raise ValueError("Choose an available match scenario")
+        res = get_sim(home, away, seed, scenario)
+        # Keep the current match and its identity intact if validation or simulation fails.
         self.params = {"home": home, "away": away, "seed": seed, "scenario": scenario}
-        self.res = get_sim(home, away, seed, scenario)
+        self.res = res
         self.events = sorted(self.res.events, key=_event_order)
         self._reset_pipeline()
 
@@ -175,7 +188,15 @@ class MatchSession:
         v = Viewer(profile, Director(profile, self.state, self.names), ops)
         self.viewers[v.id] = v
         v.send(self.hello(v))
+        self._catch_up_viewer(v)
         return v
+
+    def _catch_up_viewer(self, v: Viewer | CaptureViewer) -> None:
+        """A viewer joining a paused moment receives the same current cues as existing viewers."""
+        for cue in self.live_cues():
+            out = v.director.decide(cue)
+            if out is not None:
+                v.send({"type": "cue", "cue": out.model_dump()})
 
     def disconnect(self, vid: str) -> None:
         self.viewers.pop(vid, None)
@@ -240,34 +261,60 @@ class MatchSession:
             self.playing = False
             self._paused_at = time.monotonic()
         elif action == "speed":
-            self.speed = float(max(0.5, min(60.0, float(value))))
+            speed = self._control_number(value, "Speed")
+            self.speed = float(max(0.5, min(60.0, speed)))
         elif action == "seek":
-            self.seek(float(value))
+            minute = self._control_number(value, "Minute")
+            if minute < 0:
+                raise ValueError("Minute must be zero or greater")
+            self.seek(minute)
         elif action == "restart":
             self._reset_pipeline()
             self.broadcast({"type": "reset", "snapshot": self.state.snapshot(), "moments": []})
         elif action == "load":
-            self.playing = False
-            self.load(value.get("home", "NOR"), value.get("away", "CAL"), int(value.get("seed", 7)),
+            if not isinstance(value, dict):
+                raise ValueError("Match settings must be an object")
+            self.load(value.get("home", "NOR"), value.get("away", "CAL"), value.get("seed", 7),
                       value.get("scenario", "derby"))
+            self.playing = False
             for v in self.viewers.values():
                 v.send(self.hello(v))
         elif action == "chaos":
-            self.telemetry.chaos_fail_rate = float(max(0.0, min(1.0, value.get("fail_rate", 0.0))))
-            self.telemetry.chaos_latency_ms = float(max(0.0, min(8000.0, value.get("latency_ms", 0.0))))
+            if not isinstance(value, dict):
+                raise ValueError("Failure settings must be an object")
+            fail_rate = self._control_number(value.get("fail_rate", 0.0), "Failure rate")
+            latency = self._control_number(value.get("latency_ms", 0.0), "Added latency")
+            self.telemetry.chaos_fail_rate = float(max(0.0, min(1.0, fail_rate)))
+            self.telemetry.chaos_latency_ms = float(max(0.0, min(8000.0, latency)))
             active = self.telemetry.chaos_fail_rate > 0 or self.telemetry.chaos_latency_ms > 0
             self._chaos_until = time.monotonic() + 90.0 if active else 0.0  # fault injection always switches itself off
+        else:
+            raise ValueError("Unknown playback control")
         self.broadcast({"type": "control", "control": self.control_state()})
         return self.control_state()
 
+    @staticmethod
+    def _control_number(value: Any, name: str) -> float:
+        if isinstance(value, bool) or not isinstance(value, (int, float)):
+            raise ValueError(f"{name} must be a finite number")
+        try:
+            number = float(value)
+        except OverflowError:
+            raise ValueError(f"{name} must be a finite number") from None
+        if not math.isfinite(number):
+            raise ValueError(f"{name} must be a finite number")
+        return number
+
     def seek(self, minute: float) -> None:
-        target = self._t_for_minute(minute)
+        target = min(float(self.res.frame_t[-1]), max(0.0, self._t_for_minute(minute)))
         if target < self.clock_t:
             self._reset_pipeline()
         self.advance(target - self.clock_t, live=False)
         self.broadcast({"type": "reset", "snapshot": self.state.snapshot(),
                         "moments": [self._moment_summary(m) for m in self.moments[-40:]], "frame": self.state.last_frame})
-        self.broadcast({"type": "cue", "cue": self.producer.score_bug(self.clock_t, []).model_dump()})
+        for viewer in self.viewers.values():
+            viewer.director.update_profile(viewer.profile)
+            self._catch_up_viewer(viewer)
 
     def _t_for_minute(self, minute: float) -> float:
         p2 = next((e.t for e in self.events if e.type == "second_half"), None)
@@ -444,6 +491,7 @@ class MatchSession:
             v = CaptureViewer(profile, Director(profile, self.state, self.names))
             self.virtual[key] = v
             self.viewers[v.id] = v  # type: ignore[assignment]
+            self._catch_up_viewer(v)
         v.last_access = time.monotonic()
         return onair_payload(v, self.clock_t, self.state.snapshot(), self.res.info)
 
@@ -531,8 +579,11 @@ class MatchSession:
         )
         self.story[m.id] = {"job": job.id, "insight": job.insight, "verdict": job.verdict, "attempts": job.attempts,
                             "fallback_langs": job.fallback_langs, "latency_ms": round(latency, 1), "models": job.models,
-                            "trace": job.trace, "narration": job.narration if job.verdict_ok else {},  # never unchecked copy
-                            "drafts": job.drafts}  # the correction receipt: every draft, labelled with how it was judged
+                            "trace": job.trace,
+                            "narration": {lang: rtl_safe_all(c, lang) for lang, c in job.narration.items()}
+                            if job.verdict_ok else {},  # never unchecked copy
+                            # the correction receipt: every draft, labelled with how it was judged
+                            "drafts": {lang: rtl_safe_all(d, lang) for lang, d in job.drafts.items()}}
         self.broadcast({"type": "story", "moment_id": m.id, "story": self.story[m.id]})
         if not job.verdict_ok:
             return  # unverified copy never reaches air: the deterministic fast-lane cue stays up
@@ -590,7 +641,7 @@ class MatchSession:
         data, verdict = self._check_recap(offline_recap(payload), payload, lang, persona)
         return {"period": period, "language": lang, "persona": persona,
                 "source": "deterministic (the match changed while the model was writing)", "verdict": verdict.as_dict(),
-                "recap": data, "ms": 0.0, "match_id": payload["match_id"],
+                "recap": rtl_safe_all(data, lang), "ms": 0.0, "match_id": payload["match_id"],
                 "as_of": {"clock": payload.get("clock"), "score": payload.get("score"), "phase": payload.get("phase")}}
 
     async def recap(self, lang: str, persona: str, period: str | None = None, _retry: bool = True) -> dict[str, Any]:
@@ -625,7 +676,7 @@ class MatchSession:
             data, verdict = self._check_recap(offline_recap(payload), payload, lang, persona)
             source = "deterministic (verifier rejected model recap)"
         out = {"period": period, "language": lang, "persona": persona, "source": source, "verdict": verdict.as_dict(),
-               "recap": data, "ms": round((time.perf_counter() - t0) * 1000, 1),
+               "recap": rtl_safe_all(data, lang), "ms": round((time.perf_counter() - t0) * 1000, 1),
                "match_id": payload["match_id"],
                "as_of": {"clock": payload.get("clock"), "score": payload.get("score"), "phase": payload.get("phase")}}
         if gen != self._gen or (period == "live" and self._revision() != rev):

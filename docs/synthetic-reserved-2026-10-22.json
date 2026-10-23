@@ -1,0 +1,505 @@
+{
+  "cases": [
+    [
+      2026102291,
+      "KES",
+      "CAL",
+      "derby"
+    ],
+    [
+      2026102292,
+      "CAL",
+      "NOR",
+      "press"
+    ],
+    [
+      2026102293,
+      "NOR",
+      "ASH",
+      "baseline"
+    ],
+    [
+      2026102294,
+      "ASH",
+      "NOR",
+      "derby"
+    ],
+    [
+      2026102295,
+      "KES",
+      "ASH",
+      "press"
+    ],
+    [
+      2026102296,
+      "CAL",
+      "KES",
+      "baseline"
+    ]
+  ],
+  "method": "Predeclared reserved cases, transparently rerun after carrier urgency and inactive-player accounting corrections; no model-threshold or reference-band tuning. Existing evaluate() with seed-to-predeclared-SimResult dispatcher and existing realism.report().",
+  "evaluation": {
+    "matches": 6,
+    "press_shift": {
+      "truth_events": 4,
+      "recall": 0.75,
+      "false_alarms_per_match": 0.5,
+      "median_delay_min": 3.0,
+      "mean_delay_min": 3.7,
+      "median_onset_error_min": 0
+    },
+    "template_grounding": {
+      "moments": 200,
+      "outputs": 1000,
+      "rejected": 0,
+      "languages": [
+        "en",
+        "es",
+        "fr",
+        "ar",
+        "pt"
+      ],
+      "personas_per_output": 3
+    },
+    "xg_model": {
+      "shots": 175,
+      "mean_model_xg": 0.073,
+      "mean_true_xg": 0.083,
+      "bias": -0.01,
+      "mae": 0.012
+    },
+    "per_match": [
+      {
+        "seed": 2026102291,
+        "score": {
+          "KES": 1,
+          "CAL": 3
+        },
+        "truth_shifts": 2,
+        "detected": 1,
+        "false_alarms": 0
+      },
+      {
+        "seed": 2026102292,
+        "score": {
+          "CAL": 2,
+          "NOR": 1
+        },
+        "truth_shifts": 1,
+        "detected": 1,
+        "false_alarms": 0
+      },
+      {
+        "seed": 2026102293,
+        "score": {
+          "NOR": 1,
+          "ASH": 0
+        },
+        "truth_shifts": 0,
+        "detected": 0,
+        "false_alarms": 0
+      },
+      {
+        "seed": 2026102294,
+        "score": {
+          "ASH": 3,
+          "NOR": 1
+        },
+        "truth_shifts": 0,
+        "detected": 0,
+        "false_alarms": 0
+      },
+      {
+        "seed": 2026102295,
+        "score": {
+          "KES": 1,
+          "ASH": 0
+        },
+        "truth_shifts": 1,
+        "detected": 3,
+        "false_alarms": 2
+      },
+      {
+        "seed": 2026102296,
+        "score": {
+          "CAL": 2,
+          "KES": 0
+        },
+        "truth_shifts": 0,
+        "detected": 1,
+        "false_alarms": 1
+      }
+    ]
+  },
+  "realism": {
+    "matches": 6,
+    "metrics": [
+      {
+        "metric": "passes",
+        "mean": 569.5,
+        "range": [
+          330,
+          700
+        ],
+        "within_range": 1.0,
+        "pass": true
+      },
+      {
+        "metric": "pass_accuracy",
+        "mean": 0.772,
+        "range": [
+          0.72,
+          0.9
+        ],
+        "within_range": 1.0,
+        "pass": true
+      },
+      {
+        "metric": "shots",
+        "mean": 14.667,
+        "range": [
+          7,
+          19
+        ],
+        "within_range": 0.83,
+        "pass": true
+      },
+      {
+        "metric": "shots_on_target_share",
+        "mean": 0.365,
+        "range": [
+          0.25,
+          0.5
+        ],
+        "within_range": 0.67,
+        "pass": true
+      },
+      {
+        "metric": "xg",
+        "mean": 1.277,
+        "range": [
+          0.6,
+          2.2
+        ],
+        "within_range": 0.92,
+        "pass": true
+      },
+      {
+        "metric": "goals",
+        "mean": 1.25,
+        "range": [
+          0.5,
+          2.5
+        ],
+        "within_range": 0.58,
+        "pass": true
+      },
+      {
+        "metric": "xg_per_shot",
+        "mean": 0.086,
+        "range": [
+          0.07,
+          0.16
+        ],
+        "within_range": 0.67,
+        "pass": true
+      },
+      {
+        "metric": "fouls",
+        "mean": 18.333,
+        "range": [
+          7,
+          16
+        ],
+        "within_range": 0.5,
+        "pass": false
+      },
+      {
+        "metric": "corners",
+        "mean": 4.5,
+        "range": [
+          3,
+          8
+        ],
+        "within_range": 0.75,
+        "pass": true
+      },
+      {
+        "metric": "yellow_cards",
+        "mean": 1.75,
+        "range": [
+          0,
+          4
+        ],
+        "within_range": 1.0,
+        "pass": true
+      },
+      {
+        "metric": "tackles",
+        "mean": 23.833,
+        "range": [
+          8,
+          25
+        ],
+        "within_range": 0.67,
+        "pass": true
+      },
+      {
+        "metric": "interceptions",
+        "mean": 17.083,
+        "range": [
+          5,
+          20
+        ],
+        "within_range": 0.83,
+        "pass": true
+      },
+      {
+        "metric": "outfield_distance_km",
+        "mean": 11.629,
+        "range": [
+          9.0,
+          12.5
+        ],
+        "within_range": 1.0,
+        "pass": true
+      },
+      {
+        "metric": "top_speed_kmh",
+        "mean": 30.75,
+        "range": [
+          29.0,
+          37.5
+        ],
+        "within_range": 1.0,
+        "pass": true
+      }
+    ],
+    "passed": 13,
+    "total": 14
+  },
+  "per_match_realism": [
+    {
+      "seed": 2026102291,
+      "teams": {
+        "KES": {
+          "passes": 515,
+          "pass_accuracy": 0.7514563106796116,
+          "shots": 10,
+          "shots_on_target_share": 0.3,
+          "xg": 0.6502,
+          "goals": 1,
+          "xg_per_shot": 0.06502,
+          "fouls": 25,
+          "corners": 5,
+          "yellow_cards": 4,
+          "tackles": 31,
+          "interceptions": 22,
+          "outfield_distance_km": 11.78,
+          "top_speed_kmh": 29.50627326965332
+        },
+        "CAL": {
+          "passes": 611,
+          "pass_accuracy": 0.8166939443535188,
+          "shots": 22,
+          "shots_on_target_share": 0.3181818181818182,
+          "xg": 2.1613,
+          "goals": 3,
+          "xg_per_shot": 0.0982409090909091,
+          "fouls": 11,
+          "corners": 2,
+          "yellow_cards": 2,
+          "tackles": 31,
+          "interceptions": 17,
+          "outfield_distance_km": 11.4,
+          "top_speed_kmh": 29.339689254760742
+        }
+      }
+    },
+    {
+      "seed": 2026102292,
+      "teams": {
+        "CAL": {
+          "passes": 524,
+          "pass_accuracy": 0.767175572519084,
+          "shots": 10,
+          "shots_on_target_share": 0.5,
+          "xg": 0.8149,
+          "goals": 2,
+          "xg_per_shot": 0.08148999999999999,
+          "fouls": 30,
+          "corners": 3,
+          "yellow_cards": 3,
+          "tackles": 23,
+          "interceptions": 16,
+          "outfield_distance_km": 11.232,
+          "top_speed_kmh": 31.516862869262695
+        },
+        "NOR": {
+          "passes": 540,
+          "pass_accuracy": 0.7796296296296297,
+          "shots": 19,
+          "shots_on_target_share": 0.3684210526315789,
+          "xg": 1.7635,
+          "goals": 1,
+          "xg_per_shot": 0.09281578947368421,
+          "fouls": 21,
+          "corners": 4,
+          "yellow_cards": 0,
+          "tackles": 28,
+          "interceptions": 15,
+          "outfield_distance_km": 11.186666666666667,
+          "top_speed_kmh": 31.877887725830078
+        }
+      }
+    },
+    {
+      "seed": 2026102293,
+      "teams": {
+        "NOR": {
+          "passes": 648,
+          "pass_accuracy": 0.7932098765432098,
+          "shots": 17,
+          "shots_on_target_share": 0.5294117647058824,
+          "xg": 1.1976,
+          "goals": 1,
+          "xg_per_shot": 0.07044705882352942,
+          "fouls": 25,
+          "corners": 12,
+          "yellow_cards": 2,
+          "tackles": 22,
+          "interceptions": 14,
+          "outfield_distance_km": 11.436666666666667,
+          "top_speed_kmh": 32.00236511230469
+        },
+        "ASH": {
+          "passes": 467,
+          "pass_accuracy": 0.7366167023554604,
+          "shots": 15,
+          "shots_on_target_share": 0.4,
+          "xg": 1.0266,
+          "goals": 0,
+          "xg_per_shot": 0.06844,
+          "fouls": 16,
+          "corners": 4,
+          "yellow_cards": 2,
+          "tackles": 22,
+          "interceptions": 14,
+          "outfield_distance_km": 11.386666666666667,
+          "top_speed_kmh": 30.16242027282715
+        }
+      }
+    },
+    {
+      "seed": 2026102294,
+      "teams": {
+        "ASH": {
+          "passes": 510,
+          "pass_accuracy": 0.7607843137254902,
+          "shots": 14,
+          "shots_on_target_share": 0.35714285714285715,
+          "xg": 2.1218,
+          "goals": 3,
+          "xg_per_shot": 0.15155714285714286,
+          "fouls": 10,
+          "corners": 3,
+          "yellow_cards": 1,
+          "tackles": 18,
+          "interceptions": 24,
+          "outfield_distance_km": 11.26,
+          "top_speed_kmh": 30.121112823486328
+        },
+        "NOR": {
+          "passes": 598,
+          "pass_accuracy": 0.794314381270903,
+          "shots": 13,
+          "shots_on_target_share": 0.23076923076923078,
+          "xg": 1.2543,
+          "goals": 1,
+          "xg_per_shot": 0.09648461538461538,
+          "fouls": 22,
+          "corners": 5,
+          "yellow_cards": 3,
+          "tackles": 22,
+          "interceptions": 10,
+          "outfield_distance_km": 12.044,
+          "top_speed_kmh": 31.968679428100586
+        }
+      }
+    },
+    {
+      "seed": 2026102295,
+      "teams": {
+        "KES": {
+          "passes": 589,
+          "pass_accuracy": 0.7419354838709677,
+          "shots": 7,
+          "shots_on_target_share": 0.14285714285714285,
+          "xg": 0.4447,
+          "goals": 1,
+          "xg_per_shot": 0.06352857142857142,
+          "fouls": 24,
+          "corners": 2,
+          "yellow_cards": 3,
+          "tackles": 26,
+          "interceptions": 19,
+          "outfield_distance_km": 12.045,
+          "top_speed_kmh": 31.734712600708008
+        },
+        "ASH": {
+          "passes": 613,
+          "pass_accuracy": 0.7699836867862969,
+          "shots": 21,
+          "shots_on_target_share": 0.3333333333333333,
+          "xg": 1.5948,
+          "goals": 0,
+          "xg_per_shot": 0.07594285714285715,
+          "fouls": 11,
+          "corners": 4,
+          "yellow_cards": 0,
+          "tackles": 19,
+          "interceptions": 20,
+          "outfield_distance_km": 11.778333333333332,
+          "top_speed_kmh": 30.482654571533203
+        }
+      }
+    },
+    {
+      "seed": 2026102296,
+      "teams": {
+        "CAL": {
+          "passes": 646,
+          "pass_accuracy": 0.7941176470588235,
+          "shots": 17,
+          "shots_on_target_share": 0.35294117647058826,
+          "xg": 1.1642,
+          "goals": 2,
+          "xg_per_shot": 0.06848235294117647,
+          "fouls": 11,
+          "corners": 4,
+          "yellow_cards": 1,
+          "tackles": 20,
+          "interceptions": 18,
+          "outfield_distance_km": 11.725999999999999,
+          "top_speed_kmh": 29.442981719970703
+        },
+        "KES": {
+          "passes": 573,
+          "pass_accuracy": 0.7556719022687609,
+          "shots": 11,
+          "shots_on_target_share": 0.5454545454545454,
+          "xg": 1.1325,
+          "goals": 0,
+          "xg_per_shot": 0.10295454545454547,
+          "fouls": 14,
+          "corners": 6,
+          "yellow_cards": 0,
+          "tackles": 24,
+          "interceptions": 16,
+          "outfield_distance_km": 12.278333333333332,
+          "top_speed_kmh": 30.84417724609375
+        }
+      }
+    }
+  ]
+}

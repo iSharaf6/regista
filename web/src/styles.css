@@ -123,8 +123,8 @@ a.pill:hover { background: var(--ink); text-decoration: none; }
   .page { padding: 14px 16px 28px; }
   .topbar { padding: 10px 16px 12px; gap: 12px; }
   .topbar .right { margin-left: 0; }
-  .nav { flex-wrap: nowrap; overflow-x: auto; width: 100%; padding-bottom: 6px; }
-  .nav a { flex: none; }
+  .nav { width: 100%; gap: 6px; padding-bottom: 4px; } /* every tab stays visible: the row wraps instead of scrolling */
+  .nav a { flex: none; font-size: 11px; padding: 7px 9px 6px; }
 }
 
 /* Page heading block that sits straight on the sky. */
@@ -181,7 +181,7 @@ select:focus-visible, input:focus-visible, textarea:focus-visible, button:focus-
 }
 label.field { display: grid; gap: 6px; font-family: var(--px); font-weight: 700; font-size: 10.5px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--ink-3); }
 .row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
-.stack { display: grid; gap: 12px; }
+.stack { display: grid; gap: 12px; align-content: start; } /* rows keep their own height when the column is stretched */
 
 input[type="range"] { -webkit-appearance: none; appearance: none; width: 100%; height: 22px; background: transparent; cursor: pointer; }
 input[type="range"]::-webkit-slider-runnable-track { height: 10px; background: var(--field); border: 3px solid var(--ink); }
@@ -404,6 +404,7 @@ input[type="range"]::-moz-range-thumb { width: 12px; height: 16px; background: v
 
 /* ---------------------------------------------------------------- control room */
 .ops-grid { display: grid; grid-template-columns: minmax(0, 1.45fr) minmax(0, 1fr); gap: 22px; }
+.ops-grid > .stack { min-width: 0; grid-template-columns: minmax(0, 1fr); }
 @media (max-width: 1100px) { .ops-grid { grid-template-columns: 1fr; } }
 .kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px; margin-bottom: 18px; }
 .kpi { padding: 10px 12px 12px; background: var(--card); border: 4px solid var(--ink); box-shadow: 0 5px 0 var(--ink); }
@@ -443,6 +444,9 @@ table.log tr:hover td { background: var(--field); }
 .tp { display: grid; grid-template-columns: 64px 1fr; gap: 14px; padding: 12px 0; border-bottom: 2px dashed var(--tint-2); }
 .tp .clk { font-family: var(--px); font-weight: 700; font-size: 15px; background: var(--hl); border: 3px solid var(--ink); text-align: center; align-self: start; padding: 4px 0 2px; }
 .ev { font-family: var(--font-mono); font-size: 11px; font-weight: 700; padding: 2px 6px; background: var(--ink); color: var(--card); margin-right: 4px; display: inline-block; margin-top: 6px; }
+.realism-row { display: grid; grid-template-columns: minmax(0, 1.3fr) minmax(0, 1fr) 6.5em; gap: 10px; align-items: center; margin: 8px 0; }
+.realism-row > .mono { text-align: right; }
+.realism-row > span:first-child small { display: block; font-size: 11.5px; }
 .range { position: relative; height: 14px; background: var(--field); border: 3px solid var(--ink); }
 .range .ok-zone { position: absolute; top: 0; bottom: 0; background: var(--grass-a); border-left: 2px solid var(--go-d); border-right: 2px solid var(--go-d); }
 .range .val { position: absolute; top: -7px; width: 8px; height: 22px; background: var(--ink); transform: translateX(-4px); }

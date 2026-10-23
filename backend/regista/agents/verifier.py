@@ -21,13 +21,14 @@ specific, actionable issues that the writer receives on its retry - that is the 
 from __future__ import annotations
 
 import re
+import unicodedata
 from collections.abc import Iterable
 from dataclasses import dataclass, field
 from typing import Any
 
 # digits, optionally with an ordinal suffix (2nd, 63rd, 2º, 63e, 2ème) so ordinals are checked too
-NUM_RE = re.compile(r"(?<![\w])(\d{1,4}(?:[.,]\d{1,3})?)(?:st|nd|rd|th|º|ª|°|er|e|ème|eme)?(?![\w])")
-_NUM = r"(\d{1,4}(?:[.,]\d{1,3})?)"
+NUM_RE = re.compile(r"(?<![\w])(\d+(?:[.,]\d+)?)(?:st|nd|rd|th|º|ª|°|er|e|ème|eme)?(?![\w])")
+_NUM = r"(\d+(?:[.,]\d+)?)"
 
 # A figure with a unit must match a fact of that kind: (pattern, fact-key hints, unit constants, description).
 UNITS: dict[str, tuple[re.Pattern[str], tuple[str, ...], set[float], str]] = {
@@ -38,7 +39,7 @@ UNITS: dict[str, tuple[re.Pattern[str], tuple[str, ...], set[float], str]] = {
     "percent": (re.compile(_NUM + r"\s?(?:%|٪|per ?cent\b|por ciento|pour ?cent|por cento|بالمئة|بالمائة|في المئة|في المائة)", re.I),
                 ("pct", "percent", "accuracy", "possession", "difficulty", "prob", "wp", "xg", "swing", "share", "conversion"),
                 {0.0, 50.0, 76.0, 100.0}, "a percentage"),
-    "goals": (re.compile(_NUM + r"(?:st|nd|rd|th|º|ª|e|ème|er)?\s?(?:goals?\b|goles?\b|gol\b|buts?\b|gols?\b|أهداف|اهداف|هدف)",
+    "goals": (re.compile(_NUM + r"(?:st|nd|rd|th|º|ª|e|ème|er)?\s?(?:goals?\b|goles?\b|gol\b|(?P<french_goal>buts?)\b|gols?\b|أهداف|اهداف|هدف)",
                          re.I),
               ("goals", "score"), {0.0, 1.0}, "a goal count"),
     "players": (re.compile(_NUM + r"\s?(?:-?man\b|men\b|players?\b|jugadores\b|hombres\b|joueurs\b|hommes\b|"
@@ -147,6 +148,21 @@ CLAIMS: dict[str, tuple[str, Any, str]] = {
 }
 
 
+# Claims no match data can back: what players feel, and what will happen next (en, es, fr, ar, pt). "Confidence" in its
+# statistical sense ("confidence z = 6.4", "nivel de confianza") is a figure, not a feeling, and stays allowed.
+UNSUPPORTED = re.compile(
+    r"\b(?:confidence|morale|nerves|nervy|belief|frustrat\w*|desperat\w*|composure|swagger|demorali[sz]\w*|deflated)\b"
+    r"(?!\s*(?:z\b|level|interval|=))"
+    r"|\blikely (?:to )?(?:force|forced|forcing|make|made|cause|caused|lead|led|spark|sparked)\b"
+    r"|\b(?:will|would) (?:now )?(?:have to|need to|be forced to|force)\b|\bpromis(?:e|es|ing) an?\b"
+    r"|\b(?:confianza|moral|nervios|frustraci[oó]n|desesperaci[oó]n)\b(?!\s*(?:z\b|=))"
+    r"|\btendr[aá] que\b|\bprobablemente (?:oblig|forz)\w*"
+    r"|\b(?:confiance|nervosit[ée]|d[ée]sespoir)\b(?!\s*(?:z\b|=))|\bva devoir\b|\bdevra\b"
+    r"|\b(?:confian[çc]a|nervosismo|frustra[çc][ãa]o|desespero)\b(?!\s*(?:z\b|=))|\bter[aá] que\b"
+    r"|الثقة بالنفس|المعنويات|معنويات|الإحباط|سيضطر|ستضطر|من المرجح أن يجبر",
+    re.I)
+
+
 @dataclass
 class Verdict:
     ok: bool
@@ -225,7 +241,8 @@ def unit_numbers(*sources: Any) -> dict[str, set[float]]:
         v = abs(v)
         forms = {round(v, 2), round(v, 1), float(round(v))}
         for unit, (_, hints, _, _) in UNITS.items():
-            if any(h in path for h in hints):
+            # A scorer's identifier (e.g. CAL-09) is not a score of nine. Match the score key, not "scorer".
+            if any(bool(re.search(r"(?:^|[._])score(?:$|[._])", path)) if h == "score" else h in path for h in hints):
                 out[unit].update(forms)
                 if unit == "percent" and 1 < v <= 100:
                     out[unit].add(float(round(100 - v)))
@@ -239,13 +256,20 @@ def unit_numbers(*sources: Any) -> dict[str, set[float]]:
 
 def _bound_to(text: str, at: int, name: str, names: set[str]) -> bool:
     """Whether the figure at `at` belongs to `name`: that name is the closest player named before it in the same sentence."""
-    before = re.split(r"[.!?;؟]", text[max(0, at - 90):at])[-1]
+    before = re.split(r"[.!?;؟]", text[max(0, at - 90):at])[-1].casefold()
     best, where = "", -1
     for n in names:
-        i = before.rfind(n)
+        i = before.rfind(n.casefold())
         if i > where:
             best, where = n, i
     return best == name
+
+
+def _normalise_text(text: str) -> str:
+    """Equivalent Unicode spelling and Arabic numeric separators keep the same factual checks."""
+    text = unicodedata.normalize("NFKC", text)
+    text = re.sub(r"(?<=\d)٫(?=\d)", ".", text)
+    return re.sub(r"(?<=\d)٬(?=\d)", "", text)
 
 
 # "No. 9" is a shirt number; a bare "no" is Portuguese for "in the" ("no minuto 45"), so the dot is required
@@ -265,12 +289,12 @@ def verify_texts(texts: dict[str, dict[str, dict[str, str]]], facts: list[Any], 
     """texts: {lang: {persona: {caption, line, explainer}}}."""
     allowed = allowed_numbers(*facts)
     units = unit_numbers(*facts)
-    allowed_names = {roster_names[p] for p in allowed_players if p in roster_names}
+    allowed_names = {_normalise_text(roster_names[p]) for p in allowed_players if p in roster_names}
     # the scorer's tally, so "Valdane has scored 2 goals" is held to Valdane's goals, not to any goal figure in the match
     scorer = (claims or {}).get("scorer")
     tally = (claims or {}).get("scorer_goals")
-    scorer_name = roster_names.get(scorer, "") if isinstance(scorer, str) else ""
-    other_names = {n for pid, n in roster_names.items() if pid not in allowed_players and len(n) > 3}
+    scorer_name = _normalise_text(roster_names.get(scorer, "")) if isinstance(scorer, str) else ""
+    other_names = {_normalise_text(n) for pid, n in roster_names.items() if pid not in allowed_players and len(n) > 3}
     v = Verdict(ok=True)
     failed: set[str] = set()
     for lang, personas in texts.items():
@@ -286,6 +310,7 @@ def verify_texts(texts: dict[str, dict[str, dict[str, str]]], facts: list[Any], 
             for key, text in fields.items():
                 if not isinstance(text, str):
                     continue
+                text = _normalise_text(text)
                 where = f"[{lang}/{persona}/{key}]"
                 lim = LIMITS.get(key)
                 if lim and len(text) > lim:
@@ -296,6 +321,11 @@ def verify_texts(texts: dict[str, dict[str, dict[str, str]]], facts: list[Any], 
                     if claims is not None and contradicts(claims) and re.search(pattern, low):
                         v.issues.append(f"{where} makes a claim the facts contradict: {why} - describe it accurately")
                         failed.add(lang)
+                for m in UNSUPPORTED.finditer(text):
+                    v.issues.append(f"{where} claims what players feel or what happens next ('{m.group(0)}'), which no "
+                                    f"match data shows - remove it and describe only what the facts show")
+                    failed.add(lang)
+                    break
                 for bad in BLOCKLIST:
                     if re.search(rf"(?<!\w){re.escape(bad)}(?!\w)", low):
                         v.issues.append(f"{where} brand-safety: remove '{bad}'")
@@ -315,6 +345,8 @@ def verify_texts(texts: dict[str, dict[str, dict[str, str]]], facts: list[Any], 
                         failed.add(lang)
                 for unit, (pattern, _, _, what) in UNITS.items():
                     for m in pattern.finditer(norm):
+                        if unit == "goals" and lang != "fr" and m.group("french_goal"):
+                            continue  # French "but" is a goal; English "0.22 but ..." is a conjunction.
                         if _SHIRT_BEFORE.search(norm[max(0, m.start() - 9):m.start()]):
                             continue  # "No. 9" is a shirt number, not a figure of this kind
                         raw = next(g for g in m.groups() if g)
@@ -331,12 +363,12 @@ def verify_texts(texts: dict[str, dict[str, dict[str, str]]], facts: list[Any], 
                                             f"remove it, or use the FIGURES value for that metric")
                             failed.add(lang)
                 for name in other_names:
-                    if re.search(rf"(?<!\w){re.escape(name)}(?!\w)", text):
+                    if re.search(rf"(?<!\w){re.escape(name)}(?!\w)", text, re.I):
                         v.names_checked += 1
                         v.issues.append(f"{where} mentions {name}, who is not part of this moment")
                         failed.add(lang)
                 for name in allowed_names:
-                    if name in text:
+                    if name.casefold() in text.casefold():
                         v.names_checked += 1
     v.failed_langs = sorted(failed)
     v.ok = not failed

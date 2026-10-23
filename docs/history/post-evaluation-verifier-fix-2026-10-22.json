@@ -1,0 +1,27 @@
+{
+  "date": "2026-10-22",
+  "change": "Scope French but/buts goal unit to fr; retain generic numeric checking and French scorer binding.",
+  "original_model_report_sha256": "3597a334e90ef80f11c81510c3b589c22a2bb3598903ee0ccd89f8e7db2feba4",
+  "original_model_report_unchanged": true,
+  "paid_model_calls": 0,
+  "benchmark_verifier_sha256": "16831505638857187f14f5061a0ac0d8f1806d47711f342dc54afe9ba15e3006",
+  "post_fix_verifier_sha256": "4d1cd0bd1f6d61442c9294821c2a5aa5545ad27a41fceee9e2144fb8ca75270a",
+  "fixture": {
+    "seed": 2026102294,
+    "moment": "big_chance",
+    "clock": "42'"
+  },
+  "recorded_english_copy_after_fix": {
+    "ok": false,
+    "issues": [
+      "[en/analyst/explainer] number 48 is not supported by the facts - remove it, or use only FIGURES"
+    ],
+    "numbers_checked": 12,
+    "numbers_supported": 11,
+    "names_checked": 3,
+    "failed_langs": [
+      "en"
+    ]
+  },
+  "note": "Original paid evaluation remains exactly as measured. Offline replay of the saved English analyst copy removes the false French-unit rejection; independent unsupported48 rejection remains. No model or benchmark rerun."
+}

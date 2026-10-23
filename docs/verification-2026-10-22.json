@@ -1,0 +1,439 @@
+{
+  "date": "2026-10-22",
+  "scope": "Local corrected build, synthetic match data only. Not a public deployment or submission confirmation.",
+  "base_commit": "3bf57b8",
+  "backend": {
+    "command": "REGISTA_LLM=offline REGISTA_BUS=memory REGISTA_AUTOPLAY=0 backend/.venv/bin/pytest backend/tests -q",
+    "passed": 143,
+    "failed": 0,
+    "duration_s": 141.81
+  },
+  "frontend_harness": {
+    "playback": 21,
+    "feed": 8,
+    "receipt": 11,
+    "passed": 40,
+    "scope": "Temporary isolated regression harnesses; separate from browser and CI tests."
+  },
+  "browser_main": {
+    "base": "http://127.0.0.1:5177",
+    "provider": "offline",
+    "checks": [
+      {
+        "name": "highlight alias resolves a goal with three personalized broadcasts",
+        "pass": true
+      },
+      {
+        "name": "same language visibly changes audience copy",
+        "pass": true
+      },
+      {
+        "name": "Arabic correction drill preserves its evidence in raw JSON link",
+        "pass": true
+      },
+      {
+        "name": "exhausted Arabic drill airs only a checked fallback",
+        "pass": true
+      },
+      {
+        "name": "Spanish drill labels match the requested language",
+        "pass": true
+      },
+      {
+        "name": "mobile Explore fits viewport and keeps recovery controls usable",
+        "pass": true
+      },
+      {
+        "name": "Data lab rejects invalid seed and identical teams then loads a fresh match",
+        "pass": true
+      },
+      {
+        "name": "Data lab load error becomes actionable and can be retried",
+        "pass": true
+      },
+      {
+        "name": "broadcast seek uses football minutes rather than half-time wall clock",
+        "pass": true
+      },
+      {
+        "name": "opening a new Arabic overlay on a paused goal catches up immediately",
+        "pass": true
+      },
+      {
+        "name": "recap switches languages without borrowing wrong text direction",
+        "pass": true
+      },
+      {
+        "name": "no uncaught JavaScript errors",
+        "pass": true
+      }
+    ],
+    "consoleErrors": [],
+    "pageErrors": []
+  },
+  "browser_edges": {
+    "base": "http://127.0.0.1:5177",
+    "checks": [
+      {
+        "name": "receipt moves focus in, wraps both ways, Escape restores opener",
+        "pass": true
+      },
+      {
+        "name": "receipt draft disclosures are reachable by keyboard",
+        "pass": true
+      },
+      {
+        "name": "late receipt response cannot survive match reset",
+        "pass": true
+      },
+      {
+        "name": "Ops Amira exports preserve language, mode and favourite team",
+        "pass": true
+      },
+      {
+        "name": "desktop Compare displays two broadcast stages side by side",
+        "pass": true
+      },
+      {
+        "name": "mobile Broadcast fits 390px viewport",
+        "pass": true
+      },
+      {
+        "name": "mobile Recap fits 390px viewport",
+        "pass": true
+      },
+      {
+        "name": "mobile Ops fits 390px viewport",
+        "pass": true
+      },
+      {
+        "name": "no uncaught browser errors",
+        "pass": true
+      }
+    ],
+    "pageErrors": [],
+    "metrics": {
+      "keyboardStops": [
+        {
+          "tag": "BUTTON",
+          "text": "EN"
+        },
+        {
+          "tag": "BUTTON",
+          "text": "AR"
+        },
+        {
+          "tag": "SUMMARY",
+          "text": "EN · 1 draft · aired deterministic offline rehearsal draft 1"
+        },
+        {
+          "tag": "SUMMARY",
+          "text": "AR · 1 draft · aired deterministic offline rehearsal draft 1"
+        },
+        {
+          "tag": "BUTTON",
+          "text": "Close"
+        },
+        {
+          "tag": "BUTTON",
+          "text": "EN"
+        },
+        {
+          "tag": "BUTTON",
+          "text": "AR"
+        },
+        {
+          "tag": "SUMMARY",
+          "text": "EN · 1 draft · aired deterministic offline rehearsal draft 1"
+        },
+        {
+          "tag": "SUMMARY",
+          "text": "AR · 1 draft · aired deterministic offline rehearsal draft 1"
+        },
+        {
+          "tag": "BUTTON",
+          "text": "Close"
+        },
+        {
+          "tag": "BUTTON",
+          "text": "EN"
+        },
+        {
+          "tag": "BUTTON",
+          "text": "AR"
+        },
+        {
+          "tag": "SUMMARY",
+          "text": "EN · 1 draft · aired deterministic offline rehearsal draft 1"
+        },
+        {
+          "tag": "SUMMARY",
+          "text": "AR · 1 draft · aired deterministic offline rehearsal draft 1"
+        },
+        {
+          "tag": "BUTTON",
+          "text": "Close"
+        }
+      ],
+      "exports": [
+        {
+          "label": "Overlay",
+          "href": "http://127.0.0.1:5177/#/overlay?mode=casual&lang=ar&team=CAL"
+        },
+        {
+          "label": "On-air JSON",
+          "href": "http://127.0.0.1:5177/api/onair?mode=casual&lang=ar&team=CAL"
+        },
+        {
+          "label": "Live feed",
+          "href": "http://127.0.0.1:5177/docs#/live%20feed"
+        }
+      ],
+      "compare": [
+        {
+          "x": 20,
+          "y": 274.890625,
+          "width": 689
+        },
+        {
+          "x": 731,
+          "y": 274.890625,
+          "width": 689
+        }
+      ],
+      "Broadcast": {
+        "viewport": 390,
+        "client": 390,
+        "scroll": 390,
+        "body": 390,
+        "offenders": [
+          {
+            "tag": "A",
+            "class": "",
+            "width": 117.1875,
+            "text": "Two fans"
+          },
+          {
+            "tag": "A",
+            "class": "",
+            "width": 163.03125,
+            "text": "Control room"
+          },
+          {
+            "tag": "A",
+            "class": "",
+            "width": 85.8125,
+            "text": "Recap"
+          },
+          {
+            "tag": "A",
+            "class": "",
+            "width": 114.1875,
+            "text": "Data lab"
+          },
+          {
+            "tag": "DIV",
+            "class": "follow",
+            "width": 88,
+            "text": "11Brightwell"
+          },
+          {
+            "tag": "DIV",
+            "class": "follow",
+            "width": 69.671875,
+            "text": "9Valdane"
+          },
+          {
+            "tag": "DIV",
+            "class": "follow",
+            "width": 69.671875,
+            "text": "9Valdane"
+          }
+        ]
+      },
+      "Recap": {
+        "viewport": 390,
+        "client": 390,
+        "scroll": 390,
+        "body": 390,
+        "offenders": [
+          {
+            "tag": "A",
+            "class": "",
+            "width": 117.1875,
+            "text": "Two fans"
+          },
+          {
+            "tag": "A",
+            "class": "",
+            "width": 163.03125,
+            "text": "Control room"
+          },
+          {
+            "tag": "A",
+            "class": "active",
+            "width": 85.8125,
+            "text": "Recap"
+          },
+          {
+            "tag": "A",
+            "class": "",
+            "width": 114.1875,
+            "text": "Data lab"
+          }
+        ]
+      },
+      "Ops": {
+        "viewport": 390,
+        "client": 390,
+        "scroll": 390,
+        "body": 390,
+        "offenders": [
+          {
+            "tag": "A",
+            "class": "",
+            "width": 117.1875,
+            "text": "Two fans"
+          },
+          {
+            "tag": "A",
+            "class": "active",
+            "width": 163.03125,
+            "text": "Control room"
+          },
+          {
+            "tag": "A",
+            "class": "",
+            "width": 85.8125,
+            "text": "Recap"
+          },
+          {
+            "tag": "A",
+            "class": "",
+            "width": 114.1875,
+            "text": "Data lab"
+          },
+          {
+            "tag": "TABLE",
+            "class": "log",
+            "width": 398.046875,
+            "text": "MomentDraftsVerifiedFallbackLatency"
+          },
+          {
+            "tag": "THEAD",
+            "class": "",
+            "width": 398.046875,
+            "text": "MomentDraftsVerifiedFallbackLatency"
+          },
+          {
+            "tag": "TR",
+            "class": "",
+            "width": 398.046875,
+            "text": "MomentDraftsVerifiedFallbackLatency"
+          },
+          {
+            "tag": "TH",
+            "class": "",
+            "width": 81.609375,
+            "text": "Latency"
+          },
+          {
+            "tag": "TBODY",
+            "class": "",
+            "width": 398.046875,
+            "text": ""
+          }
+        ]
+      }
+    }
+  },
+  "static_checks": {
+    "ruff": "passed",
+    "typescript": "passed",
+    "vite_build": "passed",
+    "git_diff_check": "passed"
+  },
+  "evidence": {
+    "synthetic_stress": "synthetic-stress-2026-10-22.json",
+    "current_standard_realism": "realism.json",
+    "current_standard_evaluation": "evaluation.json",
+    "foundry_snapshot": "llm-eval.json",
+    "foundry_capture": "img/capture-manifest.json"
+  },
+  "source_sha256": {
+    "backend/regista/llm_eval.py": "b1dd8a8468d1dfb4c1822b8a35d5e03eb5d68b7db9a75c4226c1c80e30288e56",
+    "backend/regista/evaluation.py": "2b5ac775f169e48f2aca9737b7ae65e49f9ba767a9cc9d9263e32c31c973dd76",
+    "backend/regista/__init__.py": "5fd9704bf7f70b23f3c9cb64d3b94863fd4b285960a90c08017813ed6e7cbece",
+    "backend/regista/cli.py": "0e103e8a3a951b7ba7c0674a8f480851993fdd401213a23dcb47010ca2855097",
+    "backend/regista/mcp_server.py": "a2b154cbb79caf693dd7ed1686fa4d4edebcbb53081edb39dd3ee6719ce3f443",
+    "backend/regista/intel/signals.py": "21cfc38e0b3d6717dbea2ed547179d488724f81d5d0f08a2daa547bb6b2f95e2",
+    "backend/regista/intel/models.py": "ec31c7a3f54fe7015ac4b25b84a92c582eb50b958d0ad734347067a10bec4866",
+    "backend/regista/intel/moments.py": "b227041241d09a5bb31749585c98bf717f2c29c80afc2366f3e1fabf74269101",
+    "backend/regista/intel/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "backend/regista/intel/state.py": "baf54e4ada8213b9482be597e37680838e40631e81f707ffd0f694cba30814a2",
+    "backend/regista/runtime/session.py": "28ca0f452c0c36acb28280a2424bf1a855a191c9b44fdb542fbb1a2694d57960",
+    "backend/regista/runtime/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "backend/regista/runtime/observability.py": "8c21ff42650ab18b7b45a87193dad0cbcb33058b8b78fc2e0b1a4c9fce031084",
+    "backend/regista/runtime/bus.py": "d5f60151988d7ec256682673f4dc842463a646188466b67a35d33439b30b0a38",
+    "backend/regista/runtime/live.py": "235c3178c96696b7a821d9e8fb5e7d99ebffffef8ebac7548836b250e36971fd",
+    "backend/regista/runtime/explore.py": "242e4e095f44f8b8e39c3c72a9e6bce7da969e0ab4ba67809d556101ec17a942",
+    "backend/regista/runtime/webhooks.py": "c09c9d1e89d6ef2b9346fc8e7fd9e36c222edeeafcae07a3b6a5dec139189158",
+    "backend/regista/agents/pundit.py": "d5837ed8071728b294573590fa03bf68814f72db8042759b95173cc9f2d572e3",
+    "backend/regista/agents/story.py": "a38aa739e06d6d614fa4b7e4e6cfdd42ec4473758b8e79526801a7e8bf4c79dc",
+    "backend/regista/agents/config.py": "b07979909e861b56568509ab516085db00f6619232d1e908666b4a4fde56d401",
+    "backend/regista/agents/tools.py": "83d643a5d08f858e5ab1645746e322da8bfcccb845c1b68f151c680b69e6172f",
+    "backend/regista/agents/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "backend/regista/agents/telemetry.py": "032e6a184e83a486bb84ed638a94d79e4e383f93898d7f789a43883f3a783502",
+    "backend/regista/agents/prompts.py": "dea4a3b1b0b3b8e4aad25fd25f5cd3ebcc5ed5526dfba2237138a4703f2ae6c2",
+    "backend/regista/agents/producer.py": "3934984c8368b693981a8f8b74d26070878236467a62c33d23625e25faec0961",
+    "backend/regista/agents/insight.py": "df00cdd966b9c7bd8167057c0c3832a07d5839f8dc9a9f7f8082f7eb4333c8c2",
+    "backend/regista/agents/templates.py": "d2d6897842ea2a6cc23d0f7fd83507de414785b883bfda5e8c6ebe0af6c71259",
+    "backend/regista/agents/clients.py": "8f01a093f16fad174cd337f7b955f543d2a1c62887c30fa4cf692242c701bcb5",
+    "backend/regista/agents/director.py": "870b3330e86e69e6f4f7acdb281c4abd048c6b91ae5dc6d48fdf61161dd71770",
+    "backend/regista/agents/recap.py": "87182c98af7d9bc78bf4d7714517dd865e47246be142ea91277ae6387a27015c",
+    "backend/regista/agents/verifier.py": "4d1cd0bd1f6d61442c9294821c2a5aa5545ad27a41fceee9e2144fb8ca75270a",
+    "backend/regista/schema/events.py": "81381406f5ad122bf199eafc72a24ce0854dc2303df1aa2fb57bdc4e3971ae19",
+    "backend/regista/schema/__init__.py": "4e9ae4ca2c470221c2a72644f1fd3560c4e5ac07b8d9eefaa459a9223c8c785c",
+    "backend/regista/schema/cues.py": "b323e35fc70598fa576e14ebbf5f2b8a0e7925ace0e5e237cdb0980c6d87071c",
+    "backend/regista/schema/profiles.py": "1f05a375ebbefe0541948deb644438005fc0b82976a3a0262717a02305885733",
+    "backend/regista/api/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "backend/regista/api/app.py": "5b6111bc5b232e4f3889b5e88ed013b70c01f6baeca33b2796bfea12220ca985",
+    "backend/regista/sim/scenarios.py": "e3009933609325ebaf636b496406ee7af4b90e3da33e0e8c53a5dfe96405edd5",
+    "backend/regista/sim/realism.py": "4a5ad5c794151cb888b0a018d71cec06f6d13e74dcdea89d239f4ed84d6ee5fb",
+    "backend/regista/sim/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "backend/regista/sim/engine.py": "d102103039a380e811caaa0707d2f01732c77ac9de1672e37563239a733737b2",
+    "backend/regista/sim/squads.py": "da8bf03bfc529e9163dfb508f674746b40b3183436517a2398f6a220b3f0fadd",
+    "backend/tests/test_claim_binding.py": "9a65a013f8684c1137d58a9372292bda7b0672e62183c68e6279b0f14f5c463b",
+    "backend/tests/test_llm_loop.py": "de7a7560180745f83c597664ad7ce41ad5ebe2fcc1fea58ae64b446a93be5c33",
+    "backend/tests/conftest.py": "e4da4f760862352df3979dc832559b6d7ba94432b194dc7cbc7213e44b1d6018",
+    "backend/tests/test_realworld.py": "611a58086077276a06cad01f9355fe347f7b9d807719c1386a827073bec9b651",
+    "backend/tests/test_recap_checks.py": "9530ef61ed6020a65307c07797eaa7e7d413c1ab3926fb4af4d710b840169b81",
+    "backend/tests/test_synthetic_stress.py": "93d126562ee5e33e94004daf50c4d28c9a0840e1371dc66ff7a67a7e67724460",
+    "backend/tests/test_control_edges.py": "1452cd152b389d67747b54ab74b8a0310786c07498ab590bdfe308788efa79bd",
+    "backend/tests/test_pipeline.py": "34b0f140968287ff80c2368682036ff4b88d3afee4939a5d1e4717bfc30da14c",
+    "web/src/App.tsx": "dadcf7038c079faaed725baf96a50734a81875b35006c5c364c9483b02c895ab",
+    "web/src/main.tsx": "a6bcae9c4f04d6ff36406b2966379834342b41b08b83ba7bd0334712d6cf87f0",
+    "web/src/styles.css": "57e1f04b6ecfd145107e8e9794ef79acdcf6a7c844226672aee753a45cd444da",
+    "web/src/components/AgentGraph.tsx": "f4ee65e3935f236c481cdb8ffeb75bdf8ec48b2307f038e3c3cab77fed27858a",
+    "web/src/components/Moments.tsx": "4b1c15dda8d4aee9ee38fac70ca9f32bf250dfc46cc7c4bf17c939c784db2211",
+    "web/src/components/Pundit.tsx": "32edd6c920476fdeb4cc91fc761a7b865537aaf82ac0f3df9a6127b97c30efda",
+    "web/src/components/UseLive.tsx": "d29a3acbe382962d819f216f27eb0eda77c2234a5d2c3e9cf90f16f22c703a97",
+    "web/src/components/Transport.tsx": "aa2974c8248f05ca9ae75e273d7963602e87e91b162d472f3ecc357173f8eba6",
+    "web/src/components/Pitch.tsx": "8d74f742d3b1827b49413db965a54715929ccb5e89c528dba9b8edcfdb4275f7",
+    "web/src/components/FanStudio.tsx": "a4d76900f3c201e3414e1d40d47be9682f444f394611b416292fe996719ccb92",
+    "web/src/components/Overlay.tsx": "f127a4cd623cf63fa7cebe2c2381e0995968849ae98514ecfb375597b842fd59",
+    "web/src/components/Stage.tsx": "4cf86dbe49844afcd4f6a1ef78fdcb6272470527da884a09a41000ef56db4047",
+    "web/src/components/SecondScreen.tsx": "aaf4faed4dd44ccb9a0073003f5c50ec2d61b8c0f6d14717513e5970f7edde40",
+    "web/src/lib/i18n.ts": "9e20fbfd915a8f2d11fd978e4512da42bbd1dab3ddde6d100f468210580757f3",
+    "web/src/lib/types.ts": "c50bbd3878b4dd4db9fed515fe6c44c2b04b46a237048df9520766a30b226f47",
+    "web/src/lib/feed.ts": "dd396c4df908298fe95499fabf4af797a336e21046088600aab6f632aa525b05",
+    "web/src/lib/playback.ts": "6651acd587f8e6a94bf6b04081d900c0a84a95405449b840af7eabf7de50ff08",
+    "web/src/pages/Lab.tsx": "1c91e7a8cff312ffdc244921459e0021375a0427ed52c0448bf5981c710f0e24",
+    "web/src/pages/Recap.tsx": "f37e6d4d7d254c851aa7a81863e708ffceb5a76a858ced83e0e8719c8fef9541",
+    "web/src/pages/ControlRoom.tsx": "a1719513478c4f1da7cc7b2561458c392c8a4017f4e086d3ae3bb04e5055daf8",
+    "web/src/pages/OverlayOnly.tsx": "dc2daa8221a65c75c2ce0663a0d04fa3b7a43b0698b147d9939b5b05655c9b3a",
+    "web/src/pages/Broadcast.tsx": "77c74749537229f9e9c16090959626c530ad8092740a1bc69741dd4107f947c1",
+    "web/src/pages/Explore.tsx": "5e20e8edcdfa70782c555759d835b96011d7e5bd0f51834a7d0ea402dc896e95",
+    "web/src/pages/Compare.tsx": "84b4934d7d90db5797a00bffd66eb65283f4eef6f04e203eae14bd23083e0dd8"
+  }
+}

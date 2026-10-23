@@ -15,7 +15,7 @@ from typing import Any
 from ..intel.state import MatchState
 from ..schema.cues import Cue, CueKind, CueSlot, Provenance
 from ..schema.profiles import FanProfile, Mode
-from .templates import Names, narrate
+from .templates import Names, narrate, rtl_safe
 
 PERSONA = {Mode.CASUAL: "casual", Mode.ANALYST: "analyst", Mode.NEW_FAN: "new_fan", Mode.PLAYER_CAM: "casual"}
 THRESHOLD = {Mode.CASUAL: 48, Mode.ANALYST: 34, Mode.NEW_FAN: 44, Mode.PLAYER_CAM: 40}
@@ -141,6 +141,10 @@ class Director:
                 out.title = fan["caption"]
                 out.payload["partisan"] = "for" if p.favorite_team == out.payload.get("team") else "against"
             out.payload["languages_available"] = sorted(i18n)
+        if p.rtl:  # scores and minutes keep reading left to right inside Arabic copy
+            out.title = rtl_safe(out.title, p.language)
+            out.body = rtl_safe(out.body, p.language)
+            out.payload["explainer"] = rtl_safe(out.payload.get("explainer"), p.language)
         return out
 
     # ------------------------------------------------------------------ player cam

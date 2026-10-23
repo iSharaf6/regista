@@ -31,11 +31,15 @@ export function MomentsList({ feed, onOpen, min = 30 }: { feed: Feed; onOpen: (m
 export function Receipts({ moment, feed, onClose, lang }: { moment: Moment; feed: Feed; onClose: () => void; lang: Lang }) {
   const [full, setFull] = useState<any>(null);
   const [tab, setTab] = useState<string>(lang);
-  useEffect(() => {
-    api(`/api/moments/${moment.id}`).then(setFull).catch(() => setFull(null));
-  }, [moment.id, feed.stories[moment.id]]);
-  const m = full ?? moment;
-  const story = full?.story ?? feed.stories[moment.id];
+  const matchId = feed.match?.match_id;
+  const openedMatch = useRef(matchId);
+  const currentMoment = feed.moments.find((m) => m.id === moment.id && m.t === moment.t);
+  const valid = openedMatch.current === matchId && !!currentMoment;
+  // Hide stale full data during the render that changes selection, before the effect's cleanup runs.
+  const detail = valid && full?.matchId === matchId && full?.moment === currentMoment
+    && full?.story === feed.stories[moment.id] ? full.data : null;
+  const m = detail ?? currentMoment ?? moment;
+  const story = detail?.story ?? feed.stories[moment.id] ?? currentMoment?.story;
   const narration = story?.narration ?? {};
   const langs = Object.keys(narration);
   // a real dialog: focus moves in, Tab stays inside, Escape closes, focus returns to the moment that opened it
@@ -44,12 +48,27 @@ export function Receipts({ moment, feed, onClose, lang }: { moment: Moment; feed
   const close = useRef(onClose);
   close.current = onClose;
   useEffect(() => {
+    setFull(null);
+    if (!valid) { close.current(); return; }
+    let active = true;
+    const abort = new AbortController();
+    api(`/api/moments/${encodeURIComponent(moment.id)}`, { signal: abort.signal })
+      .then((data) => {
+        if (active && data.id === moment.id && data.t === moment.t && data.match_id === matchId) {
+          setFull({ matchId, moment: currentMoment, story: feed.stories[moment.id], data });
+        }
+      })
+      .catch(() => { if (active) setFull(null); });
+    return () => { active = false; abort.abort(); };
+  }, [moment.id, moment.t, matchId, currentMoment, valid, feed.stories[moment.id]]);
+  useEffect(() => {
     const opener = document.activeElement instanceof HTMLElement ? document.activeElement : null;
     closeBtn.current?.focus();
     const onKey = (e: KeyboardEvent) => {
       if (e.key === "Escape") { e.preventDefault(); close.current(); return; }
       if (e.key !== "Tab" || !panel.current) return;
-      const els = panel.current.querySelectorAll<HTMLElement>("button, [href], select, input, textarea, [tabindex]:not([tabindex='-1'])");
+      const els = Array.from(panel.current.querySelectorAll<HTMLElement>("button, [href], select, input, textarea, summary, [tabindex]:not([tabindex='-1'])"))
+        .filter((el) => !el.matches(":disabled") && el.getClientRects().length > 0);
       if (!els.length) return;
       const first = els[0];
       const last = els[els.length - 1];
@@ -59,6 +78,7 @@ export function Receipts({ moment, feed, onClose, lang }: { moment: Moment; feed
     document.addEventListener("keydown", onKey);
     return () => { document.removeEventListener("keydown", onKey); opener?.focus(); };
   }, []);
+  if (!valid) return null;
   return (
     <>
       <div className="drawer-back" onClick={onClose} />
@@ -99,7 +119,7 @@ export function Receipts({ moment, feed, onClose, lang }: { moment: Moment; feed
 
         {story && (
           <>
-            <div className="section-title">Interpretation (AI, checked against the facts above)</div>
+            <div className="section-title">{isOfflineStory(story) ? "Interpretation (deterministic offline rehearsal)" : "Interpretation (checked against the facts above)"}</div>
             {story.insight && (
               <div className="card" style={{ padding: 10, marginBottom: 8 }}>
                 <b>{story.insight.claim}</b>
@@ -130,12 +150,19 @@ export function Receipts({ moment, feed, onClose, lang }: { moment: Moment; feed
 export const TRUST = "Supported numbers and selected football claims are checked against match facts. Estimates remain " +
   "estimates; narrative interpretation is not independently checked.";
 
+/** The offline Agent Framework client rehearses the same workflow with deterministic text, not a generative model. */
+export function isOfflineStory(story: any): boolean {
+  return Object.values(story.models ?? {}).includes("regista-offline")
+    || (story.trace ?? []).some((s: any) => s.model === "regista-offline");
+}
+
 export function HowChecked({ story, persona }: { story: any; persona?: string }) {
   // writer templates and the Analyst's insight are separate: an Analyst fallback is not a template in any language
   // say why only when the trace says why: a timeout or a malformed reply falls back too, and is not a failed check
   const fell = (story.trace ?? []).find((s: any) => s.agent === "Analyst" && s.status === "fallback");
-  const analyst = !fell ? story.models?.Analyst ?? "model"
-    : /fact check/i.test(fell.detail ?? "") ? "deterministic (the model's insight failed the fact check)"
+  const offline = isOfflineStory(story);
+  const analyst = !fell ? story.models?.Analyst === "regista-offline" ? "deterministic offline rehearsal" : story.models?.Analyst ?? "source not recorded"
+    : /fact check/i.test(fell.detail ?? "") ? `deterministic (the ${offline ? "rehearsal" : "model's"} insight failed the fact check)`
     : "deterministic fallback";
   return (
     <>
@@ -145,14 +172,15 @@ export function HowChecked({ story, persona }: { story: any; persona?: string })
         <span className="k">Drafts</span><span className="mono">{story.attempts}</span>
         <span className="k">Analyst insight</span><span>{analyst}</span>
         <span className="k">Writer copy from templates</span>
-        <span>{story.fallback_langs?.length ? story.fallback_langs.join(", ").toUpperCase() : "none: every language model-written"}</span>
+        <span>{offline ? "all languages (deterministic offline rehearsal)" : story.fallback_langs?.length ? story.fallback_langs.join(", ").toUpperCase() : "none: every language model-written"}</span>
         <span className="k">End-to-end</span><span className="mono">{Math.round(story.latency_ms)} ms</span>
       </div>
       <p className="trust">
+        {offline && <>This is a deterministic offline rehearsal; no generative model was called. </>}
         {TRUST} {story.verdict?.numbers_supported}/{story.verdict?.numbers_checked} counts the figures in this moment's copy, across every
         language and audience, that matched the match data.
       </p>
-      {story.drafts && Object.keys(story.drafts).length > 0 && <DraftsReceipt drafts={story.drafts} persona={persona} />}
+      {story.drafts && Object.keys(story.drafts).length > 0 && <DraftsReceipt drafts={story.drafts} persona={persona} models={story.models} offline={offline} />}
       {story.verdict?.issues?.length > 0 && (
         <ul className="muted" style={{ fontSize: 12 }}>{story.verdict.issues.map((i: string) => <li key={i}>{i}</li>)}</ul>
       )}
@@ -161,7 +189,7 @@ export function HowChecked({ story, persona }: { story: any; persona?: string })
           <div className="step" key={s.id}>
             <b>{s.agent}</b>
             <span className={`status ${s.status}`}>{s.status}</span>
-            <span className="muted" style={{ fontSize: 12 }}>{s.detail || s.model}</span>
+            <span className="muted" style={{ fontSize: 12 }}>{s.detail || (s.model === "regista-offline" ? "deterministic offline rehearsal" : s.model)}</span>
             <span className="mono">{s.ms.toFixed(1)} ms</span>
           </div>
         ))}
@@ -174,7 +202,10 @@ const LANG_ORDER = ["en", "es", "fr", "ar", "pt"];
 
 /** The correction receipt: every draft of every language, in order, as the Verifier judged it. Rejected drafts never
  *  aired; a drill draft carries the error that was planted in it on purpose. */
-export function DraftsReceipt({ drafts, persona = "analyst" }: { drafts: Record<string, any[]>; persona?: string }) {
+export function DraftsReceipt({ drafts, persona = "analyst", models = {}, offline = false }: {
+  drafts: Record<string, any[]>; persona?: string; models?: Record<string, string>; offline?: boolean;
+}) {
+  const rehearsal = offline || Object.values(models).includes("regista-offline");
   const langs = Object.keys(drafts).sort((a, b) => LANG_ORDER.indexOf(a) - LANG_ORDER.indexOf(b));
   return (
     <div className="drafts">
@@ -182,7 +213,8 @@ export function DraftsReceipt({ drafts, persona = "analyst" }: { drafts: Record<
       {langs.map((lang) => {
         const list = drafts[lang] ?? [];
         const last = list[list.length - 1];
-        const aired = !last ? "nothing" : last.source === "template" ? "the grounded template" : `model draft ${last.attempt}`;
+        const aired = !last ? "nothing" : last.source === "template" ? "the grounded template"
+          : `${rehearsal ? "deterministic offline rehearsal" : "model"} draft ${last.attempt}`;
         const eventful = list.length > 1 || list.some((d) => d.drill || d.status !== "passed");
         const rtl = lang === "ar";
         return (
@@ -195,7 +227,7 @@ export function DraftsReceipt({ drafts, persona = "analyst" }: { drafts: Record<
                 return (
                   <li key={i} className={`draft ${ok ? "ok" : "bad"}`}>
                     <div className="draft-head">
-                      <span>Draft {d.attempt} · {d.agent} · {d.source === "template" ? "template" : "model"}</span>
+                      <span>Draft {d.attempt} · {d.agent} · {d.source === "template" ? "template" : rehearsal ? "deterministic offline rehearsal" : "model"}</span>
                       <span className={`status ${ok ? "ok" : "rejected"}`}>
                         {ok ? "passed" : d.status === "rejected" ? "rejected · never aired" : "no usable reply · never aired"}
                       </span>
@@ -222,11 +254,27 @@ export function DraftsReceipt({ drafts, persona = "analyst" }: { drafts: Record<
   );
 }
 
-const FACT_LABEL = (k: string) => k.replaceAll("_", " ").replace(/\bkmh\b/, "km/h").replace(/\bwp\b/, "win probability");
+const LABELS: Record<string, string> = {
+  xg: "xG", wp_before: "win probability before", wp_after: "win probability after", wp_swing: "win probability swing",
+  shot_speed_kmh: "shot speed", distance_m: "distance from goal", scorer_goals: "scorer's goals today", set_piece: "set piece",
+  context: "what it did",
+};
+const FACT_LABEL = (k: string) => LABELS[k] ?? k.replaceAll("_", " ").replace(/\bkmh\b/, "km/h").replace(/\bwp\b/, "win probability");
+const CONTEXT: Record<string, string> = {
+  go_ahead: "go-ahead goal", opener: "opening goal", extends_lead: "extends the lead", pulls_one_back: "pulls one back",
+  equaliser: "equaliser", equalizer: "equaliser", consolation: "consolation goal",
+};
+/** Facts that repeat another row in other words. */
+const HIDDEN_FACTS = new Set(["score_text"]);
 
 /** A fact as a fan reads it: player ids as names, a score as "NOR 1 · CAL 0", win probabilities as percentages. */
 function factValue(k: string, v: unknown, match?: MatchInfo | null): string {
+  if (k === "set_piece" && (v === null || v === undefined)) return "open play";
   if (v === null || v === undefined) return "none";
+  if (k === "wp_swing" && typeof v === "number") { const pts = v * 100; return `+${pts.toFixed(pts < 10 ? 1 : 0)} pts`; }
+  if (k === "context" && typeof v === "string") return CONTEXT[v] ?? v.replaceAll("_", " ");
+  if (typeof v === "number" && k.endsWith("_kmh")) return `${v.toFixed(1)} km/h`;
+  if (typeof v === "number" && k.endsWith("_m")) return `${v.toFixed(1)} m`;
   if (typeof v === "number") return Number.isInteger(v) ? String(v) : v.toFixed(Math.abs(v) < 10 ? 2 : 1);
   if (typeof v === "boolean") return v ? "yes" : "no";
   if (typeof v === "string") {
@@ -246,7 +294,7 @@ function factValue(k: string, v: unknown, match?: MatchInfo | null): string {
 
 /** Each fact with what it is: observed in the feed, or estimated by a model. */
 export function FactTable({ facts, kinds, match }: { facts: Record<string, unknown>; kinds: Record<string, string>; match?: MatchInfo | null }) {
-  const rows = Object.entries(facts);
+  const rows = Object.entries(facts).filter(([k]) => !HIDDEN_FACTS.has(k));
   if (!rows.length) return <div className="empty">No facts recorded for this moment.</div>;
   return (
     <div className="facts">

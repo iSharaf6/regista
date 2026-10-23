@@ -16,10 +16,12 @@ from __future__ import annotations
 
 import asyncio
 import json
+import math
 import random
 import re
 import time
 import uuid
+from copy import deepcopy
 from dataclasses import dataclass, field
 from typing import Any
 
@@ -235,29 +237,50 @@ class AnalystExecutor(Executor):
                     raise AgentFailure("analyst returned no claim")
                 job.insight = _checked_insight(job, data)
             except AgentFailure as exc:
-                t0 = time.perf_counter()
                 job.insight = deterministic_insight(job.moment, job.names_obj)
                 job.models["Analyst"] = "deterministic"
-                self.rt.note(job, "Analyst", "fallback", str(exc)[:120], (time.perf_counter() - t0) * 1000)
+                self.rt.note(job, "Analyst", "fallback", str(exc)[:120])  # rules, not a model call: no latency sample
         job.redo = list(job.languages)
         await ctx.send_message(job)
+
+
+def _finite_number(value: Any) -> bool:
+    if isinstance(value, bool) or not isinstance(value, (int, float)):
+        return False
+    try:
+        return math.isfinite(value)
+    except OverflowError:
+        return False
 
 
 def _checked_insight(job: StoryJob, data: dict[str, Any]) -> dict[str, Any]:
     """The Analyst is fact-checked too, before any writer sees its insight: key numbers that match data cannot back are
     dropped, and an insight whose text cites unbacked figures or players is replaced by the factor-based one."""
+    if not isinstance(data.get("claim"), str) or not data["claim"].strip():
+        raise AgentFailure("analyst claim is not nonempty text")
+    why = data.get("why", [])
+    if not isinstance(why, list) or len(why) > 3 or any(not isinstance(x, str) for x in why):
+        raise AgentFailure("analyst reasons are not a list of up to three texts")
+    if not isinstance(data.get("tactical_read", ""), str):
+        raise AgentFailure("analyst tactical_read is not text")
+    confidence = data.get("confidence")
+    if confidence is not None and (not _finite_number(confidence) or not 0 <= confidence <= 1):
+        raise AgentFailure("analyst confidence is not a finite probability")
     ev = job.evidence()
     allowed = allowed_numbers(*ev)
     kn = data.get("key_numbers") if isinstance(data.get("key_numbers"), dict) else {}
-    data["key_numbers"] = {k: v for k, v in kn.items()
-                           if isinstance(v, (int, float)) and not isinstance(v, bool) and _supported(abs(float(v)), allowed)}
-    fields = {f: (x if isinstance(x, str) else " ".join(map(str, x)) if isinstance(x, list) else "")
-              for f, x in ((f, data.get(f)) for f in ("claim", "why", "tactical_read"))}
+    # Only the checked contract crosses the hand-off: nested or extra model fields cannot bypass the text checks.
+    checked = {"claim": data["claim"].strip(), "why": list(why), "tactical_read": data.get("tactical_read", ""),
+               "key_numbers": {k: v for k, v in kn.items() if _finite_number(v)
+                               and _supported(abs(float(v)), allowed)}}
+    if confidence is not None:
+        checked["confidence"] = confidence
+    fields = {"claim": checked["claim"], "why": " ".join(why), "tactical_read": checked["tactical_read"]}
     verdict = verify_texts({"en": {"insight": fields}}, ev, set(job.moment.get("players", [])), job.roster_names,
                            claims=job.moment.get("facts", {}))
     if not verdict.ok:
         raise AgentFailure(f"insight failed the fact check: {verdict.issues[0].split('] ', 1)[-1][:100]}")
-    return data
+    return checked
 
 
 # The recovery drill plants one wrong, clearly labelled claim in a draft so the Verifier really rejects it and only that
@@ -287,13 +310,15 @@ async def _write(rt: AgentRuntime, job: StoryJob, lang: str) -> None:
             rt.note(job, "Drill", "injected", f"{lang} draft {attempt}: a labelled wrong goal count was planted (drill)")
         job.narration[lang] = copy
         job.drafts.setdefault(lang, []).append({"attempt": attempt, "agent": name, "source": "model", "status": "pending",
-                                                "copy": copy, **({"drill": planted} if planted else {})})
+                                                "copy": deepcopy(copy), **({"drill": planted} if planted else {})})
         if lang in job.fallback_langs:  # a second draft after a failed first one: model-written after all
             job.fallback_langs.remove(lang)
     except AgentFailure as exc:
         job.drafts.setdefault(lang, []).append({"attempt": attempt, "agent": name, "source": "model",
                                                 "status": "no usable reply", "copy": None, "issues": [str(exc)[:120]]})
-        job.narration[lang] = _template(job, lang)  # on air meanwhile, so nothing waits on the retry
+        job.narration[lang] = _template(job, lang)  # the next verifier pass checks this template too
+        job.drafts[lang].append({"attempt": attempt, "agent": "Fallback", "source": "template", "status": "pending",
+                                "copy": deepcopy(job.narration[lang])})
         if lang not in job.fallback_langs:
             job.fallback_langs.append(lang)
         retry = job.attempts + 1 < rt.cfg.max_attempts  # a slow or malformed reply gets the same second draft as a rejection
@@ -309,7 +334,8 @@ class NarratorExecutor(Executor):
 
     @handler
     async def run(self, job: StoryJob, ctx: WorkflowContext[StoryJob]) -> None:
-        await _write(self.rt, job, "en")
+        if "en" in job.languages:
+            await _write(self.rt, job, "en")
         await ctx.send_message(job)
 
 
@@ -344,6 +370,7 @@ def _merge(jobs: list[StoryJob]) -> StoryJob:
         if other is base:
             continue
         base.narration.update({k: v for k, v in other.narration.items() if k not in base.narration or k != "en"})
+        base.drafts.update({k: v for k, v in other.drafts.items() if k not in base.drafts or k != "en"})
         seen = {t["id"] for t in base.trace}
         base.trace += [t for t in other.trace if t["id"] not in seen]
         base.models.update(other.models)
@@ -402,7 +429,8 @@ class FallbackExecutor(Executor):
     async def run(self, job: StoryJob, ctx: WorkflowContext[StoryJob]) -> None:
         for lang in job.failed:
             job.narration[lang] = _template(job, lang)
-            job.fallback_langs.append(lang)
+            if lang not in job.fallback_langs:
+                job.fallback_langs.append(lang)
         self.rt.note(job, "Fallback", "fallback", f"templates for {','.join(job.failed)} after {job.attempts} attempt(s)")
         check = {lang: job.narration[lang] for lang in job.languages}
         verdict = verify_texts(check, job.evidence(), set(job.moment.get("players", [])), job.roster_names,
@@ -410,8 +438,10 @@ class FallbackExecutor(Executor):
         job.verdict = {**verdict.as_dict(), "via": "fallback"}  # the templates' own verdict, never overridden
         for lang in job.failed:
             job.drafts.setdefault(lang, []).append({
-                "attempt": job.attempts, "agent": "Fallback", "source": "template", "copy": job.narration[lang],
-                "status": "rejected" if lang in verdict.failed_langs else "passed"})
+                "attempt": job.attempts, "agent": "Fallback", "source": "template", "copy": deepcopy(job.narration[lang]),
+                "status": "rejected" if lang in verdict.failed_langs else "passed",
+                **({"issues": [i for i in verdict.issues if i.startswith(f"[{lang}/")][:6]}
+                   if lang in verdict.failed_langs else {})})
         await ctx.send_message(job)
 
 
@@ -435,6 +465,8 @@ def _shape(data: Any) -> dict[str, dict[str, str]]:
         if not isinstance(block, dict) or not all(isinstance(block.get(k), str) for k in ("caption", "line", "explainer")):
             raise AgentFailure(f"narration missing {p}")
         out[p] = {k: block[k].strip() for k in ("caption", "line", "explainer")}
+        if not out[p]["caption"] or not out[p]["line"]:
+            raise AgentFailure(f"narration has empty {p} caption or line")
     return out
 
 

@@ -106,9 +106,16 @@ function Ticker({ cue, rtl }: { cue: Cue; rtl: boolean }) {
   return (
     <div className="ticker" dir={rtl ? "rtl" : "ltr"} lang={cue.locale} style={accent(cue)}>
       <b>{cue.payload.moment_kind ? label(cue.locale, cue.payload.moment_kind) : cue.kind}</b>
-      <span className={rtl ? "rtl" : ""}>{cue.body || cue.title}</span>
+      <span className={rtl ? "rtl" : ""}>{scoreText(cue.body || cue.title, rtl)}</span>
     </div>
   );
+}
+
+/** Keep scores in their source order inside RTL copy, without changing the copy or splitting a score across lines. */
+function scoreText(text: string, rtl: boolean) {
+  if (!rtl) return text;
+  return text.split(/(\p{Nd}+[ \u00a0]*[-–][ \u00a0]*\p{Nd}+)/u).map((part, i) =>
+    i % 2 ? <bdi key={i} dir="ltr" style={{ whiteSpace: "nowrap" }}>{part}</bdi> : part);
 }
 
 function accent(c: Cue): React.CSSProperties {
@@ -119,7 +126,8 @@ function accent(c: Cue): React.CSSProperties {
 function ScoreBug({ match, snap, cue }: { match: MatchInfo; snap: Snapshot | null; cue?: Cue }) {
   const score = snap?.score ?? cue?.payload.score ?? {};
   return (
-    <div className="scorebug" aria-label="Score">
+    // a score bug reads home-left, away-right in every language: in RTL "2–1" would otherwise show as "1–2"
+    <div className="scorebug" aria-label="Score" dir="ltr">
       <div className="team"><span className="chip" style={{ background: match.home.primary }} />{match.home.abbr}</div>
       <div className="score">{score[match.home.id] ?? 0}–{score[match.away.id] ?? 0}</div>
       <div className="team">{match.away.abbr}<span className="chip" style={{ background: match.away.primary }} /></div>
@@ -183,9 +191,9 @@ function Lower({ cue, receipts, detail, dir, match }: CardProps) {
     <div className="lower" key={cue.id} style={accent(cue)} dir={dir} lang={cue.locale}>
       <div className="tag">{team?.abbr ?? label(cue.locale, "live")}</div>
       <div className={`content ${rtl ? "rtl" : ""}`}>
-        <div className="caption">{cue.title}</div>
-        {cue.body && <div className="line">{cue.body}</div>}
-        {cue.payload.explainer && <div className="why">{cue.payload.explainer}</div>}
+        <div className="caption">{scoreText(cue.title, rtl)}</div>
+        {cue.body && <div className="line">{scoreText(cue.body, rtl)}</div>}
+        {cue.payload.explainer && <div className="why">{scoreText(cue.payload.explainer, rtl)}</div>}
         {receipts && <Receipt cue={cue} detail={detail} />}
       </div>
     </div>
@@ -232,8 +240,8 @@ function Card({ cue, receipts, detail, dir, match }: CardProps) {
   return (
     <div className="gcard g-glass" style={accent(cue)} dir={dir} lang={cue.locale} key={cue.id}>
       <div className="kicker">{kicker}</div>
-      <div className={`title ${rtl ? "rtl" : ""}`}>{cue.title}</div>
-      {cue.body && <div className={`body ${rtl ? "rtl" : ""}`}>{cue.body}</div>}
+      <div className={`title ${rtl ? "rtl" : ""}`}>{scoreText(cue.title, rtl)}</div>
+      {cue.body && <div className={`body ${rtl ? "rtl" : ""}`}>{scoreText(cue.body, rtl)}</div>}
       {cue.kind === "pass_card" && f.passer_accuracy !== undefined && !p.moment_kind && (
         <div className="body mono" style={{ fontSize: "0.78em" }}>{Math.round(f.ball_speed_kmh)} km/h · {label(l, "passer_acc", { n: f.passer_accuracy })}</div>
       )}
@@ -257,7 +265,7 @@ function Card({ cue, receipts, detail, dir, match }: CardProps) {
       {p.moment_kind === "press_shift" && <PressViz f={f} locale={l} />}
       {p.moment_kind === "control_chaos" && <FactorViz factors={f.factors ?? []} />}
       {p.moment_kind === "momentum_swing" && <Spark series={(f.series ?? []).map((s: any) => s.value)} color={match?.home.primary} />}
-      {p.explainer && <div className={`body ${rtl ? "rtl" : ""}`} style={{ opacity: 0.85 }}>{p.explainer}</div>}
+      {p.explainer && <div className={`body ${rtl ? "rtl" : ""}`} style={{ opacity: 0.85 }}>{scoreText(p.explainer, rtl)}</div>}
       {receipts && <Receipt cue={cue} detail={detail} />}
     </div>
   );

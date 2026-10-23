@@ -8,9 +8,33 @@ chat client "generates", so the whole agent graph runs without any cloud.
 
 from __future__ import annotations
 
+import re
 from typing import Any
 
 LANGS = ("en", "es", "fr", "ar", "pt")
+RTL_LANGS = {"ar", "he", "fa", "ur"}
+
+# A score or a stoppage-time minute after a right-to-left word: "2-1", "45+2'". Without an isolate, the Arabic word turns
+# the digits into Arabic-context numbers, the hyphen or plus splits them, and the score displays reversed ("1-2").
+_BIDI_TOKEN = re.compile(r"(?<![\u2066\d])(\d+(?:\s?[-–+/]\s?\d+)+['’′]?)")
+
+
+def rtl_safe(text: Any, lang: str) -> Any:
+    """Keep scores and minutes reading left to right inside right-to-left copy (a Unicode LTR isolate, invisible)."""
+    if lang not in RTL_LANGS or not isinstance(text, str):
+        return text
+    return _BIDI_TOKEN.sub(lambda m: f"\u2066{m.group(1)}\u2069", text)
+
+
+def rtl_safe_all(value: Any, lang: str) -> Any:
+    """rtl_safe over every string in a nested copy (dicts and lists), returning a new structure."""
+    if lang not in RTL_LANGS:
+        return value
+    if isinstance(value, dict):
+        return {k: rtl_safe_all(v, lang) for k, v in value.items()}
+    if isinstance(value, list):
+        return [rtl_safe_all(v, lang) for v in value]
+    return rtl_safe(value, lang)
 PERSONAS = ("casual", "analyst", "new_fan")
 
 

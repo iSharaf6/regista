@@ -154,12 +154,16 @@ def detect(seed: int) -> dict[str, Any]:
 
     k = 0
     for fi in range(len(res.frame_t)):
-        ft = float(res.frame_t[fi])
-        for sig in st.on_frame(res.frame(fi)):
+        frame = res.frame(fi)
+        ft = frame["t"]
+        for sig in st.on_frame(frame):
             keep(det.on_signal(sig, ft, st.clock))
         while k < len(evs) and _event_order(evs[k])[0] <= ft:
             keep(det.on_enriched(st.on_event(evs[k])))
             k += 1
+    while k < len(evs):
+        keep(det.on_enriched(st.on_event(evs[k])))
+        k += 1
     names = {"players": {pid: p.info.short_name for pid, p in st.players.items()}, "teams": dict(st.short)}
     shirts = {pid: p.info.number for pid, p in st.players.items()}
     return {"seed": seed, "state": st, "detector": det, "found": found, "names": names, "shirts": shirts}

@@ -33,15 +33,15 @@ export class Playback {
   reset(frame: Frame | null | undefined) {
     this.frames = frame ? [frame] : [];
     this.t = NaN;
+    this.waiting = true;
+    this.drift = 0;
   }
 
   push(frames: Frame[]) {
     for (const f of frames) {
       const last = this.frames[this.frames.length - 1];
-      if (last && f.t <= last.t) {
-        if (f.t < last.t - 1) this.reset(f); // the clock went back without a reset: follow it
-        continue;
-      }
+      // Seeks and new matches have an explicit reset. A late/duplicate frame must never rewind that timeline.
+      if (last && f.t <= last.t) continue;
       this.frames.push(f);
     }
     this.trim();
@@ -62,7 +62,10 @@ export class Playback {
         this.waiting = true;
         this.drift = 0;
       }
-      this.drift += (goal - this.t - this.drift) * Math.min(1, dt);
+      // Compare with this draw's expected time, not the previous draw's time. Otherwise normal progress looks like
+      // drift, speeding up until the buffer runs dry (especially with the reduced-motion half-second draw interval).
+      const expected = this.t + (this.waiting ? 0 : dt * rate);
+      this.drift += (goal - expected - this.drift) * Math.min(1, dt);
       if (this.waiting) this.waiting = newest - this.t < want - 1e-6;
       else this.t += dt * rate + this.drift * Math.min(1, dt * 0.5); // the playback speed, drifting back gently
       if (this.t >= newest) this.waiting = true; // ran dry: hold rather than step frame by frame
@@ -89,7 +92,8 @@ export class Playback {
       even ? q1 + 0.5 * u * (q2 - q0 + u * (2 * q0 - 5 * q1 + 4 * q2 - q3 + u * (3 * (q1 - q2) + q3 - q0))) : q1 + (q2 - q1) * u;
     const players = a.p.map((p1, k): [number, number] | null => {
       const p2 = b.p[k];
-      if (!p1) return p2 ? [p2[0], p2[1]] : null;
+      // Do not introduce a player before their first tracked frame (including across a tracking gap).
+      if (!p1) return null;
       if (!p2) return [p1[0], p1[1]];
       const p0 = before.p[k] ?? p1;
       const p3 = after.p[k] ?? p2;

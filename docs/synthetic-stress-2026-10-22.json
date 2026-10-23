@@ -1,0 +1,549 @@
+{
+  "cases": 12,
+  "failures": 0,
+  "overspeed_frames": 0,
+  "backwards_events": 0,
+  "events": 28337,
+  "frames": 350023,
+  "penalties": 4,
+  "reds": 12,
+  "substitutions": 97,
+  "date": "2026-10-22",
+  "data_source": "synthetic only",
+  "seed_plan": {
+    "declared_before_execution": true,
+    "development": [
+      [
+        2026102201,
+        "NOR",
+        "CAL",
+        "derby"
+      ],
+      [
+        2026102202,
+        "ASH",
+        "KES",
+        "press"
+      ],
+      [
+        2026102203,
+        "KES",
+        "NOR",
+        "baseline"
+      ],
+      [
+        2026102204,
+        "CAL",
+        "ASH",
+        "derby"
+      ],
+      [
+        2026102205,
+        "NOR",
+        "KES",
+        "press"
+      ],
+      [
+        2026102206,
+        "ASH",
+        "CAL",
+        "baseline"
+      ]
+    ],
+    "reserved_final": [
+      [
+        2026102291,
+        "KES",
+        "CAL",
+        "derby"
+      ],
+      [
+        2026102292,
+        "CAL",
+        "NOR",
+        "press"
+      ],
+      [
+        2026102293,
+        "NOR",
+        "ASH",
+        "baseline"
+      ],
+      [
+        2026102294,
+        "ASH",
+        "NOR",
+        "derby"
+      ],
+      [
+        2026102295,
+        "KES",
+        "ASH",
+        "press"
+      ],
+      [
+        2026102296,
+        "CAL",
+        "KES",
+        "baseline"
+      ]
+    ]
+  },
+  "development_cases": [
+    {
+      "seed": 2026102201,
+      "home": "NOR",
+      "away": "CAL",
+      "scenario": "derby",
+      "events": 2367,
+      "frames": 29312,
+      "moments": 90,
+      "score": {
+        "NOR": 1,
+        "CAL": 3
+      },
+      "reds": {},
+      "subs": {
+        "NOR": 4,
+        "CAL": 4
+      },
+      "penalties": 0,
+      "stoppage_events": 193,
+      "failures": [],
+      "backwards_event_times": [],
+      "tracking_max_kmh": 35.75,
+      "overspeed_frames": 0,
+      "fastest": {
+        "player": "NOR-11",
+        "cap_kmh": 35.9,
+        "t": 90.80000305175781
+      },
+      "seconds": 5.84
+    },
+    {
+      "seed": 2026102202,
+      "home": "ASH",
+      "away": "KES",
+      "scenario": "press",
+      "events": 2316,
+      "frames": 29657,
+      "moments": 79,
+      "score": {
+        "ASH": 2,
+        "KES": 2
+      },
+      "reds": {
+        "KES": 1,
+        "ASH": 1
+      },
+      "subs": {
+        "KES": 4,
+        "ASH": 5
+      },
+      "penalties": 2,
+      "stoppage_events": 141,
+      "failures": [],
+      "backwards_event_times": [],
+      "tracking_max_kmh": 35.0,
+      "overspeed_frames": 0,
+      "fastest": {
+        "player": "ASH-15",
+        "cap_kmh": 35.0,
+        "t": 6212.7998046875
+      },
+      "seconds": 6.68
+    },
+    {
+      "seed": 2026102203,
+      "home": "KES",
+      "away": "NOR",
+      "scenario": "baseline",
+      "events": 2401,
+      "frames": 29212,
+      "moments": 77,
+      "score": {
+        "KES": 0,
+        "NOR": 0
+      },
+      "reds": {
+        "NOR": 1
+      },
+      "subs": {
+        "NOR": 4,
+        "KES": 4
+      },
+      "penalties": 0,
+      "stoppage_events": 228,
+      "failures": [],
+      "backwards_event_times": [],
+      "tracking_max_kmh": 35.24,
+      "overspeed_frames": 0,
+      "fastest": {
+        "player": "NOR-07",
+        "cap_kmh": 35.4,
+        "t": 140.39999389648438
+      },
+      "seconds": 6.61
+    },
+    {
+      "seed": 2026102204,
+      "home": "CAL",
+      "away": "ASH",
+      "scenario": "derby",
+      "events": 2361,
+      "frames": 29104,
+      "moments": 79,
+      "score": {
+        "CAL": 1,
+        "ASH": 2
+      },
+      "reds": {
+        "CAL": 2
+      },
+      "subs": {
+        "ASH": 4,
+        "CAL": 4
+      },
+      "penalties": 0,
+      "stoppage_events": 157,
+      "failures": [],
+      "backwards_event_times": [],
+      "tracking_max_kmh": 34.87,
+      "overspeed_frames": 0,
+      "fastest": {
+        "player": "ASH-06",
+        "cap_kmh": 35.0,
+        "t": 71.5999984741211
+      },
+      "seconds": 6.31
+    },
+    {
+      "seed": 2026102205,
+      "home": "NOR",
+      "away": "KES",
+      "scenario": "press",
+      "events": 2203,
+      "frames": 29151,
+      "moments": 68,
+      "score": {
+        "NOR": 3,
+        "KES": 2
+      },
+      "reds": {
+        "NOR": 1,
+        "KES": 2
+      },
+      "subs": {
+        "NOR": 4,
+        "KES": 4
+      },
+      "penalties": 1,
+      "stoppage_events": 177,
+      "failures": [],
+      "backwards_event_times": [],
+      "tracking_max_kmh": 34.49,
+      "overspeed_frames": 0,
+      "fastest": {
+        "player": "NOR-17",
+        "cap_kmh": 34.8,
+        "t": 5427.7998046875
+      },
+      "seconds": 6.33
+    },
+    {
+      "seed": 2026102206,
+      "home": "ASH",
+      "away": "CAL",
+      "scenario": "baseline",
+      "events": 2461,
+      "frames": 29090,
+      "moments": 68,
+      "score": {
+        "ASH": 1,
+        "CAL": 1
+      },
+      "reds": {},
+      "subs": {
+        "ASH": 4,
+        "CAL": 4
+      },
+      "penalties": 0,
+      "stoppage_events": 159,
+      "failures": [],
+      "backwards_event_times": [],
+      "tracking_max_kmh": 35.08,
+      "overspeed_frames": 0,
+      "fastest": {
+        "player": "CAL-11",
+        "cap_kmh": 35.1,
+        "t": 7.800000190734863
+      },
+      "seconds": 6.43
+    }
+  ],
+  "reserved_cases": [
+    {
+      "seed": 2026102291,
+      "home": "KES",
+      "away": "CAL",
+      "scenario": "derby",
+      "events": 2362,
+      "frames": 29472,
+      "moments": 89,
+      "score": {
+        "KES": 1,
+        "CAL": 3
+      },
+      "reds": {
+        "KES": 1
+      },
+      "subs": {
+        "KES": 4,
+        "CAL": 4
+      },
+      "penalties": 0,
+      "stoppage_events": 229,
+      "failures": [],
+      "backwards_event_times": [],
+      "tracking_max_kmh": 34.07,
+      "overspeed_frames": 0,
+      "fastest": {
+        "player": "KES-15",
+        "cap_kmh": 34.5,
+        "t": 5549.39990234375
+      },
+      "seconds": 6.12
+    },
+    {
+      "seed": 2026102292,
+      "home": "CAL",
+      "away": "NOR",
+      "scenario": "press",
+      "events": 2309,
+      "frames": 29047,
+      "moments": 68,
+      "score": {
+        "CAL": 2,
+        "NOR": 1
+      },
+      "reds": {
+        "CAL": 1
+      },
+      "subs": {
+        "NOR": 4,
+        "CAL": 4
+      },
+      "penalties": 0,
+      "stoppage_events": 172,
+      "failures": [],
+      "backwards_event_times": [],
+      "tracking_max_kmh": 35.1,
+      "overspeed_frames": 0,
+      "fastest": {
+        "player": "NOR-07",
+        "cap_kmh": 35.4,
+        "t": 210.8000030517578
+      },
+      "seconds": 5.87
+    },
+    {
+      "seed": 2026102293,
+      "home": "NOR",
+      "away": "ASH",
+      "scenario": "baseline",
+      "events": 2380,
+      "frames": 29450,
+      "moments": 70,
+      "score": {
+        "NOR": 1,
+        "ASH": 0
+      },
+      "reds": {},
+      "subs": {
+        "NOR": 4,
+        "ASH": 4
+      },
+      "penalties": 0,
+      "stoppage_events": 163,
+      "failures": [],
+      "backwards_event_times": [],
+      "tracking_max_kmh": 35.45,
+      "overspeed_frames": 0,
+      "fastest": {
+        "player": "NOR-11",
+        "cap_kmh": 35.9,
+        "t": 302.79998779296875
+      },
+      "seconds": 5.96
+    },
+    {
+      "seed": 2026102294,
+      "home": "ASH",
+      "away": "NOR",
+      "scenario": "derby",
+      "events": 2249,
+      "frames": 28851,
+      "moments": 78,
+      "score": {
+        "ASH": 3,
+        "NOR": 1
+      },
+      "reds": {
+        "NOR": 1
+      },
+      "subs": {
+        "NOR": 4,
+        "ASH": 4
+      },
+      "penalties": 1,
+      "stoppage_events": 206,
+      "failures": [],
+      "backwards_event_times": [],
+      "tracking_max_kmh": 35.1,
+      "overspeed_frames": 0,
+      "fastest": {
+        "player": "NOR-11",
+        "cap_kmh": 35.9,
+        "t": 141.0
+      },
+      "seconds": 5.78
+    },
+    {
+      "seed": 2026102295,
+      "home": "KES",
+      "away": "ASH",
+      "scenario": "press",
+      "events": 2483,
+      "frames": 28789,
+      "moments": 79,
+      "score": {
+        "KES": 1,
+        "ASH": 0
+      },
+      "reds": {},
+      "subs": {
+        "KES": 4,
+        "ASH": 4
+      },
+      "penalties": 0,
+      "stoppage_events": 173,
+      "failures": [],
+      "backwards_event_times": [],
+      "tracking_max_kmh": 34.86,
+      "overspeed_frames": 0,
+      "fastest": {
+        "player": "ASH-15",
+        "cap_kmh": 35.0,
+        "t": 4541.39990234375
+      },
+      "seconds": 6.37
+    },
+    {
+      "seed": 2026102296,
+      "home": "CAL",
+      "away": "KES",
+      "scenario": "baseline",
+      "events": 2445,
+      "frames": 28888,
+      "moments": 79,
+      "score": {
+        "CAL": 2,
+        "KES": 0
+      },
+      "reds": {
+        "CAL": 1
+      },
+      "subs": {
+        "CAL": 4,
+        "KES": 4
+      },
+      "penalties": 0,
+      "stoppage_events": 153,
+      "failures": [],
+      "backwards_event_times": [],
+      "tracking_max_kmh": 33.53,
+      "overspeed_frames": 0,
+      "fastest": {
+        "player": "CAL-02",
+        "cap_kmh": 33.8,
+        "t": 220.0
+      },
+      "seconds": 6.53
+    }
+  ],
+  "assist_identity_check": [
+    {
+      "seed": 2026102201,
+      "goals": 4,
+      "assists": 4,
+      "failures": []
+    },
+    {
+      "seed": 2026102202,
+      "goals": 4,
+      "assists": 1,
+      "failures": []
+    },
+    {
+      "seed": 2026102203,
+      "goals": 0,
+      "assists": 0,
+      "failures": []
+    },
+    {
+      "seed": 2026102204,
+      "goals": 3,
+      "assists": 3,
+      "failures": []
+    },
+    {
+      "seed": 2026102205,
+      "goals": 5,
+      "assists": 5,
+      "failures": []
+    },
+    {
+      "seed": 2026102206,
+      "goals": 2,
+      "assists": 2,
+      "failures": []
+    },
+    {
+      "seed": 2026102291,
+      "goals": 4,
+      "assists": 4,
+      "failures": []
+    },
+    {
+      "seed": 2026102292,
+      "goals": 3,
+      "assists": 3,
+      "failures": []
+    },
+    {
+      "seed": 2026102293,
+      "goals": 1,
+      "assists": 1,
+      "failures": []
+    },
+    {
+      "seed": 2026102294,
+      "goals": 4,
+      "assists": 2,
+      "failures": []
+    },
+    {
+      "seed": 2026102295,
+      "goals": 1,
+      "assists": 1,
+      "failures": []
+    },
+    {
+      "seed": 2026102296,
+      "goals": 2,
+      "assists": 2,
+      "failures": []
+    }
+  ],
+  "scope": "Six development and six reserved cases, transparently rerun after carrier/inactive-player corrections. No reference-band or detector-threshold tuning. Final checks cover the invariants named in each case, not universal correctness."
+}

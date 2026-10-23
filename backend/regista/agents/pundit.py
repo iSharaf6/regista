@@ -18,7 +18,7 @@ from agent_framework import Agent
 from . import prompts
 from .story import AgentRuntime
 from .telemetry import Span
-from .templates import num
+from .templates import num, rtl_safe
 from .tools import MatchTools, _norm
 
 KEYWORDS = {
@@ -105,7 +105,8 @@ class Pundit:
                 ms = (time.perf_counter() - t0) * 1000
                 self.rt.breaker.success()
                 self.rt.telemetry.record(Span("Pundit", "ok", ms, self.rt.model_name, detail=f"tools: {', '.join(calls) or 'none'}"))
-                return {"answer": res.text.strip(), "tools": calls, "model": self.rt.model_name, "ms": round(ms)}
+                return {"answer": rtl_safe(res.text.strip(), language), "tools": calls, "model": self.rt.model_name,
+                        "ms": round(ms)}
             except Exception as exc:  # noqa: BLE001
                 self.rt.breaker.failure()
                 self.rt.telemetry.record(Span("Pundit", "error", (time.perf_counter() - t0) * 1000, self.rt.model_name,
@@ -114,7 +115,7 @@ class Pundit:
         ms = (time.perf_counter() - t0) * 1000
         self.rt.telemetry.record(Span("Pundit", "ok" if self.agent is None else "fallback", ms, "deterministic",
                                       detail=f"tools: {', '.join(calls)}"))
-        return {"answer": answer, "tools": calls, "model": "deterministic", "ms": round(ms)}
+        return {"answer": rtl_safe(answer, language), "tools": calls, "model": "deterministic", "ms": round(ms)}
 
     def offline_answer(self, question: str, lang: str) -> tuple[str, list[str]]:
         lang = lang if lang in A["status"] else "en"

@@ -1,99 +1,79 @@
-# Innovation Studio project page: what to paste where
+# Innovation Studio project page
 
-Fill the form top to bottom, save, then add the media and the code repository (both unlock after the first save).
-Everything below is measured (`docs/*.json`) and matches the README; don't round the numbers up.
+This is the current draft to paste into the form. The video remains pending; do not treat this document as proof of submission. Verify media against the corrected build before upload.
 
----
-
-## Title (max 140)
-```
+## Title
 Regista: the multi-agent match director
-```
 
-## Tagline (max 300)
-```
-One match, every fan. Microsoft Agent Framework agents on Microsoft Foundry re-cut the broadcast for each viewer's language, club and football knowledge, and a deterministic Verifier checks every figure against the match data before it airs.
-```
+## Tagline
+Match stories for different fans. Evidence for the producer. Microsoft Agent Framework and Foundry turn one synthetic feed into audience-specific explanations, timed graphics and inspectable recovery.
 
 ## Keywords
-```
-multi-agent, Microsoft Agent Framework, Microsoft Foundry, Azure Container Apps, Azure Event Hubs, Application Insights, MCP, GitHub Copilot, sports broadcasting, personalization, multilingual, explainable AI, fact-checking
-```
+multi-agent, Microsoft Agent Framework, Microsoft Foundry, Azure Container Apps, Azure Event Hubs, Application Insights, MCP, GitHub Copilot, sports broadcasting, personalization, multilingual, explainable AI
 
-## Description (Markdown)
-Paste everything between the lines. Replace `<VIDEO URL>` with your YouTube link once it's uploaded.
+## Description
 
----
-**Category: Best Multi-Agent Orchestration** (also entered for the Grand Prize)
+**Category: Best Multi-Agent Orchestration / Best Multi-Agent System Prize**; also eligible for Grand Prize consideration.
 
-### 74 minutes. One goal. Three fans.
-Valdane scores the winner. **Tom**, an analyst in Manchester, wants the numbers. **Amira**, in Cairo, supports the side that just went behind and watches in Arabic. **Lucía**, in Madrid, is at her first match and has no idea what xG means. Today all three get the same broadcast. With **Regista** each gets their own, live, and every figure in it is checked against the match data before it airs.
+### One goal, different questions
+At 63′, Northbridge pull one back against Port Calder: **1–2**. Tom wants the numbers. Amira supports Port Calder and watches in Arabic. Lucía needs football explained in Spanish. Regista shows one producer how to serve those different needs from the same synthetic event.
 
-**Try it in one minute:** [Explore a moment](https://ca-registaednsnlttycm2o.calmsea-720b2319.koreacentral.azurecontainerapps.io/#/explore?moment=m055) shows the three broadcasts of that goal side by side, with the facts behind them and the Verifier's verdict.
+[Try Explore in one minute](https://ca-registaednsnlttycm2o.calmsea-720b2319.koreacentral.azurecontainerapps.io/#/explore?moment=highlight). Compare the three fictional fans, then switch to **Same language**: Tom and Sam both read English, with explanations chosen for an analyst and a newcomer. Open the facts and correction receipt to inspect what supports the copy.
 
-### What it is
-A multi-agent match director for a synthetic football feed. It turns events and 5 Hz tracking into explanations of *why* moments matter, renders them as timed broadcast graphics (a Graphics Cue Protocol), and re-cuts the whole broadcast for every viewer: web overlay, OBS/vMix page, on-air JSON for vMix and CasparCG, a phone second screen, and an MCP server that GitHub Copilot can question live.
+The current seed-16 match ends **Northbridge 1–2 Port Calder**. Port Calder score at 48′ and 50′; Northbridge's 63′ goal reduces the deficit. There are no red cards.
 
-### How the agents work together
-Built with **Microsoft Agent Framework** (agents + a workflow graph with fan-out, fan-in and switch-case retry edges), models on **Microsoft Foundry**:
-1. **Analyst** explains why a moment matters. Its own figures are checked before any writer sees them.
-2. **Narrator** (English) and **Localizers** (Spanish, French, Arabic, Portuguese) write in parallel for three audiences (casual, analyst, newcomer): native copy, not translation.
-3. **Verifier** (deterministic) checks every figure, player and key claim against match data only, never against model output. A rejected draft goes back to its writer with the exact issues; after two failures a grounded template airs instead.
-4. **Producer** times the graphics, and a **Director** per viewer re-cuts them for language, club, focus and knowledge.
-5. A deterministic **fast lane** airs shot and pass graphics in milliseconds, and a circuit breaker keeps the broadcast on air when the model fails.
+### How it works
+Microsoft Agent Framework coordinates an Analyst, English Narrator and parallel Localizers. A deterministic Verifier checks supported numbers and units, roster names and selected football claims against match data. A rejected writer receives specific feedback; exhausted retries use checked templates. The Producer schedules Graphics Cue Protocol cues, and a Director selects them for each viewer.
 
-### Measured, not claimed
-- **The fact-check loop, tested fairly on fixed evaluation matches.** 24 moments from 4 fixed evaluation matches (separate from the demo match the prompts were developed on; their failures have guided repairs), 5 languages, same model and facts: one-shot generation got every language through the Verifier for **18/24** moments. With the Verifier's feedback loop, our multi-agent workflow reached **21/24** (117/120 language outputs) and a single agent given the same loop and draft budget **23/24** (115/120). The loop is what lifts accuracy; splitting the work across agents adds speed (median 18.7 s vs 21.9 s, p95 30 s vs 42 s, as observed with a 20 s per-call timeout for the workflow and 90 s for the single agent) and isolation (a failure costs one language, not a whole moment). Every moment aired checked copy.
-- **A checker you can audit.** It caught **235 of 235** hand-written believable mistakes in five languages (a wrong goal tally in digits or words, a false brace, "down to ten" with nine left, a rate per 100 passes called "per minute", a wrong minute) and wrongly rejected **0 of 3,425** fallback outputs. Its limits are documented: it doesn't judge causal claims or catch invented names from outside the squad.
-- **Graded explainability.** The simulator logs ground truth, so tactical detection is measured: press-shift recall 52%, 0.6 false alarms per match. Every receipt labels each fact as observed or a model estimate.
-- **Scales by sharing.** In an in-process selection microbenchmark (no network, no generation), 1 to 1,000 personalised viewers cost about 0.7 to 7 ms of Director work per match-second, while model work stays one story job per moment.
-- **Correction receipts and a recovery drill.** Every draft is kept with the Verifier's actual finding. A labelled drill on Explore (`?drill=ar`) plants a wrong goal count in the Arabic draft: the Verifier rejects it, only Arabic is rewritten, and every other language keeps its copy (`?drill=ar2`: Arabic ends on its template).
-- **Limits, stated up front.** The Pundit answers from tool calls, but its answers are not run through the story Verifier. Graphics are instant; checked AI copy upgrades them a median of about 19 s later, and healthy languages wait for the whole story before that upgrade. Event Hubs mirrors the feed (no downstream consumer is built yet). The fan-out figure is in-process, not a network load test. The Producer schedules cues automatically; there is no human approve, hold or retract console yet.
+The model runs on Microsoft Foundry. Essential deterministic graphics can appear without waiting for the model; checked generated copy upgrades eligible cues after the workflow completes. Healthy language results currently wait for that completion barrier.
 
-### Who it's for
-A **producer running one match for several markets**: push the feed to `POST /api/feed`, drive existing vMix, CasparCG or OBS graphics from `GET /api/onair` (already personalised per market), open any graphic's receipt, and stay on air through a model outage. Fans get it as a second screen (scan the QR code), and club media teams as checked posts in Slack, Teams or Discord.
+### Inspect the recovery
+[Run the labelled Arabic drill](https://ca-registaednsnlttycm2o.calmsea-720b2319.koreacentral.azurecontainerapps.io/#/explore?moment=highlight&drill=ar). A deliberately planted wrong goal count is rejected; its receipt shows the exact finding and rewrite. Other languages keep their copy. `drill=ar2` shows the exhausted-retry template path. This is an injected demonstration, not a measured natural failure rate.
+
+### Evidence with a defined scope
+After the **22 October 2026** simulator and checker fixes, the standard 20-match run detected **12/30 press shifts (40%)**, with **0.5 false alarms per match**, **5-minute median detection delay** and **1-minute median onset error**. The checker accepted **3,350 language bundles / 10,050 persona copies**; xG MAE was **0.0082 over 560 shots** against engine probabilities. The realism report passes **12/14** ranges; fouls (16.525 versus an upper bound of 16) and tackles (26 versus 25) remain outside their bands. Synthetic stress invariants and these aggregate range checks measure different things. The README links the reports and records **147 passing backend tests**, **40 frontend harness cases** and **21 browser checks** covered by the verification runs.
+
+[The fresh Foundry comparison](https://github.com/iSharaf6/regista/blob/main/docs/llm-eval.json) covers **24 moments** from six never-used seeds in all five languages, on the frozen final build. Checked copy aired for **24/24** moments; **20/24** were model-written in every language (**110/120** language outputs). A single agent managed **15/24** in one shot and **21/24** with the same checker loop: the loop lifts accuracy, and splitting the writing across agents matches it while finishing faster (p50/p95 **11.9/28.5 s** vs **19.9/67.9 s**, with 20 s vs 90 s call timeouts) and confining failures to one language, at about twice the cost (**$0.0082** vs **$0.0043** per moment). It caught **220/220** hand-written and **724/724** constructed errors and wrongly rejected **0/120** templates. One Arabic model recap misspelled Port Calder in Arabic script and still passed: the checker cannot verify Arabic spellings of names.
+
+[The separate synthetic stress report](https://github.com/iSharaf6/regista/blob/main/docs/synthetic-stress-2026-10-22.json) covers **12 matches and 350,023 tracking frames** with no checked invariant failures. [Historical reports](https://github.com/iSharaf6/regista/tree/main/docs/history/before-physics-fix-2026-10-22) remain available. A local selection benchmark is not a network load test. The checker does not establish arbitrary causal claims, translation quality or unknown names outside the roster. Pundit answers use tools but do not pass through the story checker.
+
+### Intended use
+A producer serving multiple audiences can inspect the same event, choose language and knowledge level, and export a browser overlay or structured `/api/onair` output. Feed ingestion, a reference publisher and MCP tools make the prototype inspectable and extensible. Real provider adapters, external switcher validation, editorial operations and independent user benefit remain adoption work. There is no human approve/hold/retract console.
 
 ### Built with
-Microsoft Agent Framework · Microsoft Foundry (gpt-4.1-mini, Entra ID, no keys) · Azure Container Apps · Azure Event Hubs (every feed event mirrored, Fabric RTI consumer group) · Application Insights (OpenTelemetry traces of every agent run) · Azure Container Registry + managed identity · Azure Developer CLI (Bicep) · Model Context Protocol · GitHub Copilot agent mode · GitHub Actions.
+Microsoft Agent Framework · Microsoft Foundry (`gpt-4.1-mini`, Entra ID) · Azure Container Apps · Azure Event Hubs (feed mirror; no implemented Fabric consumer) · Application Insights/OpenTelemetry · Azure Container Registry and managed identity · Azure Developer CLI/Bicep · MCP · GitHub Copilot agent mode · GitHub Actions.
 
-### Links and testing
-- **Live demo:** https://ca-registaednsnlttycm2o.calmsea-720b2319.koreacentral.azurecontainerapps.io (the first load after a quiet spell takes about 20 s). Start with **Explore a moment**, then **Broadcast**, **Two fans**, **Control room → Simulate model outage** (it switches itself off after 90 s), **Recap** and **Data lab**.
-- **Code:** https://github.com/iSharaf6/regista (runs locally with no keys; 71 offline tests; full testing steps in `docs/submission.md`)
-- **Video (under 2 minutes):** <VIDEO URL>
+### Links
+- [Explore the goal](https://ca-registaednsnlttycm2o.calmsea-720b2319.koreacentral.azurecontainerapps.io/#/explore?moment=highlight)
+- [Live demo](https://ca-registaednsnlttycm2o.calmsea-720b2319.koreacentral.azurecontainerapps.io); allow cold-start/loading time.
+- [Public source](https://github.com/iSharaf6/regista); local no-key setup and verification commands are in the README and `docs/submission.md`.
+- **Required video, strictly under two minutes: `<VIDEO URL>` — pending recording and upload.**
 
-All data is synthetic; all clubs, players and venues are fictional.
+All teams, players, venues and fan personas are fictional. All match data is synthetic.
 
----
+## Form fields
+- Challenge: **The Synthetic Match Insights Engine for Premier League Studio**.
+- Writing code: **Yes**; add `https://github.com/iSharaf6/regista` after saving.
+- Open for others to join: **No**, unless team preferences change.
 
-## Challenge
-Select **The Synthetic Match Insights Engine for Premier League Studio**.
+## Media preparation
+The ten images listed in [capture-manifest.json](img/capture-manifest.json) were refreshed on 22 October from the corrected local build using Microsoft Foundry and synthetic data. They include a real rejected Arabic drill draft, its rewrite and live goal output. This records local capture, not publication of the updated demo. Do not upload old 74′/ten-men/2–1 Northbridge cards as current evidence.
 
-## Writing Code
-**Yes.** After saving, add the code repository: `https://github.com/iSharaf6/regista`
+| Refreshed image | Caption |
+|---|---|
+| `docs/img/explore.jpg` | Northbridge's 63′ response through three fictional fans: English analyst, Arabic supporter and Spanish newcomer |
+| `docs/img/explore-same.jpg` | Same language, different needs: Tom and Sam receive different English explanations |
+| `docs/img/correction-receipt.jpg` | Labelled Arabic drill: the rejected draft, actual finding and targeted recovery |
+| `docs/img/explore-checks.jpg` | Source facts labelled observed or estimated, with the checker result and trace |
+| `docs/img/overlay-amira.jpg` | Arabic browser-overlay export, shown with its selected audience; claim OBS operation only after validating it in OBS |
 
-## Skills Needed / open for others to join
-**No** (leave it closed).
+These files are current captures; select the images you want to upload with the submission.
 
-## Media (after saving), in this order
-| # | File | Caption |
-|---|---|---|
-| 1 | `docs/media/cover.png` | One match. Every fan. Every figure checked. |
-| 2 | `docs/img/explore.jpg` | Same second, three broadcasts: Tom (English analyst), Amira (Arabic, Port Calder fan) and Lucía (Spanish, first match) |
-| 3 | `docs/img/correction-receipt.jpg` | A correction receipt from a labelled drill: a wrong goal count planted in the Arabic draft is rejected with the Verifier's exact findings, never airs, and only Arabic is rewritten |
-| 4 | `docs/img/explore-same.jpg` | Same language, two fans: Tom (analyst) and Sam (first match) get different English broadcasts of the same goal |
-| 5 | `docs/img/overlay-amira.jpg` | Amira's OBS / vMix overlay export, in Arabic and right to left (shown over a plain backdrop) |
-| 6 | `docs/img/explore-checks.jpg` | The receipts: each fact tagged observed or model estimate, the Verifier's verdict and the agent trace |
-| 7 | `docs/img/broadcast.jpg` | The live broadcast at the 74th-minute goal, with tracked players and timed graphics |
-| 8 | `docs/img/compare.jpg` | Two fans, two broadcasts, the same second |
-| 9 | `docs/img/control-room.jpg` | Control room: the real agent workflow, live, with the outage switch |
-| 10 | `docs/img/lab.jpg` | Data lab: the workflow against a single agent with and without the checker, and 235/235 believable errors caught |
-| 11 | `docs/img/recap.jpg` | Full-time recap, written by an agent and checked figure by figure |
-| 12 | `docs/img/receipts.jpg` | A graphic's receipt, opened from the broadcast |
+## Before final submission
+- [ ] Record and upload the functioning-project video, strictly under 2:00; replace its placeholder in the description and video field.
+- [ ] Check the demo and stable highlight link in a private window.
+- [ ] Check the repository and video while signed out.
+- [ ] Ensure every numerical claim has a matching current artifact and scope; keep historical results explicitly historical.
+- [ ] Complete the submission form by **Tuesday 27 October, 23:59 PT / Wednesday 28 October, 5:59 pm Sydney**. Leave time for upload and access checks.
 
-Video: paste the YouTube URL wherever the page asks for it, and in the Description's Links section.
-
-## Before you press Submit
-- [ ] Video uploaded (Public or Unlisted), under 2:00, link pasted in two places.
-- [ ] Live demo opens in a private window, and **Explore a moment** shows the three fans.
-- [ ] Repo is public: https://github.com/iSharaf6/regista opens when signed out.
-- [ ] Submit by **Tue Oct 27, 23:59 PT** (Wed Oct 28, 5:59 pm Sydney). Aim for Sunday, so a failed upload isn't a crisis.
+These checks prepare the submission; they do not record that it has already been submitted.

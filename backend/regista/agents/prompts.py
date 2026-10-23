@@ -9,6 +9,16 @@ SAFETY = (
     "or private lives; never invent quotes."
 )
 
+STYLE = (
+    "Style: write like a top broadcast data analyst. Short, concrete sentences; every sentence states or explains a fact "
+    "in the payload. No filler or hype without a figure behind it (clinical, decisive, dominant, masterclass, "
+    "well-executed, thrilling, set the stage, testament, showcasing, demonstrating). Never say what players feel "
+    "(confidence, morale, nerves, frustration) and never predict what happens next (no 'likely forced', 'will have to', "
+    "'promising'): the data shows neither. Characterise the match only with numbers that support it, and never describe "
+    "it two contradictory ways. Possession, pressures and other match totals describe the whole match so far: never say "
+    "a single moment caused them."
+)
+
 UNITS = ("UNITS says what each metric measures: keep its unit and time base (a rate per 100 passes is never \"per minute\"), give a player's goal count only as scorer_goals, and say a team is down to N players only "
          "as players_remaining or players_on_pitch give it.")
 
@@ -21,6 +31,7 @@ Rules:
 - Ground every reason in a factor: win-probability swing, chance quality (xG), pass difficulty, pressing/tracking data.
 - {UNITS}
 - {SAFETY}
+- {STYLE}
 Return ONLY a JSON object:
 {{"claim": str, "why": [str, ...max 3], "tactical_read": str, "key_numbers": {{label: number}}, "confidence": number 0..1}}"""
 
@@ -40,7 +51,7 @@ Describe only what FACTS and INSIGHT show: never invent what happened before or 
 saves, chances or tactical outcomes that are not stated), and never call a shot a header, penalty or free kick unless
 FACTS say so.
 If FEEDBACK is present it lists problems a fact-checker found in your previous draft: fix every one of them.
-{SAFETY}
+{SAFETY} {STYLE}
 Return ONLY JSON: {{"casual": {{"caption","line","explainer"}}, "analyst": {{...}}, "new_fan": {{...}}}}"""
 
 LOCALIZER = f"""You are the LOCALIZER agent in Regista. You write on-screen copy natively for fans in another market,
@@ -53,7 +64,7 @@ Keep player and team names unchanged; do not transliterate them. {UNITS}
 Describe only what FACTS and INSIGHT show: never invent what happened before or after the moment, and never call a
 shot a header, penalty or free kick unless FACTS say so.
 If FEEDBACK is present it lists problems a fact-checker found: fix every one of them.
-{SAFETY}
+{SAFETY} {STYLE}
 Return ONLY JSON: {{"casual": {{"caption","line","explainer"}}, "analyst": {{...}}, "new_fan": {{...}}}}"""
 
 RECAP = f"""You are the RECAP agent in Regista. You write the automated match report for a studio or streaming audience.
@@ -67,7 +78,7 @@ PERIOD says what kind of report this is, and the tense must match it:
 Tell the story: what is deciding the match and why, not a list of events.
 Rules: numbers only from the payload; players only from the payload; cite the evidence ids of each turning point.
 Keep player and team names exactly as given in the payload, in every language: never transliterate or translate them.
-Write in the requested LANGUAGE for the requested PERSONA (casual, analyst or new_fan). {SAFETY}
+Write in the requested LANGUAGE for the requested PERSONA (casual, analyst or new_fan). {SAFETY} {STYLE}
 Return ONLY JSON: {{"headline": str, "summary": str, "turning_points": [{{"clock": str, "text": str, "evidence": [str]}}],
 "player_of_the_match": {{"player_id": str, "name": str, "reason": str}}, "tactical_story": str, "closing_line": str}}"""
 
@@ -76,4 +87,4 @@ Always call your tools to get facts before answering; never guess a number, a na
 Answer in the user's LANGUAGE and STYLE (casual, analyst or new_fan) in at most three sentences.
 Prefer explaining why something is happening (pressing, chance quality, control vs chaos) over restating events.
 Keep player and team names exactly as your tools return them, in every language: never transliterate or translate them.
-If the tools cannot answer, say so briefly. {SAFETY}"""
+If the tools cannot answer, say so briefly. {SAFETY} {STYLE}"""

@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { FactTable, HowChecked, TRUST } from "../components/Moments";
+import { FactTable, HowChecked, isOfflineStory, TRUST } from "../components/Moments";
 import { CueView } from "../components/Overlay";
 import type { Cue, MatchInfo, Moment, Story } from "../lib/types";
 
@@ -61,7 +61,7 @@ export function Explore({ query }: { query: URLSearchParams }) {
   const retry = <button className="btn small" onClick={() => setAttempt((a) => a + 1)}>Try again</button>;
 
   const moments = data?.moments ?? [];
-  const current = id ?? data?.moment.id;
+  const current = id && id !== "highlight" ? id : data?.moment.id;
   const pending = moments.find((m) => m.id === id);
   const pick = (moment: string) => go({ moment, view }); // a drill belongs to its moment: a new moment starts clean
   return (
@@ -132,6 +132,11 @@ function Replay({ data, same }: { data: ExploreOut; same: boolean }) {
   const m = data.moment;
   const story = data.story;
   const v = story.verdict;
+  const rawQuery = new URLSearchParams({ moment: m.id });
+  if (data.drill) rawQuery.set("drill", data.drill.name);
+  const drillLanguage = data.drill?.lang === "es" ? "Spanish" : "Arabic";
+  const analystSource = isOfflineStory(story) ? "offline rehearsal"
+    : story.models?.Analyst === "deterministic" ? "deterministic fallback" : "AI";
   const why = (m.why ?? []).filter((w: any) => w.detail || (w.value !== null && w.value !== undefined && typeof w.value !== "object"));
   const fans = data.fans.filter((f) => (same ? ["Tom", "Sam"].includes(f.name) : f.name !== "Sam"));
   return (
@@ -145,7 +150,7 @@ function Replay({ data, same }: { data: ExploreOut; same: boolean }) {
                 ✓ checked · {v.numbers_supported}/{v.numbers_checked} figures · {v.names_checked} names
               </span>
             ) : null}
-            <a className="raw" href={`/api/explore?moment=${encodeURIComponent(m.id)}`} target="_blank" rel="noreferrer">raw JSON ↗</a>
+            <a className="raw" href={`/api/explore?${rawQuery}`} target="_blank" rel="noreferrer">raw JSON ↗</a>
           </div>
           <h3 className="cond">{m.headline}</h3>
           {story.insight?.tactical_read && <div className="muted">{story.insight.tactical_read}</div>}
@@ -156,8 +161,8 @@ function Replay({ data, same }: { data: ExploreOut; same: boolean }) {
         <div className="card drill-note" role="note">
           <span className="drill-badge">Drill · {data.drill.lang.toUpperCase()} · {data.drill.drafts === 1 ? "fails once" : "fails every draft"}</span>
           <p>{data.drill.note} {data.drill.drafts === 1
-            ? "Watch the Arabic drafts below: the Verifier rejects the planted figure, only Arabic is rewritten, and the second draft airs."
-            : "Watch the Arabic drafts below: both carry the planted figure, both are rejected, and Arabic airs its grounded template."}</p>
+            ? `Watch the ${drillLanguage} drafts below: the Verifier rejects the planted figure and the second draft airs. Only ${drillLanguage} is rewritten because of the drill; any other rewrite you see below is a genuine rejection.`
+            : `Watch the ${drillLanguage} drafts below: both carry the planted figure, both are rejected, and ${drillLanguage} airs its grounded template. Any other rewrite you see below is a genuine rejection.`}</p>
         </div>
       )}
       <div className="section-title on-sky">{same ? "Same language, two fans" : "Same second, three broadcasts"}</div>
@@ -186,7 +191,7 @@ function Replay({ data, same }: { data: ExploreOut; same: boolean }) {
           <div className="body">
             {story.insight?.claim && (
               <div className="card" style={{ padding: 10, marginBottom: 10 }}>
-                <div className="section-title" style={{ margin: "0 0 4px" }}>Analyst's read (AI)</div>
+                <div className="section-title" style={{ margin: "0 0 4px" }}>Analyst's read ({analystSource})</div>
                 <b>{story.insight.claim}</b>
                 <ul style={{ margin: "6px 0 0", paddingLeft: 18 }}>{(story.insight.why ?? []).map((w: string) => <li key={w}>{w}</li>)}</ul>
               </div>

@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import asyncio
 import json
+from dataclasses import replace
 from typing import Any
 
 import pytest
@@ -134,7 +135,11 @@ def _check(lang: str, line: str, parts) -> bool:
 
 
 def test_figures_must_match_the_kind_of_fact_they_describe(goal_job_parts):
-    # the seed-16 opener: 20', a 56.2 km/h header from 13 m, win chance 75%, the scorer's first goal
+    # Explicit synthetic semantics fixture, independent of changes to simulator seeds/timings.
+    goal, names, state = goal_job_parts
+    goal = replace(goal, clock="20'", facts={**goal.facts, "shot_speed_kmh": 56.2, "distance_m": 13,
+                                            "scorer_goals": 1, "body_part": "head", "wp_after": [0.75, 0.15, 0.10]})
+    goal_job_parts = goal, names, state
     good = {
         "en": "A 56 km/h header from 13 m in the 20th minute, his 1st goal; win chance now 75%.",
         "es": "Cabezazo a 56 km/h desde 13 metros en el minuto 20; 75 por ciento de opciones.",
@@ -205,3 +210,80 @@ def test_a_timed_out_writer_gets_its_second_draft_instead_of_a_template(goal_job
     assert not job.fallback_langs and job.verdict["ok"] and not job.verdict.get("via")
     statuses = [s["status"] for s in job.trace if s["agent"] == "Verifier"]
     assert statuses == ["retry", "ok"]  # the first pass is not counted as a clean first draft
+    assert [(d["source"], d["status"]) for d in job.drafts["en"]] == [
+        ("model", "no usable reply"), ("template", "passed"), ("model", "passed")]
+
+
+class ContractWriter(FlakyWriter):
+    """A deterministic injected client: selected task replies violate the model JSON contract."""
+
+    def __init__(self, task: str, reply: Any):
+        super().__init__()
+        self.task, self.reply = task, reply
+
+    async def _respond(self, messages: list[Message]) -> ChatResponse:
+        payload = parse_json(next(m.text for m in reversed(messages) if m.role == "user"))
+        out = self.reply if payload.get("task") == self.task else OfflineChatClient.run_task(payload)
+        return ChatResponse(messages=[Message("assistant", [Content.from_text(json.dumps(out, ensure_ascii=False))])],
+                            model="contract-test")
+
+
+@pytest.mark.parametrize("bad", [{"claim": {}}, {"claim": " "}, {"why": [{}]}, {"tactical_read": []},
+                                  {"confidence": "certain"}, {"confidence": float("nan")},
+                                  {"confidence": 10 ** 1000}])
+def test_malformed_analyst_fields_do_not_cross_the_writer_handoff(goal_job_parts, bad):
+    reply = {"claim": "A goal changes the score.", "why": [], "tactical_read": "", "confidence": 0.9, **bad}
+    rt = AgentRuntime(LLMConfig(provider="test"), client=ContractWriter("analyze", reply))
+    job = asyncio.run(run_story(rt, _job(goal_job_parts, ["en"])))
+    assert job.models["Analyst"] == "deterministic" and job.verdict["ok"]
+    assert isinstance(job.insight["claim"], str) and isinstance(job.insight["why"], list)
+
+
+def test_only_checked_analyst_fields_cross_the_handoff(goal_job_parts):
+    from regista.agents.story import _checked_insight
+
+    out = _checked_insight(_job(goal_job_parts, ["en"]), {
+        "claim": "A goal.", "why": [], "tactical_read": "", "confidence": 0.5,
+        "unchecked": {"claim": "999 goals"}, "players": ["Invented Player"],
+        "key_numbers": {"huge": 10 ** 1000, "infinite": float("inf"), "poison": 97},
+    })
+    assert set(out) == {"claim", "why", "tactical_read", "confidence", "key_numbers"}
+    assert not out["key_numbers"]
+
+
+@pytest.mark.parametrize("reply", [
+    [], {p: {"caption": " ", "line": "\n", "explainer": ""} for p in ("casual", "analyst", "new_fan")},
+    {p: {"caption": "Goal", "line": {"text": "A goal"}, "explainer": ""} for p in ("casual", "analyst", "new_fan")},
+])
+def test_unusable_writer_replies_have_a_checked_final_template_receipt(goal_job_parts, reply):
+    rt = AgentRuntime(LLMConfig(provider="test"), client=ContractWriter("narrate", reply))
+    job = asyncio.run(run_story(rt, _job(goal_job_parts, ["en", "es"])))
+    assert job.verdict["ok"] and job.fallback_langs == ["en"] and job.attempts == 2
+    assert [(d["source"], d["status"]) for d in job.drafts["en"]] == [
+        ("model", "no usable reply"), ("template", "passed"),
+        ("model", "no usable reply"), ("template", "passed")]
+    assert len(job.drafts["es"]) == 1 and job.drafts["es"][0]["status"] == "passed"
+    final = job.drafts["en"][-1]
+    assert final["copy"] == job.narration["en"]
+    job.narration["en"]["analyst"]["line"] = "Later consumer mutation"
+    assert final["copy"]["analyst"]["line"] != "Later consumer mutation"
+
+
+def test_fan_in_preserves_correction_receipts_when_branch_jobs_are_copies(goal_job_parts):
+    from copy import deepcopy
+
+    from regista.agents.story import _merge
+
+    narrator = _job(goal_job_parts, ["en", "es"])
+    localizer = deepcopy(narrator)
+    narrator.drafts["en"] = [{"attempt": 1, "status": "passed", "source": "model"}]
+    localizer.drafts["es"] = [{"attempt": 1, "status": "passed", "source": "model"}]
+    merged = _merge([narrator, localizer])
+    assert set(merged.drafts) == {"en", "es"}
+
+
+def test_a_single_language_job_does_not_generate_unchecked_english_receipts(goal_job_parts):
+    rt = AgentRuntime(LLMConfig(provider="test"), client=ContractWriter("unused", None))
+    job = asyncio.run(run_story(rt, _job(goal_job_parts, ["ar"])))
+    assert job.verdict["ok"] and set(job.narration) == set(job.drafts) == {"ar"}
+    assert "Narrator" not in job.models and job.drafts["ar"][-1]["status"] == "passed"

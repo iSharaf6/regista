@@ -48,16 +48,17 @@ def test_live_feed_drives_the_whole_pipeline_and_onair(client, match):
     before = client.get("/api/onair", params={"mode": "casual", "lang": "es", "team": "NOR"}).json()
     assert before["score"] == "0-0"
     headlines, seen_lower = [], []
-    for body in _batches(match, until_t=21 * 60):
+    goal = next(event for event in match.events if event.type == "goal")
+    for body in _batches(match, until_t=goal.t + 60, step=25):
         r = client.post("/api/feed", json=body).json()
         headlines += r["new_moments"]
-        onair = client.get("/api/onair", params={"mode": "casual", "lang": "es", "team": "NOR"}).json()
+        onair = client.get("/api/onair", params={"mode": "casual", "lang": "es", "team": goal.team}).json()
         if onair["flat"]["lower_title"]:
             seen_lower.append(onair["flat"]["lower_title"])
-    assert any(h.startswith("GOAL Northbridge") for h in headlines)
-    assert client.get("/api/state").json()["score"]["NOR"] == 1
+    assert any(h.startswith("GOAL ") for h in headlines)
+    assert client.get("/api/state").json()["score"][goal.team] == 1
     assert seen_lower, "the goal lower third must be visible to polling production tools"
-    assert any("GOLAZO" in t or "GOL" in t for t in seen_lower)  # Spanish copy, partisan for a Northbridge fan
+    assert any("GOLAZO" in t or "GOL" in t for t in seen_lower)  # Spanish copy for the scoring team's fan
     # providers may resend: ingest is idempotent
     replay_first = next(_batches(match, until_t=0))
     again = client.post("/api/feed", json=replay_first).json()
@@ -221,7 +222,8 @@ def test_a_late_story_never_lands_on_a_new_timeline(monkeypatch):
 
     async def run():
         s = api.MatchSession()
-        s.seek(25)
+        goal_event = next(e for e in s.events if e.type == "goal")
+        s.advance(goal_event.t - s.clock_t + 2, live=False)
         goal = next(m for m in s.moments if m.kind == "goal")
         task = asyncio.create_task(s._run_story(goal, s._gen, s._context()))
         await asyncio.sleep(0)
@@ -273,14 +275,15 @@ def test_changing_profile_recuts_what_is_on_air():
     """The client drops its cues on a profile change, so the server re-sends what is on air, cut for the new fan."""
     async def run():
         s = api.MatchSession()
-        s.seek(25)
+        goal_event = next(e for e in s.events if e.type == "goal")
+        s.advance(goal_event.t - s.clock_t + 2, live=False)
         goal = next(m for m in s.moments if m.kind == "goal")
-        s.seek((goal.t + 2) / 60)
         assert any(c.moment_id == goal.id for c in s.live_cues())
         v = s.connect(FanProfile())
         while not v.queue.empty():
             v.queue.get_nowait()
-        s.set_profile(v.id, FanProfile(id=v.id, mode="analyst", language="es", favorite_team="CAL"))
+        opponent = s.state.away if goal.team == s.state.home else s.state.home
+        s.set_profile(v.id, FanProfile(id=v.id, mode="analyst", language="es", favorite_team=opponent))
         msgs = [v.queue.get_nowait() for _ in range(v.queue.qsize())]
         cues = [m["cue"] for m in msgs if m["type"] == "cue"]
         assert msgs[0]["type"] == "profile" and any(c["kind"] == "score_bug" for c in cues)
@@ -292,7 +295,7 @@ def test_changing_profile_recuts_what_is_on_air():
 def test_explore_one_moment_shows_three_fans_without_touching_the_broadcast(client):
     client.post("/api/control", json={"action": "pause"})  # a paused shared broadcast must stay exactly where it is
     before = client.get("/api/state").json()
-    out = client.get("/api/explore").json()
+    out = client.get("/api/explore", params={"moment": "highlight"}).json()
     assert out["curated"] and out["moment"]["kind"] == "goal" and out["moments"]
     assert [f["name"] for f in out["fans"]] == ["Tom", "Amira", "Lucía", "Sam"]  # Sam: Tom's same-language pair
     assert [f["cue"]["locale"] for f in out["fans"]] == ["en", "ar", "es", "en"]
@@ -301,7 +304,8 @@ def test_explore_one_moment_shows_three_fans_without_touching_the_broadcast(clie
     assert all(d[-1]["status"] == "passed" and d[-1]["source"] == "model" for d in out["story"]["drafts"].values())
     assert out["story"]["verdict"]["ok"] and set(out["moment"]["fact_kinds"].values()) == {"observed", "model estimate"}
     assert out["fans"][1]["cue"]["payload"].get("partisan") == "against"  # Amira supports the side that conceded
-    assert client.get("/api/explore").json()["fans"] == out["fans"]  # cached: one story job per moment
+    assert client.get("/api/explore", params={"moment": "highlight"}).json()["fans"] == out["fans"]
+    assert out["moment"]["id"] == [m["id"] for m in out["moments"] if m["kind"] == "goal"][-1]
     assert client.get("/api/explore", params={"moment": "nope"}).status_code == 404
     assert client.get("/api/state").json()["clock"] == before["clock"]  # the shared broadcast did not move
 

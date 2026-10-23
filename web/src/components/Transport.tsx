@@ -4,7 +4,10 @@ const SPEEDS = [1, 4, 10, 30, 60];
 
 export function Transport({ feed }: { feed: Feed }) {
   const c = feed.control;
-  const minute = c ? Math.floor(c.t / 60) : 0;
+  // Feed time includes the half-time break; the scrubber seeks football minutes.
+  // First-half added time stays at 45 so it cannot masquerade as the second half.
+  const [base, added = 0] = (feed.snap?.clock ?? c?.clock ?? "0").replace(/['’′]/g, "").split("+").map(Number);
+  const minute = Number.isFinite(base) ? base + (base >= 90 ? added : 0) : 0;
   const off = !feed.connected; // a click while the socket reconnects would be lost: say so instead
   return (
     <div className="transport" role="toolbar" aria-label="Playback" title={off ? "Reconnecting…" : undefined}>

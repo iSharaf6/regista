@@ -4,6 +4,25 @@ import { api } from "../lib/feed";
 const pct = (v: number | undefined) => (typeof v === "number" ? `${Math.round(v * 100)}%` : "-");
 const secs = (ms: number | undefined) => (typeof ms === "number" ? `${(ms / 1000).toFixed(1)} s` : "-");
 
+/** The realism report's metrics as a fan reads them (per team, per match). */
+const one = (v: number) => v.toFixed(1);
+const REALISM: Record<string, { label: string; fmt: (v: number) => string }> = {
+  passes: { label: "Passes", fmt: (v) => String(Math.round(v)) },
+  pass_accuracy: { label: "Pass accuracy", fmt: (v) => `${(v * 100).toFixed(1)}%` },
+  shots: { label: "Shots", fmt: one },
+  shots_on_target_share: { label: "Shots on target", fmt: (v) => `${(v * 100).toFixed(1)}%` },
+  xg: { label: "xG", fmt: (v) => v.toFixed(2) },
+  goals: { label: "Goals", fmt: (v) => v.toFixed(2) },
+  xg_per_shot: { label: "xG per shot", fmt: (v) => v.toFixed(2) },
+  fouls: { label: "Fouls", fmt: one },
+  corners: { label: "Corners", fmt: one },
+  yellow_cards: { label: "Yellow cards", fmt: one },
+  tackles: { label: "Tackles", fmt: one },
+  interceptions: { label: "Interceptions", fmt: one },
+  outfield_distance_km: { label: "Distance per outfield player", fmt: (v) => `${one(v)} km` },
+  top_speed_kmh: { label: "Top sprint speed", fmt: (v) => `${one(v)} km/h` },
+};
+
 /** The live agents scored against the real model (docs/llm-eval.json, written by `regista llm-eval`). */
 function ModelEval({ llm, grounding }: { llm: any; grounding: any }) {
   const model = String(llm.model ?? "").replace(/^foundry:/, "");
@@ -16,7 +35,6 @@ function ModelEval({ llm, grounding }: { llm: any; grounding: any }) {
   const believable = Object.values(llm.verifier_probe?.believable_errors ?? {}) as { planted: number; caught: number }[];
   const sum = (xs: { planted: number; caught: number }[]) => `${xs.reduce((s, p) => s + p.caught, 0)}/${xs.reduce((s, p) => s + p.planted, 0)}`;
   const share = (frac: string | undefined, v: number | undefined) => (frac ? `${frac} · ${pct(v)}` : pct(v));
-  const lead = wf && loop ? Math.round(100 * (wf.verified_without_fallback - loop.all_languages_verified)) : null;
   // highlight the best setup in a row, whichever it is: the workflow does not win every comparison
   const best = (vals: (number | undefined)[]) => Math.max(...vals.map((v) => v ?? -1));
   const mark = (v: number | undefined, vals: (number | undefined)[]) => (v !== undefined && v === best(vals) ? "win" : "");
@@ -61,11 +79,13 @@ function ModelEval({ llm, grounding }: { llm: any; grounding: any }) {
               <span>Story latency, median</span><b>{secs(wf.latency_ms?.p50)}</b>{loop && <b>{secs(loop.latency_ms?.p50)}</b>}<b>{secs(one.latency_ms?.p50)}</b>
               <span>Model cost per moment</span><b>${wf.cost_usd_per_moment}</b>{loop && <b>${loop.cost_usd_per_moment}</b>}<b>${one.cost_usd_per_moment}</b>
             </div>
-            {loop && lead !== null && (
+            {loop && (
               <div className="muted" style={{ fontSize: 13, marginTop: 6 }}>
-                Given the same Verifier feedback and the same {loop.mean_attempts > 1 ? "two-draft" : "draft"} budget, one agent reaches{" "}
-                {pct(loop.all_languages_verified)}: {lead > 0 ? `splitting the work across agents adds ${lead} points on top of the checker loop` :
-                  `the checker loop is what lifts accuracy; splitting the work across agents adds speed (median ${secs(wf.latency_ms?.p50)} vs ${secs(loop.latency_ms?.p50)}, p95 ${secs(wf.latency_ms?.p95)} vs ${secs(loop.latency_ms?.p95)}; workflow calls time out at ${llm.run?.timeout_s ?? 20} s, single-agent calls at ${llm.run?.baseline_timeout_s ?? 90} s) and keeps a failure to one language instead of the whole moment`}.
+                With the same Verifier feedback and two-draft budget, the workflow passes every language without a template for{" "}
+                {pct(wf.verified_without_fallback)} of moments; one agent with the checker reaches {pct(loop.all_languages_verified)}.
+                Median time is {secs(wf.latency_ms?.p50)} vs {secs(loop.latency_ms?.p50)}. Call deadlines differ:
+                workflow {llm.run?.timeout_s ?? 20} s, single agent {llm.run?.baseline_timeout_s ?? 90} s.
+                This small sample does not establish a general speed or accuracy advantage. The workflow can recover one failing language independently.
               </div>
             )}
             {typeof wf.first_draft_verified === "number" && (
@@ -100,14 +120,24 @@ export function Lab() {
   const [match, setMatch] = useState<any>(null);
   const [form, setForm] = useState({ home: "NOR", away: "CAL", seed: 16, scenario: "derby" });
   const [msg, setMsg] = useState("");
+  const [loading, setLoading] = useState(false);
+  const validSeed = Number.isInteger(form.seed) && form.seed >= 0 && form.seed <= 4294967295;
   useEffect(() => {
     api("/api/evaluation").then(setEv).catch(() => setEv(null));
     api("/api/match").then((m) => { setMatch(m); setForm(m.params); }).catch(() => null);
   }, []);
   const load = async () => {
+    if (loading || !validSeed || form.home === form.away) return;
+    setLoading(true);
     setMsg("Simulating 95 minutes of football…");
-    await api("/api/control", { method: "POST", body: JSON.stringify({ action: "load", value: form }) });
-    setMsg(`Loaded ${form.home} v ${form.away}, seed ${form.seed}, scenario ${form.scenario}. Open Broadcast and press play.`);
+    try {
+      await api("/api/control", { method: "POST", body: JSON.stringify({ action: "load", value: form }) });
+      setMsg(`Loaded ${form.home} v ${form.away}, seed ${form.seed}, scenario ${form.scenario}. Open Broadcast and press play.`);
+    } catch {
+      setMsg("Couldn't load this match. Check the connection and match settings, then try again.");
+    } finally {
+      setLoading(false);
+    }
   };
   const ps = ev?.explainers?.press_shift;
   const xg = ev?.explainers?.xg_model;
@@ -153,14 +183,15 @@ export function Lab() {
                 const min = lo - span * 0.5;
                 const max = hi + span * 0.5;
                 const pos = (v: number) => `${Math.max(0, Math.min(100, ((v - min) / (max - min)) * 100))}%`;
+                const r = REALISM[m.metric] ?? { label: m.metric.replaceAll("_", " "), fmt: (v: number) => String(+v.toFixed(2)) };
                 return (
-                  <div key={m.metric} style={{ display: "grid", gridTemplateColumns: "190px 1fr 80px", gap: 10, alignItems: "center", margin: "8px 0" }}>
-                    <span>{m.metric.replaceAll("_", " ")}</span>
-                    <div className="range">
+                  <div key={m.metric} className="realism-row">
+                    <span>{r.label}<small className="muted">reference {r.fmt(lo)}–{r.fmt(hi)} {m.pass ? "✓" : "✗ outside"}</small></span>
+                    <div className="range" aria-hidden>
                       <div className="ok-zone" style={{ left: pos(lo), width: `calc(${pos(hi)} - ${pos(lo)})` }} />
                       <div className="val" style={{ left: pos(m.mean) }} />
                     </div>
-                    <span className="mono" style={{ color: m.pass ? "var(--ok)" : "var(--bad)" }}>{m.mean}</span>
+                    <span className="mono" style={{ color: m.pass ? "var(--ok)" : "var(--bad)" }}>{r.fmt(m.mean)}</span>
                   </div>
                 );
               })}
@@ -174,25 +205,26 @@ export function Lab() {
             <div className="body stack">
               <div className="row">
                 <label className="field" style={{ flex: 1 }}>Home
-                  <select value={form.home} onChange={(e) => setForm({ ...form, home: e.target.value })}>{(match?.options?.teams ?? ["NOR", "CAL", "ASH", "KES"]).map((t: string) => <option key={t}>{t}</option>)}</select>
+                  <select aria-label="Home" value={form.home} onChange={(e) => setForm({ ...form, home: e.target.value })}>{(match?.options?.teams ?? ["NOR", "CAL", "ASH", "KES"]).map((t: string) => <option key={t}>{t}</option>)}</select>
                 </label>
                 <label className="field" style={{ flex: 1 }}>Away
-                  <select value={form.away} onChange={(e) => setForm({ ...form, away: e.target.value })}>{(match?.options?.teams ?? ["NOR", "CAL", "ASH", "KES"]).map((t: string) => <option key={t}>{t}</option>)}</select>
+                  <select aria-label="Away" value={form.away} onChange={(e) => setForm({ ...form, away: e.target.value })}>{(match?.options?.teams ?? ["NOR", "CAL", "ASH", "KES"]).map((t: string) => <option key={t}>{t}</option>)}</select>
                 </label>
               </div>
               <div className="row">
                 <label className="field" style={{ flex: 1 }}>Seed
-                  <input type="number" value={form.seed} onChange={(e) => setForm({ ...form, seed: Number(e.target.value) })} />
+                  <input type="number" min={0} max={4294967295} step={1} value={form.seed} onChange={(e) => setForm({ ...form, seed: Number(e.target.value) })} />
                 </label>
                 <label className="field" style={{ flex: 2 }}>Scenario
-                  <select value={form.scenario} onChange={(e) => setForm({ ...form, scenario: e.target.value })}>
+                  <select aria-label="Scenario" value={form.scenario} onChange={(e) => setForm({ ...form, scenario: e.target.value })}>
                     {Object.entries(match?.options?.scenarios ?? { derby: "", press: "", baseline: "" }).map(([k, d]) => <option key={k} value={k} title={String(d)}>{k}</option>)}
                   </select>
                 </label>
               </div>
               <div className="muted" style={{ fontSize: 12 }}>{match?.options?.scenarios?.[form.scenario]}</div>
-              <button className="btn primary" onClick={load} disabled={form.home === form.away}>Simulate and load</button>
-              {msg && <div className="muted" style={{ fontSize: 13 }}>{msg}</div>}
+              {!validSeed && <div role="alert">Seed must be a whole number between 0 and 4294967295.</div>}
+              <button className="btn primary" onClick={load} disabled={loading || !validSeed || form.home === form.away}>{loading ? "Simulating…" : "Simulate and load"}</button>
+              {msg && <div className="muted" role="status" style={{ fontSize: 13 }}>{msg}</div>}
             </div>
           </div>
           <div className="card">

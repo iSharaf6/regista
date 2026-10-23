@@ -67,32 +67,46 @@ export function useFeed(profile: Profile, opts: { ops?: boolean } = {}): Feed {
     let closed = false;
     let retry = 0;
     let timer: number | undefined;
+    const resetTimeline = (msg: { snapshot: Snapshot; moments?: Moment[]; frame?: Frame | null }) => {
+      const currentMoments = msg.moments ?? [];
+      const currentStories: Record<string, Story> = {};
+      for (const m of currentMoments) if (m.story) currentStories[m.id] = m.story;
+      setSnap(msg.snapshot); setMoments(currentMoments); setCueMap({});
+      // Moment ids repeat after a seek/new match: never attach evidence from the previous timeline.
+      setStories(currentStories); setSpans([]); setLast({}); setOps(null); setRecaps([]);
+      playback.reset(msg.frame);
+      frame.current = msg.frame ?? null;
+      clock.current = msg.frame?.t ?? msg.snapshot?.t ?? 0;
+    };
     const connect = () => {
+      if (closed) return;
       const sock = new WebSocket(wsUrl(profileRef.current, !!opts.ops));
       ws.current = sock;
-      sock.onopen = () => { retry = 0; setConnected(true); };
+      sock.onopen = () => {
+        if (closed || ws.current !== sock) { sock.close(); return; }
+        retry = 0; setConnected(true);
+      };
       sock.onclose = () => {
+        if (closed || ws.current !== sock) return;
         setConnected(false);
         if (!closed) timer = window.setTimeout(connect, Math.min(4000, 400 * 2 ** retry++));
       };
       sock.onmessage = (e) => {
+        if (closed || ws.current !== sock) return;
         const msg = JSON.parse(e.data);
         switch (msg.type) {
           case "hello":
-            setMatch(msg.match); setSnap(msg.snapshot); setControl(msg.control); setLlm(msg.llm);
-            setMoments(msg.moments ?? []); setCueMap({});
-            playback.reset(msg.frame);
-            if (msg.frame) { frame.current = msg.frame; clock.current = msg.frame.t; }
+            setMatch(msg.match); setControl(msg.control); setLlm(msg.llm);
+            resetTimeline(msg);
             break;
           case "reset":
-            setSnap(msg.snapshot); setMoments(msg.moments ?? []); setCueMap({}); playback.reset(msg.frame);
-            if (msg.frame) { frame.current = msg.frame; clock.current = msg.frame.t; }
+            resetTimeline(msg);
             break;
           case "frames": {
-            const fs: Frame[] = msg.frames;
+            const fs: Frame[] = msg.frames ?? [];
             playback.push(fs);
-            const last = fs[fs.length - 1];
-            frame.current = last; clock.current = last.t;
+            const last = playback.frames[playback.frames.length - 1];
+            if (last) { frame.current = last; clock.current = last.t; }
             break;
           }
           case "state": setSnap(msg.snapshot); setControl(msg.control); break;

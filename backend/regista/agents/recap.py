@@ -9,6 +9,7 @@ turning point carries its evidence ids.
 from __future__ import annotations
 
 import re
+import unicodedata
 from typing import Any
 
 from ..intel.moments import Moment
@@ -116,9 +117,25 @@ def recap_shape_problems(data: Any) -> list[str]:
     tps = data.get("turning_points", [])
     if not isinstance(tps, list) or any(not isinstance(tp, dict) for tp in tps):
         problems.append("turning_points is not a list of objects")
+    if isinstance(tps, list):
+        for i, tp in enumerate(tps):
+            if not isinstance(tp, dict):
+                continue
+            for key in ("clock", "text"):
+                if not isinstance(tp.get(key), str):
+                    problems.append(f"turning point {i + 1}: {key} is not text")
+            evidence = tp.get("evidence", [])
+            if not isinstance(evidence, list) or any(not isinstance(e, str) or not e.strip() for e in evidence):
+                problems.append(f"turning point {i + 1}: evidence is not a list of text ids")
+            if "moment_id" in tp and not isinstance(tp["moment_id"], str):
+                problems.append(f"turning point {i + 1}: moment_id is not text")
     potm = data.get("player_of_the_match")
     if potm is not None and not isinstance(potm, dict):
         problems.append("player_of_the_match is not an object")
+    if isinstance(potm, dict):
+        for key in ("player_id", "name", "reason"):
+            if key in potm and not isinstance(potm[key], str):
+                problems.append(f"player_of_the_match.{key} is not text")
     return problems
 
 
@@ -148,6 +165,7 @@ def phase_problems(fields: dict[str, str], period: str, phase: str) -> list[str]
     for key, text in fields.items():
         if not isinstance(text, str):
             continue
+        text = unicodedata.normalize("NFKC", text).translate(str.maketrans({"’": "'", "‐": "-", "‑": "-", "–": "-"}))
         if period in {"live", "half_time"} and _ENDED.search(text):
             problems.append(f"[{key}] says the match is over, but it is still being played ({phase}) - describe it as ongoing")
         if (period == "full_time" or (period == "live" and phase == "second_half")) and _BREAK_AHEAD.search(text):
@@ -157,6 +175,15 @@ def phase_problems(fields: dict[str, str], period: str, phase: str) -> list[str]
 
 
 _IDS_IN_PROSE = re.compile(r"\s*\((?:[me]\d{3,6})(?:\s*[,،]\s*[me]\d{3,6})*\)")
+
+
+def _clock_key(clock: str) -> str:
+    """Equivalent Unicode minute notation is the same source clock, not a new claim."""
+    clock = unicodedata.normalize("NFKC", clock).strip()
+    match = re.fullmatch(r"(\d{1,3})(?:\+(\d{1,2}))?['’′]?", clock)
+    if not match:
+        return clock
+    return f"{int(match[1])}" + (f"+{int(match[2])}" if match[2] else "") + "'"
 
 
 def normalize_recap(data: dict[str, Any], p: dict[str, Any], roster: dict[str, str]) -> dict[str, Any]:
@@ -188,26 +215,33 @@ def recap_fields(data: dict[str, Any], p: dict[str, Any], roster: dict[str, str]
     fields = {"headline": data.get("headline", ""), "summary": data.get("summary", ""),
               "tactical": data.get("tactical_story", ""), "closing": data.get("closing_line", "")}
     potm = data.get("player_of_the_match") or {}
+    potm = potm if isinstance(potm, dict) else {}
     fields["potm"] = str(potm.get("reason", ""))
-    issues: list[str] = []
-    if potm and potm.get("player_id") not in roster:
+    issues = recap_shape_problems(data)
+    if potm and (not isinstance(potm.get("player_id"), str) or potm["player_id"] not in roster):
         issues.append(f"player of the match {potm.get('player_id')!r} is not a player in this match")
     # a turning point may sit at a moment's minute or at a minute its facts give (a press shift's onset)
-    clocks = {m.get("clock") for m in p.get("moments", [])} | {
-        v for m in p.get("moments", []) for v in (m.get("facts") or {}).values()
+    clocks = {_clock_key(m.get("clock", "")) for m in p.get("moments", [])} | {
+        _clock_key(v) for m in p.get("moments", []) for v in (m.get("facts") or {}).values()
         if isinstance(v, str) and re.fullmatch(r"\d{1,3}(\+\d{1,2})?['’′]", v)}
     known = {m["id"] for m in p.get("moments", [])} | {e for m in p.get("moments", []) for e in m.get("evidence", [])}
-    for i, tp in enumerate(data.get("turning_points") or []):
+    moment_ids = {m["id"] for m in p.get("moments", [])}
+    tps = data.get("turning_points") or []
+    for i, tp in enumerate(tps if isinstance(tps, list) else []):
         fields[f"tp{i}"] = str(tp.get("text", "")) if isinstance(tp, dict) else ""
         if not isinstance(tp, dict):
             issues.append(f"turning point {i + 1} is not an object")
             continue
-        ends = [c.strip() for c in re.split(r"\s*[-–]\s*", str(tp.get("clock", "")))]  # a span: "61'-64'"
-        if not ends or any((c if c.endswith(("'", "’", "′")) else c + "'") not in clocks for c in ends):
+        ends = [c.strip() for c in re.split(r"\s*[-–—]\s*", str(tp.get("clock", "")))]  # a span: "61'-64'"
+        if not ends or any(_clock_key(c) not in clocks for c in ends):
             issues.append(f"turning point {i + 1}: {tp.get('clock')!r} is not the minute of a moment in this match")
-        bad = [e for e in tp.get("evidence") or [] if e not in known]
+        evidence = tp.get("evidence") or []
+        bad = [e for e in evidence if not isinstance(e, str) or e not in known] if isinstance(evidence, list) else []
         if bad:
             issues.append(f"turning point {i + 1}: evidence {', '.join(map(str, bad[:3]))} is not in the match data")
+        mid = tp.get("moment_id")
+        if mid is not None and (not isinstance(mid, str) or mid not in moment_ids):
+            issues.append(f"turning point {i + 1}: moment_id {mid!r} is not in the match data")
     issues += phase_problems(fields, p.get("period", ""), p.get("phase", ""))
     return fields, issues
 

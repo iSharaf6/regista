@@ -7,7 +7,9 @@ import pytest
 
 from regista.agents.templates import LANGS, Names, narrate
 from regista.agents.verifier import verify_texts
-from regista.evaluation import replay
+from regista.intel.moments import MomentDetector
+from regista.intel.state import MatchState
+from regista.schema.events import EventType, MatchEvent
 from regista.sim.engine import simulate
 
 NAMES = {"NOR-09": "Valdane", "NOR-11": "Brightwell", "NOR-07": "Fontes"}
@@ -37,10 +39,30 @@ def test_a_scorers_tally_must_be_their_own(lang):
     assert ok(TALLY_RIGHT[lang], lang, GOAL)
 
 
+def test_english_but_after_xg_is_not_a_french_goal_unit():
+    facts = {**GOAL, "xg": 0.22}
+    assert ok("The shot had an xG of 0.22 but went off target.", "en", facts)
+    assert not ok("The shot had an xG of 0.47 but went off target.", "en", facts)
+
+
+@pytest.mark.parametrize("unit", ["but", "buts"])
+def test_french_goal_units_still_check_metric_and_scorer_tally(unit):
+    facts = {**GOAL, "xg": 0.22}
+    assert not ok(f"0.22 {unit}.", "fr", facts)
+    assert not ok(f"Valdane compte 2 {unit}.", "fr", facts)
+    assert ok(f"Valdane compte 1 {unit}.", "fr", facts)
+
+
 def test_both_red_cards_give_the_right_manpower_in_every_language():
-    """Seed 101: Northbridge lose a player at 45' and another at 90+4'. The second leaves nine, not ten."""
-    st, _, moments = replay(simulate("NOR", "CAL", 101, "derby"))
-    reds = [m for m in moments if m.kind == "red_card" and m.team == "NOR"]
+    """Explicit synthetic feed: two dismissals leave nine, independently of a simulator seed's random cards."""
+    st = MatchState(simulate("NOR", "CAL", 101, "derby").info)
+    detector = MomentDetector(st)
+    reds = []
+    for seq, (pid, outcome) in enumerate((("NOR-04", "red"), ("NOR-05", "second_yellow")), 1):
+        event = MatchEvent(id=f"test-red-{seq}", match_id=st.info.match_id, seq=seq, t=seq * 60,
+                           period=1, minute=seq, second=0, clock=f"{seq}'", type=EventType.CARD,
+                           team="NOR", player=pid, outcome=outcome)
+        reds.extend(m for m in detector.on_enriched(st.on_event(event)) if m.kind == "red_card")
     assert [m.facts["players_remaining"] for m in reds] == [10, 9]
     names = Names({pid: p.info.short_name for pid, p in st.players.items()}, dict(st.short))
     roster = names.players
@@ -88,3 +110,25 @@ def test_a_rate_keeps_its_unit(lang, wrong, right):
 def test_a_wrong_minute_fails_in_every_language(lang, text):
     """Portuguese 'no minuto' once read as a shirt number ('No. 9') and skipped the minute check."""
     assert not ok(text, lang, {**GOAL, "clock": "74'"}, {"clock": "74'"})
+
+
+@pytest.mark.parametrize("lang,unit", [("en", "goals"), ("es", "goles"), ("fr", "buts"), ("pt", "gols"), ("ar", "أهداف")])
+def test_unicode_decimal_and_long_counts_cannot_evade_unit_checks(lang, unit):
+    # Arabic separators previously split 33.0 into the domain constants 33 and 0, checking only "0 goals".
+    # Seven also cannot come from scorer ID NOR-09 minus the team's score of two.
+    for count in ("٣٣٫٠", "١٬٠٠٠", "10000", "３３．０", "7"):
+        assert not ok(f"{count} {unit}", lang, GOAL), (lang, count)
+    assert ok(f"١٫٠ {unit}", lang, GOAL)
+
+
+def test_player_binding_and_exclusions_preserve_unicode_and_case_equivalence():
+    names = {"NOR-09": "Élias Valdane", "NOR-11": "José Brightwell"}
+
+    def check(text):
+        return verify_texts({"en": {"analyst": {"line": text}}}, [GOAL], {"NOR-09"}, names, claims=GOAL)
+
+    for name in ("Élias Valdane", "élias valdane", "E\u0301lias Valdane"):
+        assert not check(f"{name} has 2 goals.").ok
+        assert check(f"{name} has 1 goal.").ok
+    for name in ("José Brightwell", "josé brightwell", "Jose\u0301 Brightwell"):
+        assert not check(f"An assist from {name}.").ok

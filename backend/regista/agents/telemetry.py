@@ -94,7 +94,7 @@ class Telemetry:
         self.spans.append(span)
         self.counters[f"{span.agent}.{span.status}"] += 1
         self.counters[f"status.{span.status}"] += 1
-        if span.status in {"ok", "fallback", "rejected"}:
+        if span.ms > 0 and span.status in {"ok", "fallback", "rejected"}:
             self.latency[span.agent].append(span.ms)
         for fn in list(self.listeners):
             try:

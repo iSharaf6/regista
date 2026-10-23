@@ -64,17 +64,29 @@ class Explore:
             if goals:
                 await self.get(goals[-1], drill)
 
+    async def resolve(self, moment_id: str | None) -> str | None:
+        """Stable entry links survive changes to the simulator's moment numbering."""
+        cat = await self.catalogue()
+        if moment_id == "highlight":
+            return next((m["id"] for m in reversed(cat) if m["kind"] == "goal"), None)
+        if moment_id is None:
+            return next((m["id"] for m in cat if m["kind"] == "goal"), cat[0]["id"] if cat else None)
+        return moment_id
+
     async def get(self, moment_id: str | None = None, drill: str | None = None) -> dict[str, Any] | None:
         cat = await self.catalogue()
-        if moment_id is None:
-            moment_id = next((m["id"] for m in cat if m["kind"] == "goal"), cat[0]["id"] if cat else None)
+        moment_id = await self.resolve(moment_id)
         if moment_id not in {m["id"] for m in cat} or (drill is not None and drill not in DRILLS):
             return None
+        moment = next(m for m in cat if m["id"] == moment_id)
+        if drill is not None and moment["kind"] != "goal":
+            return None  # the drill plants a scorer's goal tally, which requires a goal
         key = cache_key(moment_id, drill)
-        async with self.lock:  # one replay at a time; every later visit is served from the cache
-            if key not in self.cache:
-                self.cache[key] = await self._build(moment_id, drill)
-        return {**self.cache[key], "moments": cat, "drills": sorted(DRILLS)}
+        if key not in self.cache:
+            async with self.lock:  # only cold builds wait; a warm judge link never queues behind another model call
+                if key not in self.cache:
+                    self.cache[key] = await self._build(moment_id, drill)
+        return {**self.cache[key], "moments": cat, "drills": sorted(DRILLS) if moment["kind"] == "goal" else []}
 
     @staticmethod
     def _replay_to(s: MatchSession, moment_id: str) -> None:

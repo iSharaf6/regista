@@ -70,7 +70,9 @@ export function AgentGraph({ stats, pulses, flowing }: {
       {NODES.map((n) => {
         const s = n.agent ? stats[n.agent] : undefined;
         const pulse = n.agent ? pulses[n.agent] : undefined;
-        const sub = typeof s === "string" ? s : s ? `p50 ${s.p50_ms ?? "-"}ms · ${s.calls ?? 0}` : n.sub;
+        // steps that call no model (routing, the Producer) are not timed: say they are rules, not "p50 -ms"
+        const p50 = (ms: number) => (ms >= 1000 ? `p50 ${(ms / 1000).toFixed(1)} s` : `p50 ${Math.round(ms)} ms`);
+        const sub = typeof s === "string" ? s : s ? `${s.p50_ms == null ? "rules" : p50(s.p50_ms)} · ${s.calls ?? 0}` : n.sub;
         return (
           <g key={n.id + (pulse?.k ?? "")} className={`node ${n.llm ? "llm" : ""} ${pulse ? "pulse" : ""} ${pulse?.bad ? "bad" : ""}`}>
             <rect x={n.x} y={n.y} width={W} height={H} />

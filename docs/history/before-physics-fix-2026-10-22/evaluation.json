@@ -1,0 +1,233 @@
+{
+ "matches": 20,
+ "press_shift": {
+  "truth_events": 33,
+  "recall": 0.52,
+  "false_alarms_per_match": 0.6,
+  "median_delay_min": 5.0,
+  "mean_delay_min": 6.1,
+  "median_onset_error_min": 2.0
+ },
+ "template_grounding": {
+  "moments": 685,
+  "outputs": 3425,
+  "rejected": 0,
+  "languages": [
+   "en",
+   "es",
+   "fr",
+   "ar",
+   "pt"
+  ],
+  "personas_per_output": 3
+ },
+ "xg_model": {
+  "shots": 607,
+  "mean_model_xg": 0.084,
+  "mean_true_xg": 0.091,
+  "bias": -0.0073,
+  "mae": 0.0092
+ },
+ "per_match": [
+  {
+   "seed": 1,
+   "score": {
+    "NOR": 0,
+    "CAL": 6
+   },
+   "truth_shifts": 2,
+   "detected": 2,
+   "false_alarms": 1
+  },
+  {
+   "seed": 2,
+   "score": {
+    "NOR": 3,
+    "CAL": 0
+   },
+   "truth_shifts": 1,
+   "detected": 1,
+   "false_alarms": 1
+  },
+  {
+   "seed": 3,
+   "score": {
+    "NOR": 2,
+    "CAL": 1
+   },
+   "truth_shifts": 1,
+   "detected": 0,
+   "false_alarms": 0
+  },
+  {
+   "seed": 4,
+   "score": {
+    "NOR": 0,
+    "CAL": 1
+   },
+   "truth_shifts": 2,
+   "detected": 1,
+   "false_alarms": 0
+  },
+  {
+   "seed": 5,
+   "score": {
+    "NOR": 1,
+    "CAL": 4
+   },
+   "truth_shifts": 2,
+   "detected": 1,
+   "false_alarms": 1
+  },
+  {
+   "seed": 6,
+   "score": {
+    "NOR": 2,
+    "CAL": 2
+   },
+   "truth_shifts": 1,
+   "detected": 2,
+   "false_alarms": 1
+  },
+  {
+   "seed": 7,
+   "score": {
+    "NOR": 0,
+    "CAL": 3
+   },
+   "truth_shifts": 2,
+   "detected": 2,
+   "false_alarms": 1
+  },
+  {
+   "seed": 8,
+   "score": {
+    "NOR": 2,
+    "CAL": 1
+   },
+   "truth_shifts": 1,
+   "detected": 1,
+   "false_alarms": 0
+  },
+  {
+   "seed": 9,
+   "score": {
+    "NOR": 0,
+    "CAL": 1
+   },
+   "truth_shifts": 2,
+   "detected": 2,
+   "false_alarms": 1
+  },
+  {
+   "seed": 10,
+   "score": {
+    "NOR": 1,
+    "CAL": 3
+   },
+   "truth_shifts": 2,
+   "detected": 1,
+   "false_alarms": 0
+  },
+  {
+   "seed": 11,
+   "score": {
+    "NOR": 0,
+    "CAL": 1
+   },
+   "truth_shifts": 2,
+   "detected": 1,
+   "false_alarms": 0
+  },
+  {
+   "seed": 12,
+   "score": {
+    "NOR": 2,
+    "CAL": 0
+   },
+   "truth_shifts": 1,
+   "detected": 0,
+   "false_alarms": 0
+  },
+  {
+   "seed": 13,
+   "score": {
+    "NOR": 1,
+    "CAL": 2
+   },
+   "truth_shifts": 2,
+   "detected": 3,
+   "false_alarms": 1
+  },
+  {
+   "seed": 14,
+   "score": {
+    "NOR": 1,
+    "CAL": 5
+   },
+   "truth_shifts": 2,
+   "detected": 1,
+   "false_alarms": 0
+  },
+  {
+   "seed": 15,
+   "score": {
+    "NOR": 3,
+    "CAL": 0
+   },
+   "truth_shifts": 2,
+   "detected": 1,
+   "false_alarms": 0
+  },
+  {
+   "seed": 16,
+   "score": {
+    "NOR": 2,
+    "CAL": 1
+   },
+   "truth_shifts": 2,
+   "detected": 2,
+   "false_alarms": 0
+  },
+  {
+   "seed": 17,
+   "score": {
+    "NOR": 3,
+    "CAL": 2
+   },
+   "truth_shifts": 1,
+   "detected": 2,
+   "false_alarms": 2
+  },
+  {
+   "seed": 18,
+   "score": {
+    "NOR": 3,
+    "CAL": 0
+   },
+   "truth_shifts": 2,
+   "detected": 2,
+   "false_alarms": 1
+  },
+  {
+   "seed": 19,
+   "score": {
+    "NOR": 2,
+    "CAL": 0
+   },
+   "truth_shifts": 1,
+   "detected": 2,
+   "false_alarms": 1
+  },
+  {
+   "seed": 20,
+   "score": {
+    "NOR": 0,
+    "CAL": 1
+   },
+   "truth_shifts": 2,
+   "detected": 2,
+   "false_alarms": 1
+  }
+ ]
+}

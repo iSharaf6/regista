@@ -1,0 +1,80 @@
+{
+  "captured": "2026-10-22",
+  "source": "local corrected build; Microsoft Foundry gpt-4.1-mini; synthetic data; not a production-deployment check",
+  "images": [
+    "explore.jpg",
+    "explore-checks.jpg",
+    "explore-same.jpg",
+    "correction-receipt.jpg",
+    "compare.jpg",
+    "control-room.jpg",
+    "broadcast.jpg",
+    "overlay-amira.jpg",
+    "lab.jpg",
+    "recap.jpg"
+  ],
+  "errors": [],
+  "highlight": {
+    "id": "m034",
+    "clock": "63'",
+    "models": {
+      "Analyst": "foundry:gpt-4.1-mini",
+      "Localizer": "foundry:gpt-4.1-mini",
+      "Narrator": "foundry:gpt-4.1-mini"
+    },
+    "verdict": {
+      "ok": true,
+      "issues": [],
+      "numbers_checked": 59,
+      "numbers_supported": 59,
+      "names_checked": 22,
+      "failed_langs": []
+    },
+    "fallback_langs": []
+  },
+  "drill": {
+    "models": {
+      "Analyst": "foundry:gpt-4.1-mini",
+      "Narrator": "foundry:gpt-4.1-mini",
+      "Localizer": "foundry:gpt-4.1-mini"
+    },
+    "verdict": {
+      "ok": true,
+      "issues": [],
+      "numbers_checked": 59,
+      "numbers_supported": 59,
+      "names_checked": 21,
+      "failed_langs": []
+    },
+    "fallback_langs": [],
+    "arabic": [
+      {
+        "status": "rejected",
+        "source": "model",
+        "issues": [
+          "[ar/analyst/explainer] '97 هدف' does not match a goal count in the facts - remove it, or use the FIGURES value for that metric"
+        ]
+      },
+      {
+        "status": "passed",
+        "source": "model"
+      }
+    ]
+  },
+  "live_story": {
+    "models": {
+      "Analyst": "foundry:gpt-4.1-mini",
+      "Narrator": "foundry:gpt-4.1-mini",
+      "Localizer": "foundry:gpt-4.1-mini"
+    },
+    "verdict": {
+      "ok": true,
+      "issues": [],
+      "numbers_checked": 33,
+      "numbers_supported": 33,
+      "names_checked": 8,
+      "failed_langs": []
+    },
+    "fallback_langs": []
+  }
+}

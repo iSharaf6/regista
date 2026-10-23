@@ -92,7 +92,26 @@ export function App() {
         {path === "/ops" && <ControlRoom fan={profile} setFan={setProfile} />}
         {path === "/recap" && <Recap lang={profile.language} />}
         {path === "/lab" && <Lab />}
+        {!ROUTES.some((r) => r.path === path) && <NotFound path={path} />}
       </main>
+    </div>
+  );
+}
+
+/** A mistyped or old link lands somewhere useful instead of on an empty page. */
+function NotFound({ path }: { path: string }) {
+  return (
+    <div className="page">
+      <div className="card not-found" role="alert">
+        <header><h3>Page not found</h3></header>
+        <div className="body">
+          <p>There is no page at <code>#{path}</code>.</p>
+          <div className="row">
+            <a className="btn" href="#/explore?moment=highlight">Explore the highlight</a>
+            <a className="btn" href="#/">Go to Broadcast</a>
+          </div>
+        </div>
+      </div>
     </div>
   );
 }

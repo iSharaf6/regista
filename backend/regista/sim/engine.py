@@ -185,6 +185,9 @@ class MatchSimulator:
             el, base, period = t, 0, 1
         else:
             el, base, period = t - self.p2_start + HALF, HALF, 2
+        # Use the same precision as the event timestamp. Repeated 0.2 s steps
+        # otherwise label e.g. t=60.0 as 0:59 at floating-point boundaries.
+        el = round(el, 2)
         cap = base + HALF
         minute = int(el // 60)
         second = int(el % 60)
@@ -299,25 +302,33 @@ class MatchSimulator:
 
     def _step(self, tgt: np.ndarray, urg: np.ndarray) -> None:
         on = self.on
+        previous = self.pos.copy()
         d = tgt - self.pos
         desired = d / 0.9
+        if self.attached is not None:
+            a = self.attached
+            feet = self.ball[:2] + np.array([-0.6 if self.team_of[a] == 0 else 0.6, 0.2])
+            # Follow the ball through the same physical limits as every other
+            # player. Snapping here and then integrating velocity moved carriers
+            # twice per frame and invented speed/distance in the tracking feed.
+            desired[a] = (feet - self.pos[a]) / DT
         sp = np.linalg.norm(desired, axis=1) + 1e-9
         cap = self.maxspd * urg * self.energy
+        if self.attached is not None:
+            # A carrier follows the ball at running effort, not the lower
+            # urgency used to drift towards a formation anchor.
+            cap[self.attached] = self.maxspd[self.attached] * self.energy[self.attached]
         desired *= np.minimum(1.0, cap / sp)[:, None]
         dv = desired - self.vel
         dvn = np.linalg.norm(dv, axis=1) + 1e-9
         dv *= np.minimum(1.0, (4.2 * DT) / dvn)[:, None]
         self.vel = np.where(on[:, None], self.vel + dv, 0.0)
-        if self.attached is not None:
-            a = self.attached
-            prev = self.pos[a].copy()
-            self.pos[a] = self.ball[:2] + np.array([-0.6 if self.team_of[a] == 0 else 0.6, 0.2])
-            self.vel[a] = (self.pos[a] - prev) / DT
         self.pos = np.where(on[:, None], self.pos + self.vel * DT, self.pos)
         np.clip(self.pos[:, 0], 0.5, L - 0.5, out=self.pos[:, 0])
         np.clip(self.pos[:, 1], 0.5, W - 0.5, out=self.pos[:, 1])
-        speed = np.linalg.norm(self.vel, axis=1)
-        self.dist += np.where(on, speed * DT, 0.0)
+        displacement = np.where(on[:, None], self.pos - previous, 0.0)
+        self.vel = displacement / DT
+        self.dist += np.linalg.norm(displacement, axis=1)
         stamina = np.array([p.stamina for p in self.roster])
         self.energy = np.clip(1.0 - (self.dist / 12500.0) * (1.15 - stamina) * 0.6, 0.8, 1.0)
 
@@ -327,6 +338,10 @@ class MatchSimulator:
         p = self.pos.copy()
         p[~self.on] = np.nan
         self._fp.append(p.astype(np.float32))
+
+    def _end_time(self, duration: float) -> float:
+        """Completion timestamp on the same 5 Hz grid used by advance()."""
+        return round(self.t + max(1, int(round(duration / DT))) * DT, 2)
 
     def advance(self, duration: float, ball_fn: Callable[[float], tuple[float, float, float]] | None = None,
                 roles_fn: Callable[[float], dict[int, tuple[float, float]]] | None = None,
@@ -638,7 +653,7 @@ class MatchSimulator:
         ev = self.emit(
             EventType.PASS, team, i, x=start[0], y=start[1], end=end_pitch, outcome=outcome,
             receiver=j, pressure=dp < 3.0, height=height, cross=cross, through_ball=through, switch=switch,
-            restart=restart, ball_speed_kmh=speed * 3.6, duration=dur, t_end=round(self.t + dur, 2),
+            restart=restart, ball_speed_kmh=speed * 3.6, duration=dur, t_end=self._end_time(dur),
             length=d,
         )
         target_for = intercept_by if intercept_by is not None else j
@@ -697,7 +712,7 @@ class MatchSimulator:
             end = (start[0] + (end[0] - start[0]) * f, start[1] + (end[1] - start[1]) * f)
             fn, dur = self.walk_ball(start, end, speed)
         ev = self.emit(EventType.CARRY, team, i, x=start[0], y=start[1], end=end, pressure=dp < 3.0,
-                       duration=dur, t_end=round(self.t + dur, 2), length=math.hypot(end[0] - start[0], end[1] - start[1]))
+                       duration=dur, t_end=self._end_time(dur), length=math.hypot(end[0] - start[0], end[1] - start[1]))
         self.advance(dur, ball_fn=fn, attach=i)
         if lose:
             self.duel(i, opp, ev)
@@ -791,7 +806,7 @@ class MatchSimulator:
         start = (float(self.ball[0]), float(self.ball[1]))
         fn, dur = self.walk_ball(start, end, float(self.rng.uniform(20, 27)), z_peak=12)
         self.emit(EventType.CLEARANCE, team, i, x=start[0], y=start[1], end=end, pressure=True,
-                  ball_speed_kmh=float(self.rng.uniform(70, 95)), duration=dur, t_end=round(self.t + dur, 2))
+                  ball_speed_kmh=float(self.rng.uniform(70, 95)), duration=dur, t_end=self._end_time(dur))
         self.advance(dur, ball_fn=fn)
         # 50/50 for the second ball
         a, da = self.nearest(team, *end)
@@ -815,7 +830,7 @@ class MatchSimulator:
         p_att = sigmoid(-0.55 + 2.6 * (self.roster[a].aerial - self.roster[d].aerial))
         ev = self.emit(EventType.PASS, team, taker, x=start[0], y=start[1], end=end, outcome="complete",
                        receiver=a, height="high", cross=True, restart="corner", ball_speed_kmh=80.0,
-                       duration=dur, t_end=round(self.t + dur, 2), length=math.hypot(end[0] - start[0], end[1] - start[1]))
+                       duration=dur, t_end=self._end_time(dur), length=math.hypot(end[0] - start[0], end[1] - start[1]))
         self.advance(dur, ball_fn=fn, roles_fn=lambda f: {a: end, d: end})
         if self.rng.random() < p_att:
             self.carrier = a
@@ -874,7 +889,7 @@ class MatchSimulator:
         ev = self.emit(
             EventType.SHOT, team, i, x=start[0], y=start[1], end=end, outcome=outcome, pressure=dp < 2.0,
             body_part="head" if header else "foot", set_piece=set_piece, shot_speed_kmh=speed_kmh,
-            duration=dur, t_end=round(self.t + dur, 2), related=[assist.id] if assist else [],
+            duration=dur, t_end=self._end_time(dur), related=[assist.id] if assist else [],
             assist_player=assist.player if assist else None,
         )
         self.truth.append({"type": "shot", "event": ev.id, "t": round(self.t, 1), "true_xg": round(xg, 4),

@@ -191,7 +191,7 @@ def moment(moment_id: str) -> dict[str, Any]:
     s = S()
     for m in s.moments:
         if m.id == moment_id:
-            return {**m.as_dict(), "story": s.story.get(m.id)}
+            return {**m.as_dict(), "match_id": s.res.info.match_id, "story": s.story.get(m.id)}
     raise HTTPException(404, "moment not found")
 
 
@@ -215,7 +215,10 @@ def telemetry(limit: int = 80) -> dict[str, Any]:
 @app.post("/api/control")
 async def control(body: ControlBody, x_regista_token: str | None = Header(None)) -> dict[str, Any]:
     require_producer(x_regista_token)
-    return await S().control(body.action, body.value)
+    try:
+        return await S().control(body.action, body.value)
+    except (TypeError, ValueError) as exc:
+        raise HTTPException(422, str(exc)) from exc
 
 
 @app.post("/api/ask")
@@ -236,8 +239,13 @@ class FeedBatch(BaseModel):
 async def feed_start(info: MatchInfo, x_regista_token: str | None = Header(None)) -> dict[str, Any]:
     """Start a live match from an external provider: send the MatchInfo (teams, squads, roster order)."""
     require_producer(x_regista_token, feed=True)
+    players = [p.id for t in (info.home, info.away) for p in t.players]
+    if info.home.id == info.away.id or len(players) != len(set(players)):
+        raise HTTPException(422, "match teams and player IDs must be distinct")
     if not info.roster:
-        info.roster = [p.id for t in (info.home, info.away) for p in t.players]
+        info.roster = players
+    if len(info.roster) != len(set(info.roster)) or not set(info.roster).issubset(players):
+        raise HTTPException(422, "roster must contain distinct player IDs from this match")
     return S().start_live(info)
 
 
@@ -248,6 +256,14 @@ async def feed(batch: FeedBatch, x_regista_token: str | None = Header(None)) -> 
     s = S()
     if s.mode != "live":
         raise HTTPException(409, "no live match: POST /api/feed/start first")
+    if any(e.match_id != s.res.info.match_id for e in batch.events):
+        raise HTTPException(422, "events must belong to the active match")
+    teams = {s.res.info.home.id, s.res.info.away.id}
+    players = {p.id for t in (s.res.info.home, s.res.info.away) for p in t.players}
+    if any((e.team is not None and e.team not in teams)
+           or (e.player is not None and e.player not in players)
+           or (e.receiver is not None and e.receiver not in players) for e in batch.events):
+        raise HTTPException(422, "events must reference teams and players from this match")
     roster = len(s.res.info.roster)
     bad = [f.t for f in batch.frames if len(f.p) != roster]
     if bad:
@@ -301,7 +317,8 @@ async def explore(request: Request, moment: str | None = None, drill: str | None
     was judged, and the agent trace. Defaults to the first goal. `drill` (ar, ar2, es, es2) runs a labelled recovery
     drill: a wrong goal count planted in that language's draft(s), so only that language is rewritten or falls back."""
     ex = explore_engine()
-    if cache_key(moment or "", drill) not in ex.cache and not recap_limit.allow(client_ip(request)):
+    resolved = await ex.resolve(moment)
+    if cache_key(resolved or "", drill) not in ex.cache and not recap_limit.allow(client_ip(request)):
         raise HTTPException(429, "too many requests: try again in a minute")
     out = await ex.get(moment, drill)
     if out is None:
@@ -370,13 +387,19 @@ async def ws(socket: WebSocket, profile: str = Query("{}"), ops: int = Query(0))
                 msg = json.loads(raw)
             except json.JSONDecodeError:
                 continue
+            if not isinstance(msg, dict):
+                viewer.send({"type": "error", "error": "Message must be an object"})
+                continue
             kind = msg.get("type")
             if kind == "profile":
                 with contextlib.suppress(Exception):
                     s.set_profile(viewer.id, FanProfile.model_validate(msg.get("profile", {})))
             elif kind == "control":
                 if not ADMIN_TOKEN or msg.get("token") == ADMIN_TOKEN:
-                    await s.control(msg.get("action", ""), msg.get("value"))
+                    try:
+                        await s.control(msg.get("action", ""), msg.get("value"))
+                    except (TypeError, ValueError) as exc:
+                        viewer.send({"type": "error", "error": str(exc)})
                 else:
                     viewer.send({"type": "error", "error": "producer token required"})
             elif kind == "ask":

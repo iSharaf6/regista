@@ -1,0 +1,2003 @@
+{
+  "model": "foundry:gpt-4.1-mini",
+  "eval_seeds": [
+    2026102291,
+    2026102292,
+    2026102293,
+    2026102294,
+    2026102295,
+    2026102296
+  ],
+  "moments": 12,
+  "moment_kinds": {
+    "big_chance": 2,
+    "goal": 2,
+    "master_pass": 2,
+    "momentum_swing": 2,
+    "press_shift": 2,
+    "red_card": 2
+  },
+  "languages": [
+    "en",
+    "es",
+    "fr",
+    "ar",
+    "pt"
+  ],
+  "workflow": {
+    "first_draft_verified": 0.417,
+    "verified": 1.0,
+    "verified_without_fallback": 0.833,
+    "moments_model_written": "10/12",
+    "language_outputs_model_written": 0.95,
+    "analyst_insight_from_model": 0.333,
+    "jobs_with_fallback": 2,
+    "mean_attempts": 1.58,
+    "latency_ms": {
+      "p50": 13716,
+      "p95": 22673
+    },
+    "tokens_in": 125533,
+    "tokens_out": 26625,
+    "cost_usd_per_moment": 0.00773
+  },
+  "verifier_probe": {
+    "planted_errors": {
+      "contradicted claim": {
+        "planted": 20,
+        "caught": 20
+      },
+      "speed of the wrong size": {
+        "planted": 60,
+        "caught": 60
+      },
+      "uninvolved player": {
+        "planted": 60,
+        "caught": 60
+      },
+      "unsupported figure": {
+        "planted": 60,
+        "caught": 60
+      },
+      "written-out figure": {
+        "planted": 32,
+        "caught": 32
+      },
+      "wrong goal count": {
+        "planted": 60,
+        "caught": 60
+      },
+      "wrong match minute": {
+        "planted": 60,
+        "caught": 60
+      }
+    },
+    "caught_rate": 1.0,
+    "note": "constructed: figures chosen with the Verifier's own pools, so a regression test, not independent evidence",
+    "believable_errors": {
+      "false brace": {
+        "planted": 10,
+        "caught": 10
+      },
+      "rate in the wrong unit": {
+        "planted": 10,
+        "caught": 10
+      },
+      "wrong goal tally": {
+        "planted": 10,
+        "caught": 10
+      },
+      "wrong manpower": {
+        "planted": 10,
+        "caught": 10
+      },
+      "wrong minute": {
+        "planted": 60,
+        "caught": 60
+      },
+      "wrong tally in words": {
+        "planted": 10,
+        "caught": 10
+      }
+    },
+    "templates_checked": 60,
+    "templates_wrongly_rejected": 0,
+    "bare_figure_pool_coverage_10_99": 0.35
+  },
+  "rejection_reasons": {
+    "unsupported figure": 5,
+    "figure of the wrong kind": 3
+  },
+  "agents": {
+    "Analyst": {
+      "calls": 16,
+      "p50_ms": 1664.1,
+      "p95_ms": 7981.1,
+      "tokens_in": 10709,
+      "tokens_out": 2496,
+      "errors": 0,
+      "fallbacks": 4,
+      "rejections": 0
+    },
+    "Narrator": {
+      "calls": 12,
+      "p50_ms": 4894.1,
+      "p95_ms": 6221.1,
+      "tokens_in": 20441,
+      "tokens_out": 3436,
+      "errors": 0,
+      "fallbacks": 0,
+      "rejections": 0
+    },
+    "Localizer": {
+      "calls": 58,
+      "p50_ms": 5933.3,
+      "p95_ms": 7623.0,
+      "tokens_in": 94383,
+      "tokens_out": 20693,
+      "errors": 1,
+      "fallbacks": 0,
+      "rejections": 0
+    },
+    "Verifier": {
+      "calls": 19,
+      "p50_ms": 7.9,
+      "p95_ms": 21.9,
+      "tokens_in": 0,
+      "tokens_out": 0,
+      "errors": 0,
+      "fallbacks": 0,
+      "rejections": 8
+    },
+    "Producer": {
+      "calls": 12,
+      "p50_ms": 0.0,
+      "p95_ms": 0.0,
+      "tokens_in": 0,
+      "tokens_out": 0,
+      "errors": 0,
+      "fallbacks": 0,
+      "rejections": 0
+    },
+    "Fallback": {
+      "calls": 2,
+      "p50_ms": 0.0,
+      "p95_ms": 0.0,
+      "tokens_in": 0,
+      "tokens_out": 0,
+      "errors": 0,
+      "fallbacks": 2,
+      "rejections": 0
+    },
+    "Pundit": {
+      "calls": 4,
+      "p50_ms": 4164.5,
+      "p95_ms": 6185.7,
+      "tokens_in": 0,
+      "tokens_out": 0,
+      "errors": 0,
+      "fallbacks": 0,
+      "rejections": 0
+    },
+    "Recap": {
+      "calls": 3,
+      "p50_ms": 5562.1,
+      "p95_ms": 6502.2,
+      "tokens_in": 15395,
+      "tokens_out": 1449,
+      "errors": 0,
+      "fallbacks": 0,
+      "rejections": 0
+    }
+  },
+  "pundit": [
+    {
+      "lang": "en",
+      "question": "Why are Northbridge winning the ball so high since the hour?",
+      "answer": "Since the hour mark, Northbridge Rovers have pushed their defensive line higher—now at 40.4m, compared to 21.9m for Port Calder FC—and increased their pressures (200 total). This upshift led to more players near the ball in opponent buildup (1.07 vs 0.5) and more high regains (8), allowing them to win the ball higher up the pitch by disrupting Port Calder's possession early. This aggressive pressing tactic is a likely reason they are successfully winning the ball high in the final third.",
+      "tools": [
+        "get_tactical_picture"
+      ],
+      "model": "foundry:gpt-4.1-mini",
+      "ms": 6186
+    },
+    {
+      "lang": "es",
+      "question": "¿Quién es el mejor jugador del partido?",
+      "answer": "El mejor jugador del partido hasta ahora es Dario Pellegrini de CAL, con una calificación de 9.2. Ha marcado 2 goles y está siendo muy efectivo en ataque, lo que claramente ha influido en su alta valoración. Además, ha corrido más de 10 kilómetros, mostrando mucho esfuerzo físico.",
+      "tools": [
+        "get_top_players"
+      ],
+      "model": "foundry:gpt-4.1-mini",
+      "ms": 3894
+    },
+    {
+      "lang": "ar",
+      "question": "ما هي احتمالات فوز كل فريق؟",
+      "answer": "المباراة انتهت والفوز لصالح فريق Port Calder FC بنتيجة 2-1، لذا احتمالات فوز Northbridge Rovers أصبحت صفر وحظوظ Port Calder FC هي 100%.",
+      "tools": [
+        "get_match_status"
+      ],
+      "model": "foundry:gpt-4.1-mini",
+      "ms": 3315
+    },
+    {
+      "lang": "fr",
+      "question": "Qui contrôle le match en ce moment, et pourquoi ?",
+      "answer": "Actuellement, le match est plutôt chaotique avec un indice de chaos à -59,4, ce qui signifie beaucoup de pertes de balle et une qualité de passes assez faible (72% de passes réussies, en-dessous de la moyenne de la ligue). Northbridge Rovers presse plus intensément et maintient une ligne défensive plus haute, ce qui montre une tentative d'imposer le rythme, mais la possession est équilibrée et peu contrôlée. En résumé, c’est un désordre avec des turnovers fréquents, et aucun des deux équipes ne domine clairement dans le contrôle du ballon.",
+      "tools": [
+        "get_tactical_picture"
+      ],
+      "model": "foundry:gpt-4.1-mini",
+      "ms": 4435
+    }
+  ],
+  "pundit_used_tools": 1.0,
+  "recaps": [
+    {
+      "seed": 2026102291,
+      "lang": "en",
+      "source": "foundry:gpt-4.1-mini",
+      "verified": true,
+      "issues": [],
+      "headline": "Northbridge clinches victory through Valdane's early header and sustained control",
+      "ms": 5576
+    },
+    {
+      "seed": 2026102291,
+      "lang": "ar",
+      "source": "foundry:gpt-4.1-mini",
+      "verified": true,
+      "issues": [],
+      "headline": "نورثبريدج تحسم المباراة بهدف فالدان المبكر",
+      "ms": 6509
+    },
+    {
+      "seed": 2026102292,
+      "lang": "es",
+      "source": "foundry:gpt-4.1-mini",
+      "verified": true,
+      "issues": [],
+      "headline": "Northbridge domina y gana 3-0 a Port Calder con un juego aéreo decisivo",
+      "ms": 4798
+    }
+  ],
+  "wall_s": 812.7,
+  "run": {
+    "concurrency": 1,
+    "pace_s": 2.0,
+    "timeout_s": 20.0,
+    "max_attempts": 2,
+    "baseline_timeout_s": 90,
+    "note": "latency is as observed under these timeouts: workflow calls give up after timeout_s and get a second draft, a single-agent call writes every language and is allowed baseline_timeout_s"
+  },
+  "jobs": [
+    {
+      "seed": 2026102292,
+      "moment": "big_chance",
+      "clock": "79'",
+      "ms": 14641,
+      "attempts": 1,
+      "first_draft_ok": true,
+      "fallback_langs": [],
+      "verified": true,
+      "verified_without_fallback": true,
+      "model_langs_verified": 5,
+      "analyst_insight": "deterministic",
+      "copy": {
+        "en": {
+          "caption": "High-quality chance by Asante",
+          "line": "Asante’s shot had an xG of 0.23 from 8 meters out, struck at 103 km/h, but was saved. Port Calder’s total xG remains 1.23 with no goals yet.",
+          "explainer": "Expected goals (xG) measures the likelihood of a shot resulting in a goal. Asante’s 0.23 xG means roughly a 23% chance to score here. The shot speed of 103 km/h indicates a powerful attempt, but the keeper saved it, so Port Calder still trails."
+        },
+        "es": {
+          "caption": "Oportunidad clave de Asante",
+          "line": "Asante generó una ocasión con xG 0,23 y disparó a 103 km/h desde 7,8 m, pero el portero evitó el gol en el 79'. Port Calder suma xG 1,23 sin goles.",
+          "explainer": "El disparo de Asante tuvo una calidad de oportunidad (xG) de 0,23, lo que implica que en promedio 1 de cada 4 tiros similares termina en gol. Su disparo a 103 km/h desde 7,8 metros fue detenido, manteniendo el marcador 0-0 para Port Calder, que acumula un xG total de 1,23."
+        },
+        "fr": {
+          "caption": "Asante, tir à 103 km/h arrêté",
+          "line": "Asante a tenté une frappe à 7,8 m avec une xG de 0,23, tirée à 103 km/h, mais le gardien a sauvé.",
+          "explainer": "La qualité de cette occasion est estimée à 0,23 xG, ce qui signifie qu'environ 1 tir sur 4 comme celui-ci devrait finir au fond. Asante a tiré à 7,8 mètres du but avec une vitesse de 103 km/h, mais le gardien a réussi à repousser ce tir."
+        },
+        "ar": {
+          "caption": "فرصة كبيرة لأسانتي (0.23 xG)",
+          "line": "أسانتي سدد كرة من 7.8 متر بسرعة 103.3 كم/س مع فرصة تسجيل 0.23 xG في الدقيقة 79، لكن الحارس تصدى للكرة.",
+          "explainer": "في الدقيقة 79، أسانتي من Port Calder أطلق تسديدة قدم بسرعة 103.3 كم/س من مسافة 7.8 متر. فرصة التسجيل حسب نموذج xG كانت 0.23، أي أن هناك احتمال تسجيل هدف من هذا النوع من التسديدات بنسبة 23%. الحارس أنقذ الكرة ومنع الهدف."
+        },
+        "pt": {
+          "caption": "Chance de gol de Asante (0,23 xG)",
+          "line": "Aos 79', Asante finalizou a 103 km/h de 7,8 m, gerando 0,23 de xG para Port Calder, que soma 1,23 xG no jogo, mas o chute foi defendido.",
+          "explainer": "O modelo estima que essa finalização de Asante tinha 23% de chance de resultar em gol (xG 0,23). A bola foi chutada a 103 km/h a 7,8 metros do gol, mas o goleiro conseguiu salvar. Port Calder tem 1,23 xG no total, sem gols marcados."
+        }
+      }
+    },
+    {
+      "seed": 2026102291,
+      "moment": "goal",
+      "clock": "13'",
+      "ms": 10700,
+      "attempts": 1,
+      "first_draft_ok": true,
+      "fallback_langs": [],
+      "verified": true,
+      "verified_without_fallback": true,
+      "model_langs_verified": 5,
+      "analyst_insight": "model",
+      "copy": {
+        "en": {
+          "caption": "Valdane's low-xG header shifts game",
+          "line": "Valdane's header from 13 m with 0.04 xG boosts Northbridge's win probability by 32 points to 74%, reflecting a major momentum swing.",
+          "explainer": "Despite a low-quality chance (xG 0.04) from a difficult 13 m header, Valdane scored, pushing Northbridge's win probability from 42% to 74%. Their higher possession (51.2%) and 29 pressures vs 17 show effective pressing and territorial control."
+        },
+        "es": {
+          "caption": "Gol de Valdane cambia el juego",
+          "line": "Valdane marca el 1-0 con un cabezazo desde 12,6 m a 46 km/h. La probabilidad de victoria de Northbridge sube 32 puntos, del 42% al 74%.",
+          "explainer": "Este gol de Valdane, su primero en el partido, fue un cabezazo desde 12,6 metros con un ángulo estrecho de 26°, y una velocidad de 46 km/h. A pesar de una xG baja de 0,04, la anotación aumentó la probabilidad de victoria de Northbridge del 42% al 74%, un cambio significativo en el partido."
+        },
+        "fr": {
+          "caption": "Ouverture du score de Valdane",
+          "line": "À la 13e minute, Valdane inscrit un but de la tête à 13 m, avec une vitesse de tir de 46 km/h, augmentant la probabilité de victoire de Northbridge de 42% à 74%.",
+          "explainer": "Le but de Valdane, son premier du match, a surpris avec une faible valeur xG de 0,04, indiquant une chance faible. Ce but a provoqué un swing de probabilité de victoire de 32 points, passant de 42% à 74%, renforçant la domination territoriale de Northbridge (51,2% de possession, 29 pressions)."
+        },
+        "ar": {
+          "caption": "هدف فالدان يرفع فرص الفوز",
+          "line": "هدف فالدان برأسية من 13 مترًا بسرعة 46 كم/س رفع فرصة فوز Northbridge من 42% إلى 74%.",
+          "explainer": "فالدان سجل هدفًا بالرأس من زاوية ضيقة 26° وعلى بعد 12.6 مترًا، مع فرصة متوقعة منخفضة 0.04، لكنه رفع فرص الفوز لفريقه بنسبة 32 نقطة مئوية."
+        },
+        "pt": {
+          "caption": "Gol de Valdane muda o jogo",
+          "line": "Aos 13', Valdane marcou seu primeiro gol com assistência de Arata, aumentando a probabilidade de vitória do Northbridge de 42% para 74%.",
+          "explainer": "Valdane marcou de cabeça a 13 metros do gol, com um ângulo estreito de 26°, em uma chance de baixa qualidade (xG 0,04). O gol impulsionou a probabilidade de vitória do Northbridge em 32 pontos percentuais, refletindo um grande impacto no jogo."
+        }
+      }
+    },
+    {
+      "seed": 2026102291,
+      "moment": "master_pass",
+      "clock": "3'",
+      "ms": 5183,
+      "attempts": 1,
+      "first_draft_ok": true,
+      "fallback_langs": [],
+      "verified": true,
+      "verified_without_fallback": true,
+      "model_langs_verified": 5,
+      "analyst_insight": "deterministic",
+      "copy": {
+        "en": {
+          "caption": "Masterclass Pass by Iturra",
+          "line": "Iturra’s 66m pass to Pellegrini bypassed 9 opponents, clocked at 76 km/h, and was executed with 100% accuracy in just his 4th pass.",
+          "explainer": "Such a high-difficulty pass (79/100) is rare and crucial as it breaks defensive lines and creates attacking opportunities, demonstrating excellent technical and tactical ability."
+        },
+        "es": {
+          "caption": "Pase clave: Iturra a Pellegrini",
+          "line": "Con una dificultad de 79/100, Iturra completó un pase aéreo de 66 m a Pellegrini, con 100% de precisión y 76 km/h, eludiendo a 9 oponentes.",
+          "explainer": "Este pase de Iturra a Pellegrini fue uno de alta dificultad (79/100), con una longitud de 66 metros y una velocidad de 76 km/h. La precisión del pase fue perfecta (100%) y logró superar a 9 jugadores rivales, mostrando gran calidad técnica."
+        },
+        "fr": {
+          "caption": "Passe difficile d'Iturra",
+          "line": "Iturra délivre une passe aérienne de 66 m à Pellegrini, avec 79/100 de difficulté, 100 % de précision et 9 adversaires dépassés.",
+          "explainer": "À la 3e minute, Iturra a réussi une passe de 66 mètres vers Pellegrini, jouée en profondeur et en l'air. La difficulté estimée est de 79/100, avec une vitesse de balle de 76 km/h et une précision parfaite. La passe a contourné 9 joueurs adverses, un exploit tactique remarquable."
+        },
+        "ar": {
+          "caption": "تمريرة صعبة من Iturra",
+          "line": "في الدقيقة 3، نفذ Iturra تمريرة بطول 66 مترًا بسرعة 76 كم/س، تجاوزت 9 لاعبين بدقة 100%، من أصل 4 تمريرات.",
+          "explainer": "تم تقييم صعوبة التمريرة بـ79/100، حيث تجاوز Iturra 9 لاعبين في تمريرة طولها 66 مترًا بسرعة 76 كم/س، مع دقة تمرير 100% من إجمالي 4 تمريرات قام بها."
+        },
+        "pt": {
+          "caption": "Passe difícil de Iturra a Pellegrini",
+          "line": "Iturra completou um passe de 66 m com 79 de dificuldade, 100% de precisão e 76 km/h, superando 9 oponentes em apenas 4 passes.",
+          "explainer": "Este passe de Iturra para Pellegrini teve uma dificuldade estimada de 79/100, cobrindo 66 metros com velocidade da bola de 76 km/h. O passe foi 100% preciso e eliminou 9 adversários, mostrando a qualidade técnica e visão do jogador em um momento com apenas 4 passes feitos pela equipe."
+        }
+      }
+    },
+    {
+      "seed": 2026102291,
+      "moment": "momentum_swing",
+      "clock": "45+3'",
+      "ms": 10182,
+      "attempts": 2,
+      "first_draft_ok": false,
+      "fallback_langs": [],
+      "verified": true,
+      "verified_without_fallback": true,
+      "model_langs_verified": 5,
+      "analyst_insight": "deterministic",
+      "copy": {
+        "en": {
+          "caption": "Momentum at 49.1 for Northbridge",
+          "line": "Momentum swung from -51.7 to +49.1 in under 12 minutes, signaling Northbridge's growing dominance despite Port Calder's higher possession.",
+          "explainer": "Momentum (threat EWMA) measures control from -100 (away dominance) to +100 (home dominance). Northbridge's momentum rising to 49.1 indicates a strong attacking threat and game control, despite Port Calder holding 53.4% possession."
+        },
+        "es": {
+          "caption": "Impulso cambia a favor de Northbridge",
+          "line": "A los 45+3 minutos, el impulso de Northbridge alcanza 49,1, tras un cambio desde -51,7 en el minuto 36, mostrando una mejora sostenida en su dominio.",
+          "explainer": "El modelo de impulso (threat EWMA) varía entre -100 (dominio visitante) y +100 (dominio local). Northbridge pasó de un impulso negativo de -51,7 a un positivo de 49,1 en menos de 10 minutos, reflejando un claro cambio en el control del partido."
+        },
+        "fr": {
+          "caption": "Momentum à 49,1 pour Northbridge",
+          "line": "Le momentum à 45+3' est de 49,1, après une remontée depuis -51,7 à la 36'. Northbridge a repris le contrôle du match.",
+          "explainer": "Le momentum est calculé par un modèle EWMA basé sur les menaces offensives. Il est passé de -51,7 à 36' (domination visiteur) à +49,1 à 45+3' (domination domicile), illustrant un net renversement en faveur de Northbridge."
+        },
+        "ar": {
+          "caption": "زخم المباراة لصالح نورثبريدج",
+          "line": "الزخم ارتفع إلى 49.1 لصالح نورثبريدج عند الدقيقة 45+3، بعد تقلبات بين -51.7 و49.1 خلال آخر 12 دقيقة.",
+          "explainer": "الزخم محسوب كنموذج تهديد متحرك (EWMA) يتراوح بين -100 لهيمنة بورت كالدر و+100 لنورثبريدج. ارتفاع الزخم إلى 49.1 يشير إلى سيطرة واضحة لنورثبريدج في نهاية الشوط الأول، مع تساوي اللاعبين 11 ضد 11."
+        },
+        "pt": {
+          "caption": "Momento favorece Northbridge",
+          "line": "O índice de momento subiu para 49,1 a favor do Northbridge aos 45+3 minutos, após oscilar entre -51,7 e 49,1 nos últimos dez minutos.",
+          "explainer": "O momento é calculado pelo modelo EWMA, que varia de -100 (domínio total do visitante) a +100 (domínio total do mandante). Northbridge virou o jogo nos minutos finais do primeiro tempo, mostrando maior ameaça ofensiva."
+        }
+      }
+    },
+    {
+      "seed": 2026102293,
+      "moment": "press_shift",
+      "clock": "28'",
+      "ms": 20583,
+      "attempts": 2,
+      "first_draft_ok": false,
+      "fallback_langs": [
+        "ar",
+        "pt"
+      ],
+      "verified": true,
+      "verified_without_fallback": false,
+      "model_langs_verified": 3,
+      "analyst_insight": "model",
+      "copy": {
+        "en": {
+          "caption": "Northbridge reduces pressing intensity",
+          "line": "Northbridge cut their pressing rate from 26.7 to 14.3 and dropped their defensive line from 32 to 26 meters, halving players near the ball from 0.8 to 0.4.",
+          "explainer": "Reducing pressing lowers defensive pressure, seen here by fewer players near the ball and a deeper defensive line. This allows Port Calder more time on the ball, impacting Northbridge's defensive compactness and control."
+        },
+        "es": {
+          "caption": "Disminución del pressing de Northbridge",
+          "line": "Desde el minuto 24, la media de jugadores cerca del balón bajó de 0,85 a 0,43 (-49%), la línea defensiva retrocedió de 32,4 a 26,5 m y el PPDA mejoró de 60,0 a 14,0.",
+          "explainer": "Northbridge redujo el pressing agresivo: menos jugadores en zona de balón, línea defensiva más baja y menor número de acciones defensivas por pase rival (PPDA). Esto facilita la construcción de Port Calder y puede explicar su ventaja actual."
+        },
+        "fr": {
+          "caption": "Pressing en baisse chez Northbridge",
+          "line": "Depuis la 24', les joueurs proches du ballon sont passés de 0,85 à 0,43, la ligne défensive est descendue de 32 à 26 mètres, et le PPDA est passé de 60,0 à 14,0.",
+          "explainer": "Le PPDA mesure le nombre de passes adverses autorisées par action défensive : plus il est bas, plus le pressing est intense. Ici, la baisse du pressing se traduit par moins de joueurs proches du ballon et une ligne défensive plus reculée, offrant plus d'espace à Port Calder."
+        },
+        "ar": {
+          "caption": "تغيير تكتيكي · Northbridge",
+          "line": "Northbridge خفف الضغط منذ الدقيقة 24: 0.4 لاعبين يضغطون (مقابل 0.8)؛ خط الدفاع من 32 م إلى 26 م.",
+          "explainer": "تم رصده من بيانات التتبع، لا من النتيجة. مستوى الثقة z = -4.8."
+        },
+        "pt": {
+          "caption": "MUDANÇA TÁTICA · Northbridge",
+          "line": "O Northbridge recuou desde os 24': 0,4 jogadores pressionando a saída (antes 0,8); linha de 32 m para 26 m.",
+          "explainer": "Detectado por dados de rastreamento, não deduzido do placar. Confiança z = -4,8."
+        }
+      }
+    },
+    {
+      "seed": 2026102293,
+      "moment": "red_card",
+      "clock": "42'",
+      "ms": 10374,
+      "attempts": 1,
+      "first_draft_ok": true,
+      "fallback_langs": [],
+      "verified": true,
+      "verified_without_fallback": true,
+      "model_langs_verified": 5,
+      "analyst_insight": "deterministic",
+      "copy": {
+        "en": {
+          "caption": "Red Card Impact",
+          "line": "Benali’s second yellow reduces Northbridge to 10 players, dropping their win probability from 2 to 1, while Port Calder’s chances rise to 94.5.",
+          "explainer": "This red card creates a numerical disadvantage for Northbridge, lowering their win probability from 2 to 1, while Port Calder’s chances increase to 94.5. Playing with fewer players disrupts Northbridge’s structure and strategy."
+        },
+        "es": {
+          "caption": "Benali expulsado, 10 vs 11",
+          "line": "Benali (Northbridge) ve la segunda amarilla al 42', dejando a su equipo con 10 jugadores y bajando su probabilidad de victoria del 2% al 1%.",
+          "explainer": "La expulsión de Benali reduce la probabilidad de victoria de Northbridge del 2% al 1%, mientras que la probabilidad de empate baja del 8,2% al 4,6%. Northbridge sigue con 10 jugadores en el campo contra 11 de Port Calder."
+        },
+        "fr": {
+          "caption": "Expulsion de Benali (Northbridge)",
+          "line": "À la 42e minute, Benali écope d'un second carton jaune, réduisant Northbridge à 10 joueurs. La probabilité de victoire de Northbridge chute de 2 % à 1 %.",
+          "explainer": "Benali a été expulsé suite à un second carton jaune à la 42e minute. Avant cette expulsion, Northbridge avait 2 % de chances de gagner, qui tombent à 1 % après. L'équipe joue désormais à 10 contre 11, ce qui complique leur situation."
+        },
+        "ar": {
+          "caption": "طرد بنالي وخسارة لاعب",
+          "line": "بنالي (رقم 3) طُرد بالبطاقة الصفراء الثانية في الدقيقة 42، نورثبريدج يلعب الآن بعشرة لاعبين، واحتمال الفوز انخفض من 2% إلى 1%.",
+          "explainer": "في الدقيقة 42، تلقى بنالي البطاقة الصفراء الثانية، مما أدى إلى طرده وخسارة نورثبريدج لاعبًا ليصبح عدد لاعبيه 10. هذا الحدث خفض احتمال فوز الفريق من 2% إلى 1%، مما يعكس تأثير النقص العددي على فرص الفوز."
+        },
+        "pt": {
+          "caption": "Expulsão de Benali reduz Northbridge a 10",
+          "line": "Com o segundo amarelo para Benali, Northbridge cai de 11 para 10 jogadores no 42'. A probabilidade de vitória do time caiu de 2% para 1%.",
+          "explainer": "Benali foi expulso aos 42 minutos após receber o segundo cartão amarelo. Antes da expulsão, a chance de vitória do Northbridge era 2%, que caiu para 1% com a desvantagem numérica, reduzindo o potencial de reação da equipe."
+        }
+      }
+    },
+    {
+      "seed": 2026102294,
+      "moment": "big_chance",
+      "clock": "42'",
+      "ms": 14737,
+      "attempts": 2,
+      "first_draft_ok": false,
+      "fallback_langs": [],
+      "verified": true,
+      "verified_without_fallback": true,
+      "model_langs_verified": 5,
+      "analyst_insight": "deterministic",
+      "copy": {
+        "en": {
+          "caption": "High-Quality Chance by Pellegrini",
+          "line": "Pellegrini’s shot had an xG of 0.22 from 8 meters out, struck at 82 km/h but went off target, contributing to Port Calder’s total xG of 0.50.",
+          "explainer": "An xG (expected goals) of 0.22 means this shot had about a 1 in 5 chance to score. The shot speed of 82 km/h shows good power, but missing kept the score level as Port Calder leads in chance quality."
+        },
+        "es": {
+          "caption": "Ocasión clara de Pellegrini",
+          "line": "Pellegrini disparó a 8 m con una xG de 0,22 y velocidad de 82 km/h, pero el balón salió fuera. Port Calder suma 0,50 xG en total.",
+          "explainer": "La calidad de la ocasión se mide con un valor xG de 0,22, indicando que uno de cada cinco disparos así suele acabar en gol. El disparo fue potente, pero no acertó a puerta. Port Calder acumula un xG total de 0,50 en el partido."
+        },
+        "fr": {
+          "caption": "Pellegrini rate une belle opportunité",
+          "line": "À la 42', Pellegrini (xG 0,22) a tiré à 8 m du but à 82 km/h, mais son tir est hors cadre. Port Calder affiche un xG total de 0,50.",
+          "explainer": "Cette action montre une chance de but notable, avec un xG de 0,22 pour Pellegrini, tirant à 7,9 m du but à 81,9 km/h. Malgré cette occasion, le tir est passé à côté, Port Calder menant en chances (xG 0,50)."
+        },
+        "ar": {
+          "caption": "تحليل فرصة بيلجريني",
+          "line": "بيلجريني سدد في الدقيقة 42 من مسافة 8 أمتار بسرعة 82 كم/س، مع فرصة تسجيل 0.22 xG، لكن الكرة خرجت عن المرمى. فريقه سجل 0 هدف وxG الفريق 0.50.",
+          "explainer": "الفرصة التي حصل عليها بيلجريني كانت ذات جودة متوسطة بقيمة 0.22 xG، مما يعني أن هناك احتمال 22% لتسجيل هدف من هذه التسديدة. أُطلقت الكرة بسرعة 82 كم/س من مسافة 8 أمتار، ولكنها لم تصب المرمى. حتى الآن، لم يسجل فريق بورت كالدر أي هدف، مع مجموع xG 0.50."
+        },
+        "pt": {
+          "caption": "Chance clara de Pellegrini",
+          "line": "Aos 42', Pellegrini finalizou com 0,22 xG e 82 km/h, a 8 metros do gol, mas errou o alvo. Port Calder soma 0,50 xG até aqui.",
+          "explainer": "Pellegrini teve uma chance com qualidade de 0,22 xG, chutando a 82 km/h de 8 metros, mostrando boa oportunidade para marcar. A equipe Port Calder já acumulava 0,50 xG na partida, mas ainda sem gols."
+        }
+      }
+    },
+    {
+      "seed": 2026102292,
+      "moment": "goal",
+      "clock": "45+1'",
+      "ms": 22673,
+      "attempts": 2,
+      "first_draft_ok": false,
+      "fallback_langs": [],
+      "verified": true,
+      "verified_without_fallback": true,
+      "model_langs_verified": 5,
+      "analyst_insight": "model",
+      "copy": {
+        "en": {
+          "caption": "Key Header Shifts Momentum",
+          "line": "Arata's header from 11 meters with a 0.06 xG lifted Northbridge's win probability by 44 points, breaking the deadlock at 1-0.",
+          "explainer": "Despite the low chance quality (0.06 xG), Arata's goal massively swung Northbridge's win probability from 21% to 64%, forcing Port Calder to rethink their tactics for the second half."
+        },
+        "es": {
+          "caption": "Gol de Arata cambia el partido",
+          "line": "Arata anotó de cabeza a 11 m con 43 km/h, aumentando la probabilidad de victoria de Northbridge del 21% al 64%.",
+          "explainer": "El gol de Arata, con una xG baja de 0,06, fue un cabezazo desde 11 metros con un ángulo de 36°, un disparo difícil que sorprendió y elevó la probabilidad de victoria de Northbridge en 44 puntos porcentuales."
+        },
+        "fr": {
+          "caption": "Arata change la donne",
+          "line": "À la 45+1', Arata inscrit son 1er but, un coup de tête à 11 m, avec une vitesse de tir de 43 km/h, faisant passer la probabilité de victoire de Northbridge de 21% à 64%.",
+          "explainer": "Malgré un xG faible de 0,06, ce but de la tête d'Arata a provoqué un swing de probabilité de victoire massif de 44 points de pourcentage, soulignant l'impact tactique d'une action improbable mais décisive avant la mi-temps."
+        },
+        "ar": {
+          "caption": "ارتفاع فرص نورثبريدج بفعل هدف أراتا",
+          "line": "هدف أراتا بالرأس من مسافة 11 مترًا وسرعة 43 كم/س رفع احتمالية فوز نورثبريدج من 21% إلى 64%، مع xG منخفضة 0.06، في الدقيقة 45+1.",
+          "explainer": "على الرغم من جودة الفرصة المنخفضة (xG 0.06)، سجل أراتا هدفًا بالرأس من مسافة 11 مترًا بسرعة 43 كم/س، مما أدى إلى زيادة كبيرة في احتمالية فوز نورثبريدج بنسبة 44 نقطة مئوية (من 21% إلى 64%)، مع بقاء 11 لاعبًا لكل فريق على أرض الملعب."
+        },
+        "pt": {
+          "caption": "Gol de cabeça de Arata (1-0)",
+          "line": "Arata abriu o placar para Northbridge com um cabeceio a 43 km/h, a 11 metros do gol, aumentando a chance de vitória do time de 21% para 64%.",
+          "explainer": "Apesar de um xG baixo de 0,06, indicando uma chance improvável, Arata marcou de cabeça com assistência de Brightwell, causando um aumento de 44 pontos percentuais na probabilidade de vitória do Northbridge."
+        }
+      }
+    },
+    {
+      "seed": 2026102292,
+      "moment": "master_pass",
+      "clock": "14'",
+      "ms": 6622,
+      "attempts": 1,
+      "first_draft_ok": true,
+      "fallback_langs": [],
+      "verified": true,
+      "verified_without_fallback": true,
+      "model_langs_verified": 5,
+      "analyst_insight": "deterministic",
+      "copy": {
+        "en": {
+          "caption": "Masterful Long Ball",
+          "line": "Lindqvist delivers a 53-meter pass at 68 km/h with 100% accuracy, bypassing 10 opponents to find Valdane.",
+          "explainer": "This pass’s difficulty rating of 67/100 highlights the technical challenge. Bypassing 10 opponents disrupts Port Calder’s defensive shape, creating a promising attacking opportunity for Northbridge."
+        },
+        "es": {
+          "caption": "Pase clave: Lindqvist a Valdane",
+          "line": "Pase de Lindqvist con dificultad 67/100, 53 m de longitud, 10 oponentes superados y 100% de precisión.",
+          "explainer": "Este pase de Lindqvist a Valdane tuvo una dificultad estimada de 67 sobre 100, recorrió 53 metros a 68 km/h, superó a 10 jugadores rivales y fue completado con un 100% de precisión en el tercer pase del jugador."
+        },
+        "fr": {
+          "caption": "Passe difficile signée Lindqvist",
+          "line": "Passe de 53 m, difficulté 67/100, 10 adversaires contournés, vitesse du ballon 68 km/h, précision 100 %.",
+          "explainer": "Lindqvist a réalisé une passe aérienne de 53 mètres avec une difficulté estimée à 67 sur 100. Il a contourné 10 joueurs adverses, avec une vitesse de balle de 68 km/h et une précision parfaite à 100 %, sur ses 3 passes tentées."
+        },
+        "ar": {
+          "caption": "تحليل تمريرة Lindqvist لـ Valdane",
+          "line": "تمريرة بطول 53 مترًا، سرعة الكرة 68 كم/س، دقة 100%، وتجاوز 10 لاعبين، وصعوبة تقديرية 67/100.",
+          "explainer": "Lindqvist نفذ تمريرة عالية الطول لمسافة 53 مترًا بسرعة 68 كم/س، بدقة كاملة 100%، متجاوزًا 10 لاعبين من Port Calder. النموذج يقيم صعوبة التمريرة بـ 67 من 100، مما يعكس جودة التمريرة."
+        },
+        "pt": {
+          "caption": "Passe difícil de Lindqvist a Valdane",
+          "line": "Passe de Lindqvist para Valdane com dificuldade 67/100, 53 metros, 10 adversários ultrapassados, velocidade de bola 68 km/h e 100% de precisão.",
+          "explainer": "Este passe de Lindqvist teve uma dificuldade estimada em 67 de 100, cobrindo 53 metros no campo. Ele ultrapassou 10 jogadores do Port Calder e viajou a 68 km/h, com precisão perfeita em 100%. Lindqvist já havia feito 3 passes na partida."
+        }
+      }
+    },
+    {
+      "seed": 2026102292,
+      "moment": "momentum_swing",
+      "clock": "40'",
+      "ms": 13716,
+      "attempts": 2,
+      "first_draft_ok": false,
+      "fallback_langs": [],
+      "verified": true,
+      "verified_without_fallback": true,
+      "model_langs_verified": 5,
+      "analyst_insight": "deterministic",
+      "copy": {
+        "en": {
+          "caption": "Northbridge Momentum Surge",
+          "line": "Northbridge's momentum rose sharply from -28.8 to 51.7, indicating a major shift in control despite equal players on pitch.",
+          "explainer": "Momentum (threat EWMA) measures control from -100 (away dominance) to +100 (home dominance). Northbridge's rise to 51.7 reflects their growing threat and possession advantage at 40 minutes."
+        },
+        "es": {
+          "caption": "Impulso de Northbridge en el 40'",
+          "line": "El impulso ha cambiado a favor de Northbridge, alcanzando 51,7 puntos, tras un aumento constante desde -28,8 en el minuto 28.",
+          "explainer": "El modelo de impulso (threat EWMA) mide la dominancia en el juego de -100 (totalmente visitante) a +100 (totalmente local). Northbridge pasó de -28,8 a 51,7 entre el minuto 28 y el 40, reflejando un cambio claro en el control del partido."
+        },
+        "fr": {
+          "caption": "Momentum à 51,7 pour Northbridge",
+          "line": "À la 40e minute, Northbridge mène le momentum à 51,7, après avoir remonté depuis -28,8 à la 28e minute.",
+          "explainer": "Le momentum est calculé par un modèle qui évalue la menace offensive en temps réel, allant de -100 (domination totale de l’équipe visiteuse) à +100 (domination totale de l’équipe locale). Northbridge est passé de -28,8 à +51,7 en 12 minutes, montrant un net renversement de situation."
+        },
+        "ar": {
+          "caption": "زخم المباراة لصالح نورثبريدج",
+          "line": "في الدقيقة 40، زخم نورثبريدج وصل إلى 51.7، بعد ارتفاع مستمر من -28.8 في الدقيقة 28، مع استحواذ 51.7% مقابل 48.3% لخصمهم.",
+          "explainer": "الزخم يقيس السيطرة على اللعب بين الفرق، حيث -100 تعني هيمنة كاملة للضيف و+100 تعني هيمنة كاملة للمضيف. نورثبريدج انتقل من زخم سلبي إلى إيجابي بقوة خلال آخر 12 دقيقة، مع استحواذ طفيف على الكرة بنسبة 51.7% مقابل 48.3% لPort Calder."
+        },
+        "pt": {
+          "caption": "Domínio do Northbridge aos 40'",
+          "line": "Aos 40 minutos, o momentum do Northbridge está em 51,7, mostrando uma clara vantagem sobre Port Calder, que tinha -28,8 aos 28 minutos.",
+          "explainer": "O momentum varia de -100 (domínio total do time visitante) a +100 (domínio total do time da casa). A evolução dos últimos minutos mostra o Northbridge recuperando o controle, passando de -28,8 aos 28' para 51,7 aos 40', indicando uma virada significativa na posse e ameaça ofensiva."
+        }
+      }
+    },
+    {
+      "seed": 2026102294,
+      "moment": "press_shift",
+      "clock": "43'",
+      "ms": 17319,
+      "attempts": 2,
+      "first_draft_ok": false,
+      "fallback_langs": [
+        "ar"
+      ],
+      "verified": true,
+      "verified_without_fallback": false,
+      "model_langs_verified": 4,
+      "analyst_insight": "model",
+      "copy": {
+        "en": {
+          "caption": "Port Calder drops press intensity",
+          "line": "Port Calder cut their pressing from 17.1 to 11.1 actions per 100 opponent passes and lowered their defensive line from 28 to 23 meters, reducing players near the ball from 0.7 to 0.4.",
+          "explainer": "By reducing pressing intensity and dropping their defensive line, Port Calder is adopting a more conservative approach. The drop in players near the ball and press rate shows less aggressive engagement, which may allow Northbridge more time and space to organize attacks."
+        },
+        "es": {
+          "caption": "Port Calder reduce presión tras el 40'",
+          "line": "Desde el minuto 40, Port Calder bajó la presión un 33%, con la línea defensiva pasando de 28 a 23 metros y el índice PPDA de 15,2 a 9,0.",
+          "explainer": "Port Calder disminuyó la agresividad en la presión tras el minuto 40: el número medio de jugadores cerca del balón bajó de 0,7 a 0,4, la línea defensiva retrocedió de 28 a 23 metros, y el PPDA cayó de 15,2 a 9,0, indicando menos pases permitidos por acción defensiva, aunque la tasa de presión bajó de 17,1 a 11,1."
+        },
+        "fr": {
+          "caption": "Baisse du pressing de Port Calder",
+          "line": "Depuis la 40e, Port Calder a réduit son pressing (17,1 à 11,1 actions/100 passes), avec moins de joueurs proches du ballon (0,7 à 0,4) et une ligne défensive plus basse (28 m à 23 m).",
+          "explainer": "Port Calder a abaissé son intensité de pressing depuis la 40e minute, avec une baisse de 33 % des joueurs dans un rayon de 8 m du ballon (de 0,7 à 0,4). Leur ligne défensive est passée de 28 à 23 mètres de leur but, et le PPDA est passé de 15,2 à 9,0, indiquant un pressing moins agressif mais plus organisé."
+        },
+        "ar": {
+          "caption": "تغيير تكتيكي · Port Calder",
+          "line": "Port Calder خفف الضغط منذ الدقيقة 40: 0.4 لاعبين يضغطون (مقابل 0.7)؛ خط الدفاع من 28 م إلى 23 م.",
+          "explainer": "تم رصده من بيانات التتبع، لا من النتيجة. مستوى الثقة z = -3.4."
+        },
+        "pt": {
+          "caption": "Pressão de Port Calder diminui aos 40'",
+          "line": "Port Calder reduziu a pressão: jogadores perto da bola caíram 33% (0,7 para 0,4), linha defensiva recuou de 28 m para 23 m, e taxa de pressão caiu de 17,1 para 11,1.",
+          "explainer": "Desde os 40 minutos, Port Calder reduziu a agressividade defensiva. O número médio de jogadores a menos de 8 m da bola caiu de 0,7 para 0,4, a linha defensiva baixou de 28 para 23 metros do gol, e a taxa de ações de pressão por 100 passes adversários diminuiu de 17,1 para 11,1, indicando uma postura mais conservadora."
+        }
+      }
+    },
+    {
+      "seed": 2026102294,
+      "moment": "red_card",
+      "clock": "89'",
+      "ms": 16379,
+      "attempts": 2,
+      "first_draft_ok": false,
+      "fallback_langs": [],
+      "verified": true,
+      "verified_without_fallback": true,
+      "model_langs_verified": 5,
+      "analyst_insight": "deterministic",
+      "copy": {
+        "en": {
+          "caption": "Benali's Red Cuts Northbridge to 10",
+          "line": "Benali's dismissal reduces Northbridge to 10 players, dropping their win probability from 6 to 4 and increasing the draw chance to 90.",
+          "explainer": "Playing with 10 players lowers Northbridge's chances to win, as shown by the model's win probability falling from 6 to 4. The draw likelihood rises to 90, reflecting the team's weakened position late in the match."
+        },
+        "es": {
+          "caption": "Benali expulsado, Northbridge con 10",
+          "line": "En el minuto 89, Benali (camiseta 3) recibe tarjeta roja. Northbridge pasa de 11 a 10 jugadores, y su probabilidad de victoria baja del 6% al 4%.",
+          "explainer": "La expulsión de Benali reduce a Northbridge a 10 jugadores en el campo, afectando su dinámica. Antes tenían un 6% de probabilidad de ganar, que cae al 4% tras la tarjeta roja, aumentando la ventaja de Port Calder."
+        },
+        "fr": {
+          "caption": "Expulsion de Benali (Northbridge)",
+          "line": "À la 89', Benali est exclu, réduisant Northbridge à 10 joueurs. La probabilité de victoire de Northbridge chute de 6% à 4%.",
+          "explainer": "La sortie de Benali à la 89e minute fait passer Northbridge à 10 joueurs sur le terrain. Cette infériorité numérique fait baisser leur probabilité de victoire de 6% à 4%, tandis que la probabilité de match nul reste élevée à 89,7%."
+        },
+        "ar": {
+          "caption": "تأثير الطرد على نورثبريدج",
+          "line": "بطاقة حمراء لبينالي قللت فرصة فوز نورثبريدج من 6% إلى 4% مع بقاء 10 لاعبين على أرض الملعب.",
+          "explainer": "في الدقيقة 89، طُرد بينالي من نورثبريدج، مما ترك الفريق بعشرة لاعبين. قبل الطرد، كانت فرصة فوز نورثبريدج 6%، لكنها انخفضت إلى 4% بعد الطرد، مع بقاء 10 لاعبين على الملعب، مما يؤثر سلباً على فرصهم في الفوز."
+        },
+        "pt": {
+          "caption": "Expulsão de Benali (Northbridge)",
+          "line": "Após o cartão vermelho a Benali, o Northbridge fica com 10 jogadores aos 89', e a probabilidade de vitória cai de 6% para 4%.",
+          "explainer": "Benali foi expulso aos 89 minutos, deixando o Northbridge com 10 jogadores. Antes da expulsão, a chance de vitória do Northbridge era 6%, que caiu para 4% após a redução numérica."
+        }
+      }
+    }
+  ],
+  "single_agent_baseline": {
+    "all_languages_verified": 0.917,
+    "moments_all_languages": "11/12",
+    "language_outputs_verified": 0.917,
+    "per_language_verified": {
+      "en": 0.917,
+      "es": 0.917,
+      "fr": 0.917,
+      "ar": 0.917,
+      "pt": 0.917
+    },
+    "mean_attempts": 1.0,
+    "latency_ms": {
+      "p50": 20638,
+      "p95": 27734
+    },
+    "tokens_in": 21926,
+    "tokens_out": 20779,
+    "cost_usd_per_moment": 0.0035,
+    "errors": 0,
+    "setup": "one call, every language, no checker loop, 90 s timeout",
+    "jobs": [
+      {
+        "ok_langs": [
+          "en",
+          "es",
+          "fr",
+          "ar",
+          "pt"
+        ],
+        "all_ok": true,
+        "ms": 18765,
+        "tokens": [
+          1775,
+          1634
+        ],
+        "attempts": 1,
+        "error": "",
+        "copy": {
+          "en": {
+            "caption": "Asante's 0.23 xG shot saved",
+            "line": "At 79', Asante (No.14) fired a 103 km/h shot from 7.8 m with 0.23 xG, but it was saved, keeping Port Calder scoreless.",
+            "explainer": "Expected goals (xG) of 0.23 means this shot had about a 23% chance to score. The shot speed was 103 km/h from 7.8 meters, a strong effort saved by the keeper."
+          },
+          "es": {
+            "caption": "Disparo de Asante con xG 0,23 atajado",
+            "line": "Al 79', Asante (N°14) lanzó un disparo a 103 km/h desde 7,8 m con xG 0,23, pero fue atajado, Port Calder sigue sin goles.",
+            "explainer": "El valor de goles esperados (xG) 0,23 indica que esta jugada tenía un 23% de probabilidad de gol. El disparo fue fuerte y cercano, pero el portero logró detenerlo."
+          },
+          "fr": {
+            "caption": "Tir d’Asante xG 0,23 arrêté",
+            "line": "À la 79e, Asante (n°14) a tiré à 103 km/h depuis 7,8 m avec un xG de 0,23, mais le gardien a sauvé, Port Calder reste à 0 but.",
+            "explainer": "Le xG de 0,23 signifie que ce tir avait 23 % de chance de finir en but. La vitesse du tir était de 103 km/h à 7,8 mètres, un tir puissant arrêté par le gardien."
+          },
+          "ar": {
+            "caption": "تصدي لتسديدة أسنتي xG 0.23",
+            "line": "في الدقيقة 79، أسنتي (رقم 14) سدد بسرعة 103 كم/س من مسافة 7.8 م مع xG 0.23، لكن الحارس تصدى، وبورت كالدر لم يسجل.",
+            "explainer": "قيمة xG 0.23 تعني أن فرصة التسجيل من هذه التسديدة كانت 23%. كانت التسديدة قوية من مسافة قريبة، لكن الحارس نجح في التصدي لها."
+          },
+          "pt": {
+            "caption": "Chute de Asante xG 0,23 defendido",
+            "line": "Aos 79', Asante (nº14) chutou a 103 km/h de 7,8 m com xG 0,23, mas foi defendido, Port Calder segue sem gols.",
+            "explainer": "O xG de 0,23 indica que essa chance tinha 23% de probabilidade de gol. O chute foi forte e próximo, mas o goleiro conseguiu defender."
+          }
+        },
+        "issues": {},
+        "seed": 2026102292,
+        "moment": "big_chance",
+        "clock": "79'"
+      },
+      {
+        "ok_langs": [
+          "en",
+          "es",
+          "fr",
+          "ar",
+          "pt"
+        ],
+        "all_ok": true,
+        "ms": 24322,
+        "tokens": [
+          2153,
+          2033
+        ],
+        "attempts": 1,
+        "error": "",
+        "copy": {
+          "en": {
+            "caption": "Valdane's header boosts Northbridge",
+            "line": "At 13', Valdane (shirt 9) scored his first goal with a 46 km/h header from 13 m, assisted by Arata (10). xG was 0.04, shifting win probability 32 percentage points to 74%.",
+            "explainer": "Valdane’s goal came from a low-chance header (xG 0.04) at 13 minutes, assisted by Arata. The shot speed was 46 km/h from 13 meters. This goal increased Northbridge's win probability from 42% to 74%, a 32-point swing."
+          },
+          "es": {
+            "caption": "Cabeza de Valdane impulsa a Northbridge",
+            "line": "Min 13, Valdane (nº9) marca su primer gol con un cabezazo a 46 km/h desde 13 m, asistido por Arata (10). xG 0,04, probabilidad de victoria sube 32 puntos a 74%.",
+            "explainer": "El gol de Valdane fue un cabezazo con baja probabilidad (xG 0,04) asistido por Arata. La velocidad del disparo fue 46 km/h desde 13 metros. Esto elevó la probabilidad de victoria de Northbridge de 42% a 74%, un aumento de 32 puntos."
+          },
+          "fr": {
+            "caption": "But de Valdane booste Northbridge",
+            "line": "13', Valdane (n°9) marque son premier but d'une tête à 46 km/h à 13 m, assisté par Arata (10). xG 0,04, probabilité de victoire augmente de 32 points à 74%.",
+            "explainer": "Le but de Valdane, avec une faible probabilité (xG 0,04), a été marqué de la tête à 13 minutes, assisté par Arata. La vitesse du tir était de 46 km/h à 13 mètres. Cela a augmenté la probabilité de victoire de Northbridge de 42% à 74%, soit un gain de 32 points."
+          },
+          "ar": {
+            "caption": "هدف فالدان بالرأس يعزز نورثبريدج",
+            "line": "الدقيقة 13، سجل فالدان (القميص 9) هدفه الأول برأسية بسرعة 46 كم/س من 13 مترًا، بمساعدة أراتا (10). xG 0.04، فرصة الفوز ارتفعت 32 نقطة مئوية إلى 74%.",
+            "explainer": "جاء هدف فالدان من رأسية منخفضة الاحتمال (xG 0.04) في الدقيقة 13، بمساعدة أراتا. سرعة التسديدة كانت 46 كم/س من مسافة 13 مترًا. هذا الهدف رفع فرصة فوز نورثبريدج من 42% إلى 74%، بزيادة 32 نقطة."
+          },
+          "pt": {
+            "caption": "Cabeçada de Valdane impulsiona Northbridge",
+            "line": "Aos 13', Valdane (camisa 9) marcou seu primeiro gol com uma cabeçada a 46 km/h de 13 m, assistido por Arata (10). xG 0,04, probabilidade de vitória subiu 32 pontos para 74%.",
+            "explainer": "O gol de Valdane foi uma cabeçada de baixa chance (xG 0,04) aos 13 minutos, assistido por Arata. A velocidade do chute foi 46 km/h de 13 metros. Isso elevou a probabilidade de vitória do Northbridge de 42% para 74%, um aumento de 32 pontos percentuais."
+          }
+        },
+        "issues": {},
+        "seed": 2026102291,
+        "moment": "goal",
+        "clock": "13'"
+      },
+      {
+        "ok_langs": [
+          "en",
+          "es",
+          "fr",
+          "ar",
+          "pt"
+        ],
+        "all_ok": true,
+        "ms": 20638,
+        "tokens": [
+          1911,
+          1791
+        ],
+        "attempts": 1,
+        "error": "",
+        "copy": {
+          "en": {
+            "caption": "Iturra’s 66m master pass",
+            "line": "At 3', Iturra completed a 66m pass to Pellegrini, bypassing 9 opponents, with 100% accuracy and a ball speed of 76 km/h.",
+            "explainer": "This pass had a difficulty rating of 79/100 due to its length and lofted nature. Iturra has made 4 passes so far with perfect accuracy. The pass bypassed 9 defenders, demonstrating excellent vision and execution."
+          },
+          "es": {
+            "caption": "Pase maestro de 66m de Iturra",
+            "line": "Al 3', Iturra completó un pase de 66m a Pellegrini, superando a 9 rivales, con 100% de precisión y velocidad de balón de 76 km/h.",
+            "explainer": "Este pase tuvo una dificultad de 79/100 por su longitud y carácter elevado. Iturra ha realizado 4 pases hasta ahora con precisión perfecta. El pase superó a 9 defensores, demostrando excelente visión y ejecución."
+          },
+          "fr": {
+            "caption": "Passe magistrale de 66m d’Iturra",
+            "line": "À 3’, Iturra a réussi une passe de 66m à Pellegrini, contournant 9 adversaires, avec 100% de précision et une vitesse de balle de 76 km/h.",
+            "explainer": "Cette passe a une difficulté de 79/100 en raison de sa longueur et de sa trajectoire aérienne. Iturra a effectué 4 passes jusqu’ici avec une précision parfaite. La passe a contourné 9 défenseurs, démontrant une excellente vision et exécution."
+          },
+          "ar": {
+            "caption": "تمريرة إتورّا البعيدة 66م",
+            "line": "عند الدقيقة 3، أكمل إتورّا تمريرة بطول 66 مترًا لبيلجريني، متجاوزًا 9 لاعبين، بدقة 100% وسرعة كرة 76 كم/س.",
+            "explainer": "صنفت التمريرة بصعوبة 79/100 بسبب طولها وطبيعتها الهوائية. قام إتورّا بأربع تمريرات حتى الآن بدقة كاملة. تجاوزت التمريرة 9 مدافعين، مما يظهر رؤية وتنفيذ ممتازين."
+          },
+          "pt": {
+            "caption": "Passe magistral de 66m de Iturra",
+            "line": "Aos 3', Iturra completou um passe de 66m para Pellegrini, passando por 9 adversários, com 100% de precisão e velocidade da bola de 76 km/h.",
+            "explainer": "Este passe teve uma dificuldade de 79/100 devido ao seu comprimento e natureza levantada. Iturra fez 4 passes até agora com precisão perfeita. O passe passou por 9 defensores, demonstrando excelente visão e execução."
+          }
+        },
+        "issues": {},
+        "seed": 2026102291,
+        "moment": "master_pass",
+        "clock": "3'"
+      },
+      {
+        "ok_langs": [
+          "en",
+          "es",
+          "fr",
+          "ar",
+          "pt"
+        ],
+        "all_ok": true,
+        "ms": 16565,
+        "tokens": [
+          1522,
+          1533
+        ],
+        "attempts": 1,
+        "error": "",
+        "copy": {
+          "en": {
+            "caption": "Northbridge Momentum Surge",
+            "line": "Momentum swung from -51.7 at 36' to +49.1 by 45+3', showing a major shift favoring Northbridge in the final minutes.",
+            "explainer": "Momentum is a model estimate ranging from -100 (away dominance) to +100 (home dominance). Northbridge’s momentum rose from strongly negative to strongly positive, indicating increased pressure and control in the last 10 minutes."
+          },
+          "es": {
+            "caption": "Impulso a favor de Northbridge",
+            "line": "El impulso pasó de -51.7 en el 36' a +49.1 en el 45+3', mostrando un cambio significativo a favor de Northbridge.",
+            "explainer": "El impulso es una estimación del modelo que va de -100 (dominio visitante) a +100 (dominio local). Northbridge pasó de un impulso muy negativo a uno muy positivo, indicando mayor control en los últimos 10 minutos."
+          },
+          "fr": {
+            "caption": "Montée d'impulsion pour Northbridge",
+            "line": "L’impulsion est passée de -51,7 à 36’ à +49,1 à 45+3’, montrant un fort basculement en faveur de Northbridge.",
+            "explainer": "L’impulsion est une estimation modélisée de -100 (domination visiteur) à +100 (domination locale). Northbridge a vu son élan passer de très négatif à très positif, signe d’un contrôle accru en fin de match."
+          },
+          "ar": {
+            "caption": "ارتفاع زخم نورثبريدج",
+            "line": "تحول الزخم من -51.7 في الدقيقة 36 إلى +49.1 عند 45+3، مما يدل على تغير كبير لصالح نورثبريدج في الدقائق الأخيرة.",
+            "explainer": "الزخم هو تقدير نموذجي يتراوح بين -100 (سيطرة الفريق الضيف) و+100 (سيطرة الفريق المضيف). ارتفع زخم نورثبريدج من سلبي قوي إلى إيجابي قوي، مما يشير إلى زيادة الضغط والسيطرة في الدقائق العشر الأخيرة."
+          },
+          "pt": {
+            "caption": "Surto de impulso do Northbridge",
+            "line": "O impulso mudou de -51,7 aos 36' para +49,1 aos 45+3', mostrando uma grande virada a favor do Northbridge.",
+            "explainer": "O impulso é uma estimativa do modelo que varia de -100 (domínio visitante) a +100 (domínio da casa). O Northbridge passou de um impulso muito negativo para um muito positivo, indicando maior pressão e controle nos últimos 10 minutos."
+          }
+        },
+        "issues": {},
+        "seed": 2026102291,
+        "moment": "momentum_swing",
+        "clock": "45+3'"
+      },
+      {
+        "ok_langs": [
+          "en",
+          "es",
+          "fr",
+          "ar",
+          "pt"
+        ],
+        "all_ok": true,
+        "ms": 17699,
+        "tokens": [
+          2083,
+          1661
+        ],
+        "attempts": 1,
+        "error": "",
+        "copy": {
+          "en": {
+            "caption": "Northbridge press intensity drops",
+            "line": "From 24', players near ball dropped from 0.8 to 0.4, line height fell from 32m to 26m, and press rate halved from 27 to 14 per 100 passes.",
+            "explainer": "Northbridge reduced pressing by 49%, with fewer players within 8m of the ball and a lower defensive line. PPDA dropped from 60 to 14, indicating a less aggressive defensive stance since 24'."
+          },
+          "es": {
+            "caption": "Disminuye la intensidad de presión de Northbridge",
+            "line": "Desde el 24', jugadores cerca del balón bajaron de 0,8 a 0,4, línea defensiva de 32m a 26m y tasa de presión de 27 a 14 por cada 100 pases.",
+            "explainer": "Northbridge redujo la presión un 49%, con menos jugadores a 8m del balón y línea defensiva más baja. El PPDA bajó de 60 a 14, indicando una defensa menos agresiva desde el minuto 24."
+          },
+          "fr": {
+            "caption": "Baisse de l’intensité de pressing de Northbridge",
+            "line": "Depuis la 24e, joueurs près du ballon de 0,8 à 0,4, ligne défensive de 32m à 26m, taux de pressing de 27 à 14 pour 100 passes.",
+            "explainer": "Northbridge a réduit son pressing de 49%, avec moins de joueurs à 8m du ballon et une ligne défensive plus basse. Le PPDA est passé de 60 à 14, indiquant une défense moins agressive depuis la 24e minute."
+          },
+          "ar": {
+            "caption": "انخفاض شدة الضغط لنورثبريدج",
+            "line": "منذ الدقيقة 24، انخفض عدد اللاعبين بالقرب من الكرة من 0.8 إلى 0.4، وخط الدفاع من 32 مترًا إلى 26 مترًا، ومعدل الضغط من 27 إلى 14 لكل 100 تمريرة.",
+            "explainer": "قللت نورثبريدج الضغط بنسبة 49%، مع عدد أقل من اللاعبين ضمن 8 أمتار من الكرة وخط دفاع منخفض. انخفض PPDA من 60 إلى 14، مما يشير إلى موقف دفاعي أقل عدوانية منذ الدقيقة 24."
+          },
+          "pt": {
+            "caption": "Queda na intensidade de pressão do Northbridge",
+            "line": "Desde os 24', jogadores perto da bola caíram de 0,8 para 0,4, linha defensiva de 32m para 26m e taxa de pressão de 27 para 14 por 100 passes.",
+            "explainer": "Northbridge reduziu a pressão em 49%, com menos jogadores a 8m da bola e linha defensiva mais baixa. O PPDA caiu de 60 para 14, indicando postura defensiva menos agressiva desde os 24'."
+          }
+        },
+        "issues": {},
+        "seed": 2026102293,
+        "moment": "press_shift",
+        "clock": "28'"
+      },
+      {
+        "ok_langs": [
+          "en",
+          "es",
+          "fr",
+          "ar",
+          "pt"
+        ],
+        "all_ok": true,
+        "ms": 19811,
+        "tokens": [
+          1509,
+          1544
+        ],
+        "attempts": 1,
+        "error": "",
+        "copy": {
+          "en": {
+            "caption": "Benali's red card shifts odds",
+            "line": "At 42', Benali (No.3) gets a second yellow, reducing Northbridge to 10 players. Their win probability drops from 2% to 1%.",
+            "explainer": "Benali's second yellow card results in a red card dismissal at 42 minutes. Northbridge's win probability fell from 2% to 1%, reflecting the impact of playing with 10 players instead of 11."
+          },
+          "es": {
+            "caption": "Expulsión de Benali reduce opciones",
+            "line": "Al minuto 42, Benali (N°3) recibe segunda amarilla, dejando a Northbridge con 10 jugadores. Su probabilidad de ganar baja del 2% al 1%.",
+            "explainer": "La segunda tarjeta amarilla de Benali causó su expulsión a los 42 minutos. La probabilidad de victoria de Northbridge cayó del 2% al 1%, reflejando el impacto de jugar con un jugador menos."
+          },
+          "fr": {
+            "caption": "Expulsion de Benali réduit les chances",
+            "line": "À la 42e, Benali (n°3) reçoit un deuxième jaune, réduisant Northbridge à 10 joueurs. Leur probabilité de victoire chute de 2% à 1%.",
+            "explainer": "Le deuxième carton jaune de Benali entraîne un carton rouge à la 42e minute. La probabilité de victoire de Northbridge est passée de 2% à 1%, montrant l'impact du joueur en moins."
+          },
+          "ar": {
+            "caption": "طرد بنالي يقلل فرص الفوز",
+            "line": "في الدقيقة 42، حصل بنالي (رقم 3) على البطاقة الصفراء الثانية، ليبقى نورثبريدج بعشرة لاعبين. احتمالية الفوز انخفضت من 2% إلى 1%.",
+            "explainer": "البطاقة الصفراء الثانية لبنالي أدت إلى طرده في الدقيقة 42. انخفضت احتمالية فوز نورثبريدج من 2% إلى 1%، مما يعكس تأثير اللعب بعشرة لاعبين بدلاً من 11."
+          },
+          "pt": {
+            "caption": "Expulsão de Benali reduz chances",
+            "line": "Aos 42', Benali (nº 3) recebe o segundo amarelo, reduzindo Northbridge a 10 jogadores. Probabilidade de vitória cai de 2% para 1%.",
+            "explainer": "O segundo cartão amarelo de Benali resultou em expulsão aos 42 minutos. A probabilidade de vitória do Northbridge caiu de 2% para 1%, mostrando o impacto de jogar com um a menos."
+          }
+        },
+        "issues": {},
+        "seed": 2026102293,
+        "moment": "red_card",
+        "clock": "42'"
+      },
+      {
+        "ok_langs": [],
+        "all_ok": false,
+        "ms": 23570,
+        "tokens": [
+          1798,
+          1949
+        ],
+        "attempts": 1,
+        "error": "",
+        "copy": {
+          "en": {
+            "caption": "Pellegrini's 0.22 xG shot off target",
+            "line": "In the 42nd minute, Pellegrini (No. 9) fired a shot at 82 km/h from 7.9 m with 0.22 xG, but it went off target. Port Calder's team xG now 0.50, score still 0-0.",
+            "explainer": "The shot had an expected goal value of 0.22, meaning statistically 1 in 5 shots like this score. The shot was taken from a decent angle (48° visible goal) and distance (7.9 m), but missed the frame. Port Calder holds a slight advantage in chance quality so far."
+          },
+          "es": {
+            "caption": "Disparo de Pellegrini con xG 0,22 fuera",
+            "line": "En el minuto 42, Pellegrini (N° 9) lanzó un disparo a 82 km/h desde 7,9 m con xG 0,22, pero salió fuera. El xG del equipo Port Calder es 0,50, marcador 0-0.",
+            "explainer": "El valor esperado de gol (xG) de este disparo fue 0,22, lo que significa que 1 de cada 5 tiros similares termina en gol. El disparo fue desde un buen ángulo (48° de portería visible) y distancia (7,9 m), pero no encontró el arco. Port Calder domina ligeramente en calidad de chances."
+          },
+          "fr": {
+            "caption": "Tir de Pellegrini xG 0,22 hors cadre",
+            "line": "À la 42e minute, Pellegrini (n°9) a tiré à 82 km/h depuis 7,9 m avec un xG de 0,22, mais le tir est passé à côté. Le xG de l’équipe Port Calder est de 0,50, score 0-0.",
+            "explainer": "La valeur xG de ce tir est 0,22, ce qui signifie qu’en moyenne 1 tir sur 5 de ce type finit en but. Le tir était pris d’un angle favorable (48° de but visible) et à une distance de 7,9 m, mais n’a pas cadré. Port Calder domine légèrement en qualité d’occasions."
+          },
+          "ar": {
+            "caption": "تسديدة بيليجريني بـ xG 0.22 خارج المرمى",
+            "line": "في الدقيقة 42، بيليجريني (رقم 9) سدد كرة بسرعة 82 كم/س من مسافة 7.9 متر وبقيمة xG 0.22 لكنها خرجت عن المرمى. قيمة xG للفريق 0.50، والنتيجة 0-0.",
+            "explainer": "قيمة الهدف المتوقع (xG) للتسديدة 0.22، ما يعني أن 1 من كل 5 تسديدات مشابهة يسجل هدفًا. التسديدة كانت من زاوية جيدة (48 درجة مرئية للمرمى) وعلى مسافة 7.9 متر، لكنها لم تصب المرمى. بورت كالدر يتفوق قليلاً في جودة الفرص."
+          },
+          "pt": {
+            "caption": "Chute de Pellegrini com xG 0,22 fora do alvo",
+            "line": "Aos 42', Pellegrini (nº 9) chutou a 82 km/h de 7,9 m com xG 0,22, mas a bola saiu do alvo. xG da equipe Port Calder é 0,50, placar 0-0.",
+            "explainer": "O valor esperado de gol (xG) deste chute foi 0,22, indicando que 1 em cada 5 finalizações assim resulta em gol. O chute foi feito de um bom ângulo (48° de gol visível) e distância (7,9 m), mas não acertou o alvo. Port Calder tem leve vantagem na qualidade das chances."
+          }
+        },
+        "issues": {
+          "en": [
+            "[en/analyst/explainer] number 48 is not supported by the facts - remove it, or use only FIGURES"
+          ],
+          "es": [
+            "[es/analyst/explainer] number 48 is not supported by the facts - remove it, or use only FIGURES"
+          ],
+          "fr": [
+            "[fr/analyst/explainer] number 48 is not supported by the facts - remove it, or use only FIGURES"
+          ],
+          "ar": [
+            "[ar/analyst/explainer] number 48 is not supported by the facts - remove it, or use only FIGURES"
+          ],
+          "pt": [
+            "[pt/analyst/explainer] number 48 is not supported by the facts - remove it, or use only FIGURES"
+          ]
+        },
+        "seed": 2026102294,
+        "moment": "big_chance",
+        "clock": "42'"
+      },
+      {
+        "ok_langs": [
+          "en",
+          "es",
+          "fr",
+          "ar",
+          "pt"
+        ],
+        "all_ok": true,
+        "ms": 27294,
+        "tokens": [
+          2157,
+          1851
+        ],
+        "attempts": 1,
+        "error": "",
+        "copy": {
+          "en": {
+            "caption": "Arata's header breaks deadlock",
+            "line": "At 45+1', Arata (shirt 10) scored his first goal with a 43 km/h header from 11 meters, assisted by Brightwell (11), swinging win probability from 21% to 64%.",
+            "explainer": "Despite a low expected goal value of 0.06, Arata's header—less likely to score than shots with feet—proved decisive, increasing Northbridge's chance of winning by 44 percentage points."
+          },
+          "es": {
+            "caption": "Gol de cabeza de Arata rompe el empate",
+            "line": "Al 45+1', Arata (número 10) anotó su primer gol con un cabezazo a 43 km/h desde 11 metros, asistido por Brightwell (11), aumentando la probabilidad de victoria del 21% al 64%.",
+            "explainer": "Aunque la calidad de la oportunidad fue baja (xG 0,06), el cabezazo de Arata, menos probable de anotar que un disparo con el pie, fue decisivo, aumentando la probabilidad de victoria en 44 puntos porcentuales."
+          },
+          "fr": {
+            "caption": "But de la tête d'Arata pour débloquer le score",
+            "line": "À la 45+1', Arata (n°10) marque son premier but d'une tête à 43 km/h depuis 11 mètres, assisté par Brightwell (11), faisant passer la probabilité de victoire de 21% à 64%.",
+            "explainer": "Malgré une faible valeur xG de 0,06, la tête d'Arata — moins souvent convertie que les tirs au pied — s'est avérée décisive, augmentant la probabilité de victoire de Northbridge de 44 points."
+          },
+          "ar": {
+            "caption": "هدف رأسية أرّاتا يكسر التعادل",
+            "line": "عند الدقيقة 45+1، سجل أرّاتا (القميص 10) هدفه الأول برأسية بسرعة 43 كم/س من مسافة 11 مترًا، بمساعدة برايتويل (11)، مما رفع احتمالية الفوز من 21% إلى 64%.",
+            "explainer": "على الرغم من جودة الفرصة المنخفضة (xG 0.06)، كانت رأسية أرّاتا — التي تقل احتمالية تسجيلها مقارنة بالتسديدات بالقدم — حاسمة، وزادت فرصة فوز نورثبريدج بمقدار 44 نقطة مئوية."
+          },
+          "pt": {
+            "caption": "Cabeceio de Arata quebra o empate",
+            "line": "Aos 45+1', Arata (camisa 10) marcou seu primeiro gol com um cabeceio a 43 km/h de 11 metros, assistido por Brightwell (11), elevando a probabilidade de vitória de 21% para 64%.",
+            "explainer": "Apesar do baixo valor de xG (0,06), o cabeceio de Arata — menos provável de marcar que chutes com o pé — foi decisivo, aumentando a chance de vitória do Northbridge em 44 pontos percentuais."
+          }
+        },
+        "issues": {},
+        "seed": 2026102292,
+        "moment": "goal",
+        "clock": "45+1'"
+      },
+      {
+        "ok_langs": [
+          "en",
+          "es",
+          "fr",
+          "ar",
+          "pt"
+        ],
+        "all_ok": true,
+        "ms": 20715,
+        "tokens": [
+          1924,
+          1766
+        ],
+        "attempts": 1,
+        "error": "",
+        "copy": {
+          "en": {
+            "caption": "Masterful 53m pass by Lindqvist",
+            "line": "At 14', Lindqvist completes a 53.1m pass at 68.2 km/h with 100% accuracy, bypassing 10 opponents on his 3rd pass.",
+            "explainer": "This pass had a difficulty rating of 67.4/100, factoring in length, pressure, and loft. Lindqvist’s precise delivery over 53 meters at high speed bypassed 10 defenders, demonstrating excellent technical ability and vision."
+          },
+          "es": {
+            "caption": "Pase magistral de 53m de Lindqvist",
+            "line": "Al 14', Lindqvist completa un pase de 53,1m a 68,2 km/h con 100% de precisión, superando a 10 rivales en su tercer pase.",
+            "explainer": "Este pase tuvo una dificultad de 67,4/100, considerando longitud, presión y altura. La entrega precisa de Lindqvist a 53 metros y alta velocidad superó a 10 defensores, demostrando técnica y visión excelentes."
+          },
+          "fr": {
+            "caption": "Passe magistrale de 53m par Lindqvist",
+            "line": "À 14', Lindqvist réalise une passe de 53,1m à 68,2 km/h avec 100% de précision, contournant 10 adversaires lors de sa 3e passe.",
+            "explainer": "Cette passe a une difficulté de 67,4/100, prenant en compte la longueur, la pression et la trajectoire. La précision de Lindqvist sur 53 mètres à grande vitesse a dépassé 10 défenseurs, démontrant une excellente technique et vision."
+          },
+          "ar": {
+            "caption": "تمريرة متقنة بطول 53 متر من ليندكفيست",
+            "line": "عند الدقيقة 14، أكمل ليندكفيست تمريرة بطول 53.1 متر بسرعة 68.2 كم/س وبدقة 100%، متجاوزًا 10 لاعبين في تمريرته الثالثة.",
+            "explainer": "صنفت التمريرة بصعوبة 67.4 من 100، مع الأخذ بعين الاعتبار الطول، الضغط، والارتفاع. دقة ليندكفيست على مسافة 53 مترًا وبسرعة عالية تجاوزت 10 مدافعين، مما يدل على مهارة تقنية ورؤية ممتازة."
+          },
+          "pt": {
+            "caption": "Passe magistral de 53m por Lindqvist",
+            "line": "Aos 14', Lindqvist completa um passe de 53,1m a 68,2 km/h com 100% de precisão, passando por 10 adversários em seu 3º passe.",
+            "explainer": "Este passe teve dificuldade de 67,4/100, considerando comprimento, pressão e trajetória. A entrega precisa de Lindqvist a 53 metros em alta velocidade passou por 10 defensores, demonstrando técnica e visão excelentes."
+          }
+        },
+        "issues": {},
+        "seed": 2026102292,
+        "moment": "master_pass",
+        "clock": "14'"
+      },
+      {
+        "ok_langs": [
+          "en",
+          "es",
+          "fr",
+          "ar",
+          "pt"
+        ],
+        "all_ok": true,
+        "ms": 20049,
+        "tokens": [
+          1504,
+          1604
+        ],
+        "attempts": 1,
+        "error": "",
+        "copy": {
+          "en": {
+            "caption": "Northbridge momentum at 51.7",
+            "line": "At 40', Northbridge's momentum model estimate is 51.7, up from -28.8 at 28'. They lead possession 51.7% to 48.3%, with higher pass accuracy and pressures.",
+            "explainer": "Momentum is a model estimate ranging from -100 (away dominance) to +100 (home dominance). Northbridge's positive 51.7 indicates strong control, supported by 81.1% pass accuracy and 83 pressures compared to Port Calder's 76.8% and 68."
+          },
+          "es": {
+            "caption": "Impulso de Northbridge en 51.7",
+            "line": "En el minuto 40, el impulso estimado de Northbridge es 51.7, subiendo desde -28.8 en el 28'. Lideran la posesión 51.7% vs 48.3%, con mejor precisión de pase y presiones.",
+            "explainer": "El impulso es un modelo que va de -100 (dominio visitante) a +100 (dominio local). Northbridge con 51.7 indica fuerte control, apoyado en 81.1% de pases precisos y 83 presiones frente a 76.8% y 68 de Port Calder."
+          },
+          "fr": {
+            "caption": "Élan de Northbridge à 51,7",
+            "line": "À la 40e, l'élan estimé de Northbridge est à 51,7, remontant de -28,8 à la 28e. Ils dominent la possession 51,7% contre 48,3%, avec une meilleure précision de passe et plus de pressions.",
+            "explainer": "L'élan est un modèle allant de -100 (domination visiteur) à +100 (domination domicile). 51,7 indique un fort contrôle, soutenu par 81,1% de passes précises et 83 pressions contre 76,8% et 68 pour Port Calder."
+          },
+          "ar": {
+            "caption": "زخم نورثبريدج 51.7",
+            "line": "عند الدقيقة 40، تقدير زخم نورثبريدج هو 51.7، ارتفاعًا من -28.8 عند الدقيقة 28. يتفوقون في الاستحواذ 51.7% مقابل 48.3%، مع دقة تمرير وضغط أعلى.",
+            "explainer": "الزخم هو تقدير نموذجي من -100 (سيطرة الفريق الضيف) إلى +100 (سيطرة الفريق المضيف). 51.7 يدل على سيطرة قوية، مدعومة بدقة تمرير 81.1% و83 ضغطًا مقابل 76.8% و68 لفريق بورت كالدر."
+          },
+          "pt": {
+            "caption": "Impulso de Northbridge em 51,7",
+            "line": "Aos 40', o impulso estimado de Northbridge é 51,7, subindo de -28,8 aos 28'. Lideram a posse 51,7% contra 48,3%, com melhor precisão de passe e mais pressões.",
+            "explainer": "Impulso é um modelo que varia de -100 (domínio visitante) a +100 (domínio do time da casa). 51,7 indica forte controle, apoiado em 81,1% de precisão de passe e 83 pressões contra 76,8% e 68 do Port Calder."
+          }
+        },
+        "issues": {},
+        "seed": 2026102292,
+        "moment": "momentum_swing",
+        "clock": "40'"
+      },
+      {
+        "ok_langs": [
+          "en",
+          "es",
+          "fr",
+          "ar",
+          "pt"
+        ],
+        "all_ok": true,
+        "ms": 27734,
+        "tokens": [
+          2083,
+          1796
+        ],
+        "attempts": 1,
+        "error": "",
+        "copy": {
+          "en": {
+            "caption": "Port Calder lowers press intensity",
+            "line": "Since 40', Port Calder's press rate dropped from 17.1 to 11.1 actions per 100 opponent passes, with players near ball decreasing from 0.7 to 0.4 and line height dropping from 28m to 23m.",
+            "explainer": "Press rate measures how often a team pressures opponents in their own half. Players near ball counts how many defenders are close to the ball. Line height is how far up the pitch the defensive line is. All show Port Calder pressing less aggressively."
+          },
+          "es": {
+            "caption": "Port Calder reduce intensidad de presión",
+            "line": "Desde el 40', la tasa de presión de Port Calder bajó de 17,1 a 11,1 acciones por cada 100 pases rivales, con jugadores cerca del balón de 0,7 a 0,4 y línea defensiva de 28m a 23m.",
+            "explainer": "La tasa de presión mide cuán seguido un equipo presiona en la mitad rival. Jugadores cerca del balón indica cuántos defensores están próximos al balón. La altura de línea es la distancia de la defensa a su portería. Todo indica que Port Calder presiona menos agresivamente."
+          },
+          "fr": {
+            "caption": "Port Calder diminue l'intensité du pressing",
+            "line": "Depuis la 40e, le taux de pressing de Port Calder est passé de 17,1 à 11,1 actions pour 100 passes adverses, avec des joueurs près du ballon passant de 0,7 à 0,4 et une ligne défensive reculant de 28m à 23m.",
+            "explainer": "Le taux de pressing mesure la fréquence des actions de pression dans la moitié adverse. Les joueurs près du ballon indiquent combien de défenseurs sont proches du ballon. La hauteur de la ligne défensive est la distance entre la défense et leur but. Tout montre que Port Calder presse moins agressivement."
+          },
+          "ar": {
+            "caption": "بورت كالدر تخفض شدة الضغط",
+            "line": "منذ الدقيقة 40، انخفض معدل ضغط بورت كالدر من 17.1 إلى 11.1 إجراء لكل 100 تمريرة للخصم، مع انخفاض اللاعبين القريبين من الكرة من 0.7 إلى 0.4 وخط الدفاع من 28م إلى 23م.",
+            "explainer": "معدل الضغط يقيس عدد مرات الضغط في نصف الخصم. عدد اللاعبين القريبين من الكرة يوضح كم مدافع قريب من الكرة. ارتفاع الخط الدفاعي يقيس بعد خط الدفاع عن مرماهم. كل ذلك يدل على تقليل بورت كالدر لشدة الضغط."
+          },
+          "pt": {
+            "caption": "Port Calder diminui intensidade da pressão",
+            "line": "Desde os 40', a taxa de pressão do Port Calder caiu de 17,1 para 11,1 ações por 100 passes do adversário, com jogadores perto da bola de 0,7 para 0,4 e linha defensiva de 28m para 23m.",
+            "explainer": "Taxa de pressão mede a frequência de ações de pressão no campo adversário. Jogadores perto da bola indicam quantos defensores estão próximos da posse. Altura da linha defensiva é a distância da defesa ao próprio gol. Tudo mostra que Port Calder pressiona menos agressivamente."
+          }
+        },
+        "issues": {},
+        "seed": 2026102294,
+        "moment": "press_shift",
+        "clock": "43'"
+      },
+      {
+        "ok_langs": [
+          "en",
+          "es",
+          "fr",
+          "ar",
+          "pt"
+        ],
+        "all_ok": true,
+        "ms": 23921,
+        "tokens": [
+          1507,
+          1617
+        ],
+        "attempts": 1,
+        "error": "",
+        "copy": {
+          "en": {
+            "caption": "Benali's red card shifts odds",
+            "line": "At 89', Benali (No. 3) receives a red card, dropping Northbridge to 10 players and reducing their win probability from 6% to 4%.",
+            "explainer": "The dismissal of Benali reduces Northbridge's players on pitch to 10, lowering their win chances from 6% to 4% while increasing the draw probability to 89.7%. Numerical disadvantage impacts team strategy and momentum."
+          },
+          "es": {
+            "caption": "Tarjeta roja de Benali cambia probabilidades",
+            "line": "Al minuto 89, Benali (N° 3) recibe tarjeta roja, reduciendo a Northbridge a 10 jugadores y bajando su probabilidad de ganar del 6% al 4%.",
+            "explainer": "La expulsión de Benali reduce los jugadores en cancha a 10, disminuyendo las chances de victoria de Northbridge del 6% al 4%, mientras que la probabilidad de empate sube a 89.7%. La desventaja numérica afecta la estrategia y el impulso del equipo."
+          },
+          "fr": {
+            "caption": "Carton rouge de Benali modifie les chances",
+            "line": "À la 89e, Benali (n°3) reçoit un carton rouge, réduisant Northbridge à 10 joueurs et faisant passer leur probabilité de victoire de 6% à 4%.",
+            "explainer": "L'exclusion de Benali diminue les joueurs sur le terrain à 10, réduisant les chances de victoire de Northbridge de 6% à 4%, tandis que la probabilité de match nul monte à 89,7%. Le désavantage numérique impacte la stratégie et le momentum."
+          },
+          "ar": {
+            "caption": "بطاقة حمراء لبنالي تغير الاحتمالات",
+            "line": "في الدقيقة 89، حصل بنالي (الرقم 3) على بطاقة حمراء، مما خفض عدد لاعبي نورثبريدج إلى 10 وخفض فرص الفوز من 6% إلى 4%.",
+            "explainer": "طرد بنالي قلل عدد اللاعبين على أرض الملعب إلى 10، مما خفض فرص الفوز من 6% إلى 4%، وزاد احتمال التعادل إلى 89.7%. النقص العددي يؤثر على استراتيجية الفريق وزخم اللعب."
+          },
+          "pt": {
+            "caption": "Cartão vermelho de Benali altera chances",
+            "line": "Aos 89 minutos, Benali (nº 3) recebe cartão vermelho, reduzindo Northbridge a 10 jogadores e baixando a probabilidade de vitória de 6% para 4%.",
+            "explainer": "A expulsão de Benali reduz os jogadores em campo para 10, diminuindo as chances de vitória do Northbridge de 6% para 4%, enquanto a probabilidade de empate sobe para 89,7%. A desvantagem numérica impacta a estratégia e o momento do time."
+          }
+        },
+        "issues": {},
+        "seed": 2026102294,
+        "moment": "red_card",
+        "clock": "89'"
+      }
+    ]
+  },
+  "single_agent_with_checker": {
+    "all_languages_verified": 0.917,
+    "moments_all_languages": "11/12",
+    "language_outputs_verified": 0.917,
+    "per_language_verified": {
+      "en": 0.917,
+      "es": 0.917,
+      "fr": 0.917,
+      "ar": 0.917,
+      "pt": 0.917
+    },
+    "mean_attempts": 1.08,
+    "latency_ms": {
+      "p50": 20138,
+      "p95": 43757
+    },
+    "tokens_in": 23888,
+    "tokens_out": 22737,
+    "cost_usd_per_moment": 0.00383,
+    "errors": 0,
+    "setup": "one agent, same Verifier feedback, up to 2 drafts, rewrites only failing languages, 90 s timeout per call",
+    "jobs": [
+      {
+        "ok_langs": [
+          "en",
+          "es",
+          "fr",
+          "ar",
+          "pt"
+        ],
+        "all_ok": true,
+        "ms": 18020,
+        "tokens": [
+          1775,
+          1577
+        ],
+        "attempts": 1,
+        "error": "",
+        "copy": {
+          "en": {
+            "caption": "Asante's 0.23 xG shot saved",
+            "line": "At 79', Asante (Port Calder) fired a 103 km/h shot from 7.8 m with 0.23 xG, but it was saved, keeping Port Calder scoreless.",
+            "explainer": "Expected goals (xG) estimate how likely a shot is to score. Asante's shot had a 23% chance to score based on distance and angle, but the keeper saved it."
+          },
+          "es": {
+            "caption": "Disparo de Asante con xG 0,23 atajado",
+            "line": "Al 79', Asante (Port Calder) lanzó un disparo a 103 km/h desde 7,8 m con xG 0,23, pero fue atajado, manteniendo el marcador en cero.",
+            "explainer": "El xG (goles esperados) indica la probabilidad de marcar. El disparo de Asante tenía un 23% de chance según distancia y ángulo, pero el portero lo salvó."
+          },
+          "fr": {
+            "caption": "Tir d'Asante xG 0,23 arrêté",
+            "line": "À la 79e, Asante (Port Calder) a tiré à 103 km/h depuis 7,8 m avec un xG de 0,23, mais le gardien a arrêté, gardant le score à zéro.",
+            "explainer": "Le xG (expected goals) mesure la probabilité de marquer. Le tir d'Asante avait 23% de chance selon distance et angle, mais le gardien l'a stoppé."
+          },
+          "ar": {
+            "caption": "تصدي لتسديدة أسانتي بقيمة xG 0.23",
+            "line": "في الدقيقة 79، أسانتي (بورت كالدر) سدد كرة بسرعة 103 كم/س من مسافة 7.8 متر وبقيمة xG 0.23، لكن الحارس تصدى لها، وبقيت النتيجة صفر.",
+            "explainer": "xG تعني الأهداف المتوقعة وهي احتمال تسجيل الهدف. تسديدة أسانتي كانت لديها فرصة 23% للتسجيل بناءً على المسافة والزاوية، لكن الحارس تصدى لها."
+          },
+          "pt": {
+            "caption": "Chute de Asante com xG 0,23 defendido",
+            "line": "Aos 79', Asante (Port Calder) chutou a 103 km/h de 7,8 m com xG 0,23, mas foi defendido, mantendo o placar zerado.",
+            "explainer": "xG (gols esperados) indica a probabilidade de marcar. O chute de Asante tinha 23% de chance baseado na distância e ângulo, mas o goleiro defendeu."
+          }
+        },
+        "issues": {},
+        "seed": 2026102292,
+        "moment": "big_chance",
+        "clock": "79'"
+      },
+      {
+        "ok_langs": [
+          "en",
+          "es",
+          "fr",
+          "ar",
+          "pt"
+        ],
+        "all_ok": true,
+        "ms": 20334,
+        "tokens": [
+          2153,
+          1687
+        ],
+        "attempts": 1,
+        "error": "",
+        "copy": {
+          "en": {
+            "caption": "Valdane's header goal",
+            "line": "At 13', Valdane scored his first goal with a 46 km/h header from 13 m, assisted by Arata, increasing Northbridge's win probability from 42% to 74%.",
+            "explainer": "The goal was a low-chance header (xG 0.04) from 13 meters with a shot speed of 46 km/h. It caused a 32 percentage point swing in win probability, showing its high impact despite the low expected goal value."
+          },
+          "es": {
+            "caption": "Gol de Valdane de cabeza",
+            "line": "Al 13', Valdane anotó su primer gol con un cabezazo a 46 km/h desde 13 m, asistido por Arata, elevando la probabilidad de victoria de Northbridge del 42% al 74%.",
+            "explainer": "El gol fue un cabezazo de baja probabilidad (xG 0,04) desde 13 metros con velocidad de disparo de 46 km/h. Provocó un cambio de 32 puntos porcentuales en la probabilidad de ganar, mostrando su gran impacto pese al bajo valor esperado."
+          },
+          "fr": {
+            "caption": "But de Valdane de la tête",
+            "line": "À 13', Valdane marque son premier but d'une tête à 46 km/h depuis 13 m, assisté par Arata, faisant passer la probabilité de victoire de Northbridge de 42% à 74%.",
+            "explainer": "Le but était une tête à faible probabilité (xG 0,04) à 13 mètres avec une vitesse de tir de 46 km/h. Il a provoqué un swing de 32 points de pourcentage dans la probabilité de gagner, montrant un fort impact malgré la faible valeur attendue."
+          },
+          "ar": {
+            "caption": "هدف فالدان برأسية",
+            "line": "في الدقيقة 13، سجل فالدان هدفه الأول برأسية بسرعة 46 كم/س من مسافة 13 م، بمساعدة أراتا، مما رفع احتمالية فوز نورثبريدج من 42% إلى 74%.",
+            "explainer": "كان الهدف برأسية ذات فرصة منخفضة (xG 0.04) من مسافة 13 مترًا وسرعة تسديدة 46 كم/س. تسبب الهدف في زيادة 32 نقطة مئوية في احتمالية الفوز، مما يدل على تأثيره الكبير رغم القيمة المتوقعة المنخفضة."
+          },
+          "pt": {
+            "caption": "Gol de cabeça de Valdane",
+            "line": "Aos 13', Valdane marcou seu primeiro gol com uma cabeçada a 46 km/h, a 13 m, assistido por Arata, elevando a probabilidade de vitória do Northbridge de 42% para 74%.",
+            "explainer": "O gol foi uma cabeçada de baixa chance (xG 0,04) a 13 metros, com velocidade de chute de 46 km/h. Isso causou uma variação de 32 pontos percentuais na probabilidade de vitória, mostrando grande impacto apesar do baixo valor esperado."
+          }
+        },
+        "issues": {},
+        "seed": 2026102291,
+        "moment": "goal",
+        "clock": "13'"
+      },
+      {
+        "ok_langs": [
+          "en",
+          "es",
+          "fr",
+          "ar",
+          "pt"
+        ],
+        "all_ok": true,
+        "ms": 21546,
+        "tokens": [
+          1911,
+          1746
+        ],
+        "attempts": 1,
+        "error": "",
+        "copy": {
+          "en": {
+            "caption": "High-difficulty master pass",
+            "line": "At 3', Iturra delivered a 66m pass to Pellegrini with 100% accuracy, bypassing 9 opponents at 76 km/h ball speed.",
+            "explainer": "This master pass by Iturra had a difficulty rating of 79/100, covering 66 meters forward and bypassing 9 defenders. Iturra has completed 4 passes so far with perfect accuracy, showcasing excellent vision and execution."
+          },
+          "es": {
+            "caption": "Pase maestro de alta dificultad",
+            "line": "Al 3', Iturra entregó un pase de 66m a Pellegrini con 100% de precisión, superando a 9 rivales a 76 km/h.",
+            "explainer": "Este pase maestro de Iturra tuvo una dificultad de 79/100, cubriendo 66 metros hacia adelante y superando a 9 defensores. Iturra ha completado 4 pases con precisión perfecta, demostrando gran visión y técnica."
+          },
+          "fr": {
+            "caption": "Passe maître de haute difficulté",
+            "line": "À la 3e minute, Iturra a délivré une passe de 66 m à Pellegrini avec 100% de précision, contournant 9 adversaires à 76 km/h.",
+            "explainer": "Cette passe maître d'Iturra a une difficulté de 79/100, couvrant 66 mètres vers l'avant et contournant 9 défenseurs. Iturra a réussi 4 passes avec une précision parfaite, démontrant une excellente vision et exécution."
+          },
+          "ar": {
+            "caption": "تمريرة رئيسية عالية الصعوبة",
+            "line": "في الدقيقة 3، نفذ إيتورا تمريرة بطول 66 مترًا لبيلجريني بدقة 100%، متجاوزًا 9 لاعبين بسرعة كرة 76 كم/س.",
+            "explainer": "تم تقييم صعوبة هذه التمريرة بـ 79 من 100، حيث غطت 66 مترًا للأمام وتجاوزت 9 مدافعين. إيتورا أتم 4 تمريرات بدقة كاملة حتى الآن، مما يدل على رؤية وتنفيذ ممتاز."
+          },
+          "pt": {
+            "caption": "Passe mestre de alta dificuldade",
+            "line": "Aos 3', Iturra entregou um passe de 66m para Pellegrini com 100% de precisão, driblando 9 adversários a 76 km/h.",
+            "explainer": "Este passe mestre de Iturra teve uma dificuldade de 79/100, cobrindo 66 metros à frente e driblando 9 defensores. Iturra completou 4 passes com precisão perfeita, mostrando ótima visão e execução."
+          }
+        },
+        "issues": {},
+        "seed": 2026102291,
+        "moment": "master_pass",
+        "clock": "3'"
+      },
+      {
+        "ok_langs": [
+          "en",
+          "es",
+          "fr",
+          "ar",
+          "pt"
+        ],
+        "all_ok": true,
+        "ms": 18844,
+        "tokens": [
+          1522,
+          1468
+        ],
+        "attempts": 1,
+        "error": "",
+        "copy": {
+          "en": {
+            "caption": "Northbridge Momentum +49.1 at 45+3'",
+            "line": "Northbridge's momentum jumped from -51.7 at 36' to +49.1 at 45+3', reflecting a significant shift in control during the final minutes.",
+            "explainer": "Momentum (threat EWMA) ranges from -100 (away dominance) to +100 (home dominance). Northbridge's value of +49.1 indicates strong home advantage in the closing moments."
+          },
+          "es": {
+            "caption": "Impulso de Northbridge +49.1 a 45+3'",
+            "line": "El impulso de Northbridge subió de -51.7 en el minuto 36 a +49.1 en el 45+3', mostrando un cambio significativo en el control en los últimos minutos.",
+            "explainer": "El impulso (threat EWMA) va de -100 (dominancia visitante) a +100 (dominancia local). +49.1 indica una fuerte ventaja local en los momentos finales."
+          },
+          "fr": {
+            "caption": "Élan Northbridge +49,1 à 45+3'",
+            "line": "L'élan de Northbridge est passé de -51,7 à la 36e à +49,1 à 45+3', montrant un changement net de contrôle dans les dernières minutes.",
+            "explainer": "L'élan (threat EWMA) va de -100 (domination visiteur) à +100 (domination locale). +49,1 indique une forte domination locale en fin de match."
+          },
+          "ar": {
+            "caption": "زخم نورثبريدج +49.1 عند 45+3'",
+            "line": "ارتفع زخم نورثبريدج من -51.7 في الدقيقة 36 إلى +49.1 عند 45+3'، مما يعكس تغيرًا كبيرًا في السيطرة خلال الدقائق الأخيرة.",
+            "explainer": "الزخم (threat EWMA) يتراوح بين -100 (سيطرة الفريق الضيف) و +100 (سيطرة الفريق المضيف). قيمة +49.1 تعني تفوقًا قويًا للمضيف في اللحظات الأخيرة."
+          },
+          "pt": {
+            "caption": "Impulso Northbridge +49,1 aos 45+3'",
+            "line": "O impulso do Northbridge subiu de -51,7 aos 36' para +49,1 aos 45+3', mostrando uma mudança significativa no controle nos minutos finais.",
+            "explainer": "Impulso (threat EWMA) varia de -100 (domínio visitante) a +100 (domínio da casa). +49,1 indica forte vantagem do time da casa nos momentos finais."
+          }
+        },
+        "issues": {},
+        "seed": 2026102291,
+        "moment": "momentum_swing",
+        "clock": "45+3'"
+      },
+      {
+        "ok_langs": [
+          "en",
+          "es",
+          "fr",
+          "ar",
+          "pt"
+        ],
+        "all_ok": true,
+        "ms": 19977,
+        "tokens": [
+          2083,
+          1903
+        ],
+        "attempts": 1,
+        "error": "",
+        "copy": {
+          "en": {
+            "caption": "Northbridge pressing intensity drops",
+            "line": "From 24', Northbridge's pressing rate fell from 26.7 to 14.3 per 100 opponent passes; players near ball dropped from 0.85 to 0.43; defensive line height lowered from 32.4m to 26.5m.",
+            "explainer": "Pressing rate measures how often a team pressures opponents per 100 passes; a drop means less pressure. Players near ball shows how many defenders are close to the ball; fewer means less tight marking. Defensive line height is how far up the pitch the defense stands; lowering it means playing deeper."
+          },
+          "es": {
+            "caption": "Disminuye la presión de Northbridge",
+            "line": "Desde el 24', la tasa de presión de Northbridge cayó de 26,7 a 14,3 por cada 100 pases rivales; jugadores cerca del balón bajaron de 0,85 a 0,43; línea defensiva bajó de 32,4m a 26,5m.",
+            "explainer": "La tasa de presión mide cuántas veces un equipo presiona por cada 100 pases del rival; una caída indica menos presión. Jugadores cerca del balón muestra cuántos defensores están próximos al balón; menos significa menos marcaje. La altura de la línea defensiva indica qué tan adelantada está la defensa; bajarla significa jugar más atrás."
+          },
+          "fr": {
+            "caption": "Pressing de Northbridge en baisse",
+            "line": "Depuis la 24e, le taux de pressing de Northbridge est passé de 26,7 à 14,3 par 100 passes adverses; joueurs près du ballon de 0,85 à 0,43; ligne défensive descendue de 32,4m à 26,5m.",
+            "explainer": "Le taux de pressing mesure la fréquence de pression par 100 passes adverses; une baisse indique moins de pression. Les joueurs près du ballon montrent le nombre de défenseurs proches du ballon; moins signifie un marquage moins serré. La hauteur de la ligne défensive indique la position de la défense sur le terrain; la baisser signifie jouer plus en retrait."
+          },
+          "ar": {
+            "caption": "انخفاض شدة الضغط لنورثبريدج",
+            "line": "منذ الدقيقة 24، انخفض معدل الضغط لنورثبريدج من 26.7 إلى 14.3 لكل 100 تمريرة للخصم؛ وعدد اللاعبين القريبين من الكرة من 0.85 إلى 0.43؛ وخط الدفاع انخفض من 32.4م إلى 26.5م.",
+            "explainer": "معدل الضغط يقيس عدد مرات الضغط لكل 100 تمريرة للخصم؛ الانخفاض يعني ضغط أقل. عدد اللاعبين القريبين من الكرة يعكس مدى قرب المدافعين من الكرة؛ انخفاض العدد يعني ضغط أقل. ارتفاع خط الدفاع هو المسافة من المرمى؛ خفضه يعني الدفاع يلعب أعمق."
+          },
+          "pt": {
+            "caption": "Pressão do Northbridge cai",
+            "line": "Desde os 24', a taxa de pressão do Northbridge caiu de 26,7 para 14,3 por 100 passes do adversário; jogadores perto da bola caíram de 0,85 para 0,43; linha defensiva baixou de 32,4m para 26,5m.",
+            "explainer": "Taxa de pressão mede quantas vezes o time pressiona por 100 passes do adversário; queda indica menos pressão. Jogadores perto da bola mostram quantos defensores estão próximos; menos significa marcação mais frouxa. Altura da linha defensiva indica quão avançada está a defesa; baixar significa jogar mais recuado."
+          }
+        },
+        "issues": {},
+        "seed": 2026102293,
+        "moment": "press_shift",
+        "clock": "28'"
+      },
+      {
+        "ok_langs": [
+          "en",
+          "es",
+          "fr",
+          "ar",
+          "pt"
+        ],
+        "all_ok": true,
+        "ms": 16972,
+        "tokens": [
+          1509,
+          1615
+        ],
+        "attempts": 1,
+        "error": "",
+        "copy": {
+          "en": {
+            "caption": "Benali's red card shifts odds",
+            "line": "At 42', Benali's second yellow reduces Northbridge to 10 players, dropping their win probability from 2% to 1%.",
+            "explainer": "Benali's dismissal due to a second yellow card at 42 minutes lowers Northbridge's win probability from 2% to 1%, as the team now faces a numerical disadvantage with only 10 players on the pitch."
+          },
+          "es": {
+            "caption": "La roja de Benali cambia las probabilidades",
+            "line": "Al minuto 42, la segunda amarilla de Benali reduce a Northbridge a 10 jugadores, bajando su probabilidad de ganar del 2% al 1%.",
+            "explainer": "La expulsión de Benali por segunda amarilla a los 42 minutos disminuye la probabilidad de victoria de Northbridge del 2% al 1%, ya que el equipo enfrenta una desventaja numérica con solo 10 jugadores en el campo."
+          },
+          "fr": {
+            "caption": "Expulsion de Benali modifie les chances",
+            "line": "À la 42e, le second jaune de Benali réduit Northbridge à 10 joueurs, faisant chuter leur probabilité de victoire de 2% à 1%.",
+            "explainer": "L'expulsion de Benali pour un second carton jaune à la 42e minute fait passer la probabilité de victoire de Northbridge de 2% à 1%, en raison de la désavantage numérique avec seulement 10 joueurs sur le terrain."
+          },
+          "ar": {
+            "caption": "طرد بنالي يغير الاحتمالات",
+            "line": "عند الدقيقة 42، البطاقة الصفراء الثانية لبنالي تقلل عدد لاعبي نورثبريدج إلى 10، وتنخفض فرص الفوز من 2% إلى 1%.",
+            "explainer": "طرد بنالي بسبب البطاقة الصفراء الثانية في الدقيقة 42 خفض فرص فوز نورثبريدج من 2% إلى 1%، بسبب النقص العددي حيث يلعب الفريق الآن بعشرة لاعبين فقط."
+          },
+          "pt": {
+            "caption": "Expulsão de Benali altera chances",
+            "line": "Aos 42', o segundo amarelo de Benali reduz Northbridge a 10 jogadores, baixando a probabilidade de vitória de 2% para 1%.",
+            "explainer": "A expulsão de Benali por segundo cartão amarelo aos 42 minutos reduz a probabilidade de vitória do Northbridge de 2% para 1%, devido à desvantagem numérica com apenas 10 jogadores em campo."
+          }
+        },
+        "issues": {},
+        "seed": 2026102293,
+        "moment": "red_card",
+        "clock": "42'"
+      },
+      {
+        "ok_langs": [],
+        "all_ok": false,
+        "ms": 43757,
+        "tokens": [
+          3760,
+          3697
+        ],
+        "attempts": 2,
+        "error": "",
+        "copy": {
+          "en": {
+            "caption": "Pellegrini's off-target shot",
+            "line": "At 42', Pellegrini's shot from 7.9 m at 81.9 km/h had an xG of 0.22 but went off target. Port Calder's team xG now 0.50, score remains 0-0.",
+            "explainer": "Pellegrini's shot had a 0.22 expected goals (xG) value, reflecting a decent scoring chance from 7.9 meters with a 48° angle to goal. The shot speed was 81.9 km/h, but it missed the target. Port Calder has a total xG of 0.50 so far, with no goals scored yet."
+          },
+          "es": {
+            "caption": "Disparo fuera de Pellegrini",
+            "line": "Al 42', disparo de Pellegrini desde 7,9 m a 81,9 km/h con xG 0,22 salió fuera. xG total de Port Calder 0,50, marcador 0-0.",
+            "explainer": "El disparo de Pellegrini tuvo un valor de goles esperados (xG) de 0,22, reflejando una buena oportunidad desde 7,9 metros con un ángulo de 48°. La velocidad fue de 81,9 km/h, pero el tiro no fue a puerta. Port Calder tiene un xG total de 0,50 y aún no ha marcado."
+          },
+          "fr": {
+            "caption": "Tir hors cadre de Pellegrini",
+            "line": "À 42', tir de Pellegrini à 7,9 m et 81,9 km/h avec un xG de 0,22, hors cadre. xG total de Port Calder 0,50, score 0-0.",
+            "explainer": "Le tir de Pellegrini avait une valeur d'espérance de but (xG) de 0,22, indiquant une bonne chance depuis 7,9 mètres avec un angle de 48°. La vitesse du tir était de 81,9 km/h, mais il a manqué le cadre. Port Calder a un xG total de 0,50 et aucun but marqué."
+          },
+          "ar": {
+            "caption": "تسديدة بيلجريني خارج المرمى",
+            "line": "في الدقيقة 42، تسديدة بيلجريني من 7.9 م بسرعة 81.9 كم/س بقيمة xG 0.22 لكنها أخطأت المرمى. قيمة xG لفريق بورت كالدر 0.50، والنتيجة 0-0.",
+            "explainer": "تسديدة بيلجريني كانت بقيمة توقع هدف (xG) 0.22، مما يشير إلى فرصة تسجيل جيدة من مسافة 7.9 متر وزاوية 48°. سرعة التسديدة 81.9 كم/س لكنها لم تصب المرمى. فريق بورت كالدر لديه xG إجمالي 0.50 ولم يسجل أي هدف حتى الآن."
+          },
+          "pt": {
+            "caption": "Chute de Pellegrini fora do alvo",
+            "line": "Aos 42', chute de Pellegrini a 7,9 m e 81,9 km/h com xG 0,22 saiu fora. xG total do Port Calder 0,50, placar 0-0.",
+            "explainer": "O chute de Pellegrini teve um valor de gols esperados (xG) de 0,22, indicando uma boa chance a partir de 7,9 metros com ângulo de 48°. A velocidade do chute foi 81,9 km/h, mas errou o alvo. Port Calder tem xG total de 0,50 e nenhum gol marcado até agora."
+          }
+        },
+        "issues": {
+          "en": [
+            "[en/analyst/line] '0.22 but' does not match a goal count in the facts - remove it, or use the FIGURES value for that metric",
+            "[en/analyst/explainer] number 48 is not supported by the facts - remove it, or use only FIGURES"
+          ],
+          "es": [
+            "[es/analyst/explainer] number 48 is not supported by the facts - remove it, or use only FIGURES"
+          ],
+          "fr": [
+            "[fr/analyst/explainer] number 48 is not supported by the facts - remove it, or use only FIGURES"
+          ],
+          "ar": [
+            "[ar/analyst/explainer] number 48 is not supported by the facts - remove it, or use only FIGURES"
+          ],
+          "pt": [
+            "[pt/analyst/explainer] number 48 is not supported by the facts - remove it, or use only FIGURES"
+          ]
+        },
+        "seed": 2026102294,
+        "moment": "big_chance",
+        "clock": "42'"
+      },
+      {
+        "ok_langs": [
+          "en",
+          "es",
+          "fr",
+          "ar",
+          "pt"
+        ],
+        "all_ok": true,
+        "ms": 32306,
+        "tokens": [
+          2157,
+          2175
+        ],
+        "attempts": 1,
+        "error": "",
+        "copy": {
+          "en": {
+            "caption": "Arata’s header shifts win probability",
+            "line": "At 45+1', Arata’s header from 11m (43 km/h) assisted by Brightwell yields a 0.06 xG goal, swinging Northbridge’s win probability from 21% to 64%.",
+            "explainer": "Arata scored with a header, a type of shot that typically has a lower chance of scoring. The shot speed was 43 km/h from 11 meters. The expected goals (xG) model rated this chance at 0.06, meaning it was unlikely but successful. This goal increased Northbridge’s chance of winning from 21% to 64%."
+          },
+          "es": {
+            "caption": "Cabeza de Arata cambia probabilidad",
+            "line": "Al 45+1', el cabezazo de Arata desde 11m (43 km/h), asistido por Brightwell, genera un gol con xG 0,06, aumentando la probabilidad de victoria de Northbridge del 21% al 64%.",
+            "explainer": "Arata anotó con un cabezazo, un tipo de disparo que suele tener menos probabilidades de gol. La velocidad del disparo fue 43 km/h desde 11 metros. El modelo de goles esperados (xG) valoró esta oportunidad en 0,06, es decir, poco probable pero exitosa. Este gol aumentó la probabilidad de victoria de Northbridge del 21% al 64%."
+          },
+          "fr": {
+            "caption": "Tête d’Arata change la probabilité",
+            "line": "À la 45+1', la tête d’Arata à 11m (43 km/h), assistée par Brightwell, aboutit à un but avec un xG de 0,06, faisant passer la probabilité de victoire de Northbridge de 21% à 64%.",
+            "explainer": "Arata a marqué d’une tête, un type de tir qui a généralement moins de chances de réussir. La vitesse du tir était de 43 km/h à 11 mètres. Le modèle xG a estimé cette occasion à 0,06, donc peu probable mais réussie. Ce but a augmenté la probabilité de victoire de Northbridge de 21% à 64%."
+          },
+          "ar": {
+            "caption": "رأسية أراتا تغير فرص الفوز",
+            "line": "في الدقيقة 45+1، رأسية أراتا من 11 مترًا بسرعة 43 كم/س، بمساعدة برايتويل، سجل هدفًا بقيمة فرصة تسجيل 0.06، ورفعت فرصة فوز نورثبريدج من 21% إلى 64%.",
+            "explainer": "أراتا سجل برأسية، وهي تسديدة عادة ما تكون فرصتها للتسجيل أقل. سرعة التسديدة كانت 43 كم/س من مسافة 11 مترًا. نموذج الفرص المتوقعة (xG) قيم هذه الفرصة بـ0.06، مما يعني أنها كانت فرصة ضعيفة لكنها نجحت. هذا الهدف رفع فرصة فوز نورثبريدج من 21% إلى 64%."
+          },
+          "pt": {
+            "caption": "Cabeçada de Arata muda probabilidade",
+            "line": "Aos 45+1', a cabeçada de Arata a 11m (43 km/h), assistida por Brightwell, resultou em gol com xG 0,06, elevando a probabilidade de vitória do Northbridge de 21% para 64%.",
+            "explainer": "Arata marcou de cabeça, um tipo de finalização que geralmente tem menor chance de gol. A velocidade do chute foi 43 km/h a 11 metros. O modelo de gols esperados (xG) avaliou essa chance em 0,06, indicando baixa probabilidade, mas sucesso. Esse gol aumentou a chance de vitória do Northbridge de 21% para 64%."
+          }
+        },
+        "issues": {},
+        "seed": 2026102292,
+        "moment": "goal",
+        "clock": "45+1'"
+      },
+      {
+        "ok_langs": [
+          "en",
+          "es",
+          "fr",
+          "ar",
+          "pt"
+        ],
+        "all_ok": true,
+        "ms": 23978,
+        "tokens": [
+          1924,
+          1811
+        ],
+        "attempts": 1,
+        "error": "",
+        "copy": {
+          "en": {
+            "caption": "Masterful 53m pass by Lindqvist",
+            "line": "At 14', Lindqvist completes a 53.1m pass at 68.2 km/h with 100% accuracy, bypassing 10 opponents on only his 3rd pass.",
+            "explainer": "This pass had a difficulty rating of 67.4/100 due to its length, pressure, and aerial delivery. Lindqvist’s precision and speed allowed him to bypass 10 defenders, showcasing excellent vision and technique."
+          },
+          "es": {
+            "caption": "Pase magistral de 53m de Lindqvist",
+            "line": "En el 14', Lindqvist completa un pase de 53,1m a 68,2 km/h con 100% de precisión, superando a 10 rivales en solo su tercer pase.",
+            "explainer": "El pase tuvo una dificultad de 67,4/100 por su longitud, presión y entrega aérea. La precisión y velocidad de Lindqvist le permitieron superar a 10 defensores, demostrando gran visión y técnica."
+          },
+          "fr": {
+            "caption": "Passe magistrale de 53m par Lindqvist",
+            "line": "À la 14e, Lindqvist réalise une passe de 53,1m à 68,2 km/h avec 100% de précision, contournant 10 adversaires lors de sa 3e passe.",
+            "explainer": "Cette passe a une difficulté de 67,4/100 en raison de sa longueur, de la pression et de sa trajectoire aérienne. La précision et la vitesse de Lindqvist lui ont permis de dépasser 10 défenseurs, démontrant une excellente vision."
+          },
+          "ar": {
+            "caption": "تمريرة متقنة بطول 53 مترًا من ليندكفيست",
+            "line": "في الدقيقة 14، أكمل ليندكفيست تمريرة بطول 53.1 متر بسرعة 68.2 كم/س وبدقة 100%، متجاوزًا 10 لاعبين في ثالث تمريرة له.",
+            "explainer": "صعوبة التمريرة كانت 67.4/100 بسبب طولها، الضغط، وتسليمها الهوائي. دقة وسرعة ليندكفيست سمحت له بتجاوز 10 مدافعين، مما يظهر رؤية وتقنية ممتازة."
+          },
+          "pt": {
+            "caption": "Passe magistral de 53m por Lindqvist",
+            "line": "Aos 14', Lindqvist completa um passe de 53,1m a 68,2 km/h com 100% de precisão, driblando 10 adversários em sua 3ª assistência.",
+            "explainer": "O passe teve dificuldade de 67,4/100 devido ao comprimento, pressão e entrega aérea. A precisão e velocidade de Lindqvist permitiram superar 10 defensores, mostrando ótima visão e técnica."
+          }
+        },
+        "issues": {},
+        "seed": 2026102292,
+        "moment": "master_pass",
+        "clock": "14'"
+      },
+      {
+        "ok_langs": [
+          "en",
+          "es",
+          "fr",
+          "ar",
+          "pt"
+        ],
+        "all_ok": true,
+        "ms": 19233,
+        "tokens": [
+          1504,
+          1556
+        ],
+        "attempts": 1,
+        "error": "",
+        "copy": {
+          "en": {
+            "caption": "Northbridge momentum surge at 40'",
+            "line": "Northbridge’s momentum rose from -28.8 at 28' to 51.7 at 40', showing a significant shift in control over the last 12 minutes.",
+            "explainer": "Momentum is calculated using a model estimating threat and control, ranging from -100 (away dominance) to +100 (home dominance). Northbridge’s momentum moving from negative to positive 51.7 indicates a strong swing in their favor."
+          },
+          "es": {
+            "caption": "Aumento de impulso de Northbridge a los 40'",
+            "line": "El impulso de Northbridge subió de -28.8 en el 28' a 51.7 en el 40', mostrando un cambio importante en el control en 12 minutos.",
+            "explainer": "El impulso se calcula con un modelo que mide la amenaza y control, de -100 (dominio visitante) a +100 (dominio local). El cambio a 51.7 indica un fuerte giro a favor de Northbridge."
+          },
+          "fr": {
+            "caption": "Montée d’impulsion de Northbridge à 40'",
+            "line": "L’impulsion de Northbridge est passée de -28,8 à la 28e à 51,7 à la 40e, indiquant un changement majeur en 12 minutes.",
+            "explainer": "L’impulsion est un modèle estimant la menace et le contrôle, de -100 (domination visiteur) à +100 (domination locale). Le passage à 51,7 montre une forte bascule en faveur de Northbridge."
+          },
+          "ar": {
+            "caption": "ارتفاع زخم نورثبريدج عند الدقيقة 40",
+            "line": "ارتفع زخم نورثبريدج من -28.8 عند الدقيقة 28 إلى 51.7 عند الدقيقة 40، مما يدل على تغير كبير في السيطرة خلال 12 دقيقة.",
+            "explainer": "الزخم يُحسب بنموذج يقدر التهديد والسيطرة، من -100 (هيمنة الفريق الضيف) إلى +100 (هيمنة الفريق المضيف). ارتفاع الزخم إلى 51.7 يدل على تحول قوي لصالح نورثبريدج."
+          },
+          "pt": {
+            "caption": "Surto de impulso do Northbridge aos 40'",
+            "line": "O impulso do Northbridge subiu de -28,8 aos 28' para 51,7 aos 40', mostrando uma mudança significativa em 12 minutos.",
+            "explainer": "O impulso é calculado por um modelo que mede ameaça e controle, variando de -100 (domínio visitante) a +100 (domínio da casa). O avanço para 51,7 indica forte vantagem para Northbridge."
+          }
+        },
+        "issues": {},
+        "seed": 2026102292,
+        "moment": "momentum_swing",
+        "clock": "40'"
+      },
+      {
+        "ok_langs": [
+          "en",
+          "es",
+          "fr",
+          "ar",
+          "pt"
+        ],
+        "all_ok": true,
+        "ms": 20138,
+        "tokens": [
+          2083,
+          1691
+        ],
+        "attempts": 1,
+        "error": "",
+        "copy": {
+          "en": {
+            "caption": "Press intensity drops at 40'",
+            "line": "Since 40', Port Calder's press rate dropped from 17.1 to 11.1, players near ball decreased from 0.7 to 0.4, and line height fell from 28m to 23m.",
+            "explainer": "Port Calder reduced pressing intensity by 33%, with fewer players within 8m of the ball and a lower defensive line height, reflecting a strategic shift to less aggressive pressure."
+          },
+          "es": {
+            "caption": "Disminuye la intensidad de presión en el 40'",
+            "line": "Desde el 40', la tasa de presión de Port Calder bajó de 17,1 a 11,1, jugadores cerca del balón de 0,7 a 0,4, y línea defensiva de 28m a 23m.",
+            "explainer": "Port Calder redujo la presión un 33%, con menos jugadores a 8m del balón y línea defensiva más baja, reflejando un cambio táctico hacia una presión menos agresiva."
+          },
+          "fr": {
+            "caption": "Baisse d'intensité du pressing à la 40e",
+            "line": "Depuis la 40e, le taux de pressing de Port Calder est passé de 17,1 à 11,1, joueurs près du ballon de 0,7 à 0,4, ligne défensive de 28m à 23m.",
+            "explainer": "Port Calder a réduit son pressing de 33 %, avec moins de joueurs à 8m du ballon et une ligne défensive plus basse, indiquant une stratégie moins agressive."
+          },
+          "ar": {
+            "caption": "انخفاض شدة الضغط عند الدقيقة 40",
+            "line": "منذ الدقيقة 40، انخفض معدل الضغط لبورت كالدر من 17.1 إلى 11.1، وعدد اللاعبين بالقرب من الكرة من 0.7 إلى 0.4، وارتفاع خط الدفاع من 28م إلى 23م.",
+            "explainer": "خفضت بورت كالدر الضغط بنسبة 33%، مع تقليل عدد اللاعبين ضمن 8 أمتار من الكرة وخفض ارتفاع خط الدفاع، مما يعكس تغييرًا تكتيكيًا نحو ضغط أقل عدوانية."
+          },
+          "pt": {
+            "caption": "Queda na intensidade da pressão aos 40'",
+            "line": "Desde os 40', taxa de pressão do Port Calder caiu de 17,1 para 11,1, jogadores perto da bola de 0,7 para 0,4, e linha defensiva de 28m para 23m.",
+            "explainer": "Port Calder reduziu a pressão em 33%, com menos jogadores a 8m da bola e linha defensiva mais baixa, indicando uma mudança tática para pressão menos agressiva."
+          }
+        },
+        "issues": {},
+        "seed": 2026102294,
+        "moment": "press_shift",
+        "clock": "43'"
+      },
+      {
+        "ok_langs": [
+          "en",
+          "es",
+          "fr",
+          "ar",
+          "pt"
+        ],
+        "all_ok": true,
+        "ms": 20722,
+        "tokens": [
+          1507,
+          1811
+        ],
+        "attempts": 1,
+        "error": "",
+        "copy": {
+          "en": {
+            "caption": "Benali's red card shifts odds",
+            "line": "At 89', Benali's red card reduces Northbridge to 10 players, dropping their win probability from 6% to 4%, while the draw chance rises to 89.7%.",
+            "explainer": "Benali's dismissal caused Northbridge to play with one fewer player, which statistically reduced their chances of winning from 6% to 4%. The likelihood of a draw increased to nearly 90%, reflecting the impact of the numerical disadvantage late in the match."
+          },
+          "es": {
+            "caption": "La roja de Benali cambia las probabilidades",
+            "line": "En el minuto 89, la tarjeta roja a Benali reduce a Northbridge a 10 jugadores, bajando su probabilidad de ganar del 6% al 4%, mientras que la posibilidad de empate sube al 89.7%.",
+            "explainer": "La expulsión de Benali hizo que Northbridge jugara con un jugador menos, lo que estadísticamente redujo sus chances de ganar del 6% al 4%. La probabilidad de empate aumentó a casi el 90%, reflejando el impacto de la desventaja numérica al final del partido."
+          },
+          "fr": {
+            "caption": "Le rouge de Benali modifie les chances",
+            "line": "À la 89e, le carton rouge de Benali réduit Northbridge à 10 joueurs, faisant chuter leur probabilité de victoire de 6% à 4%, tandis que le nul monte à 89,7%.",
+            "explainer": "L'expulsion de Benali a obligé Northbridge à jouer à 10, réduisant statistiquement leurs chances de gagner de 6% à 4%. La probabilité de match nul a augmenté à près de 90%, illustrant l'impact du désavantage numérique en fin de match."
+          },
+          "ar": {
+            "caption": "بطاقة بنالي الحمراء تغير الاحتمالات",
+            "line": "في الدقيقة 89، بطاقة بنالي الحمراء تقلل نورثبريدج إلى 10 لاعبين، وتنخفض فرصة الفوز من 6% إلى 4%، بينما يرتفع احتمال التعادل إلى 89.7%.",
+            "explainer": "طرد بنالي أجبر نورثبريدج على اللعب بلاعب أقل، مما خفض فرص الفوز إحصائياً من 6% إلى 4%. ارتفع احتمال التعادل إلى ما يقارب 90%، مما يعكس تأثير النقص العددي في نهاية المباراة."
+          },
+          "pt": {
+            "caption": "Cartão vermelho de Benali altera chances",
+            "line": "Aos 89', o cartão vermelho de Benali reduz Northbridge a 10 jogadores, diminuindo a probabilidade de vitória de 6% para 4%, enquanto o empate sobe para 89,7%.",
+            "explainer": "A expulsão de Benali fez Northbridge jogar com um a menos, reduzindo estatisticamente suas chances de ganhar de 6% para 4%. A chance de empate subiu para quase 90%, mostrando o impacto da desvantagem numérica no final da partida."
+          }
+        },
+        "issues": {},
+        "seed": 2026102294,
+        "moment": "red_card",
+        "clock": "89'"
+      }
+    ]
+  },
+  "review_metadata": {
+    "date": "2026-10-22",
+    "synthetic_only": true,
+    "code_changes": "Corrected physical carrier integration, quantized event completion, replay serialized-frame parity; current agent/verifier fixes.",
+    "fixture": "NOR-CAL derby for each listed seed; these are the reserved seed numbers, with this fixed pairing as required by detect().",
+    "baseline_limit": "Same facts/languages/draft budget; baseline allows90s per call vs workflow20s per call. Not matched wall-clock deadlines; no claim of fair latency dominance."
+  },
+  "provenance": {
+    "date": "2026-10-22",
+    "data_source": "synthetic only",
+    "base_commit": "3bf57b8",
+    "source_hashes": {
+      "backend/regista/sim/engine.py": "d102103039a380e811caaa0707d2f01732c77ac9de1672e37563239a733737b2",
+      "backend/regista/evaluation.py": "2b5ac775f169e48f2aca9737b7ae65e49f9ba767a9cc9d9263e32c31c973dd76",
+      "backend/regista/llm_eval.py": "b1dd8a8468d1dfb4c1822b8a35d5e03eb5d68b7db9a75c4226c1c80e30288e56",
+      "backend/tests/test_synthetic_stress.py": "93d126562ee5e33e94004daf50c4d28c9a0840e1371dc66ff7a67a7e67724460"
+    },
+    "sample": "12 stratified moments from6 NOR-CAL derby matches on fresh seed numbers2026102291–2026102296. These seed numbers were also used in separately reported mixed-team/scenario invariant tests.",
+    "scope": "Final physics/checker; no tuning on the completed sample. Baseline call timeouts differ. Cost estimates cover reported jobs, exclude aborted earlier run, hosting, telemetry and later UI captures.",
+    "post_evaluation_fix": "French but/buts goal-unit matching was subsequently scoped to French. 30 focused claim tests pass. Affected saved baseline remains rejected for unsupported48; paid sample was not rerun. See history/post-evaluation-verifier-fix-2026-10-22.json."
+  }
+}

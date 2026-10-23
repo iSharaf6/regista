@@ -20,10 +20,10 @@ export function Broadcast({ profile, setProfile }: { profile: Profile; setProfil
   return (
     <div className="page grid-broadcast">
       <section>
-        <a className="start-here" href="#/explore?moment=m055">
+        <a className="start-here" href="#/explore?moment=highlight">
           <span className="replay-badge">Start here</span>
           <span><b>See one goal through three fans</b>
-            <small>The 74th-minute winner as Tom, Amira and Lucía get it, with every draft and every check · about a minute</small></span>
+            <small>One goal as Tom, Amira and Lucía get it, with every draft and every check · about a minute</small></span>
           <span className="go" aria-hidden>→</span>
         </a>
         <Welcome />

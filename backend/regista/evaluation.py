@@ -42,8 +42,9 @@ def replay(res: SimResult, contexts: dict[str, dict[str, Any]] | None = None
                 contexts[m.id] = match_context(st)
 
     for fi in range(len(res.frame_t)):
-        ft = float(res.frame_t[fi])
-        for sig in st.on_frame(res.frame(fi)):
+        frame = res.frame(fi)
+        ft = frame["t"]
+        for sig in st.on_frame(frame):
             add(det.on_signal(sig, ft, st.clock))
         while k < len(evs) and evs[k].qualifiers.get("t_end", evs[k].t) <= ft:
             add(det.on_enriched(st.on_event(evs[k])))
@@ -65,9 +66,11 @@ def _press_truth(res: SimResult) -> list[dict[str, Any]]:
     return out
 
 
-def _clock_minutes(clock: str) -> float:
-    base, _, extra = clock.rstrip("'").partition("+")
-    return float(base) + (float(extra) if extra else 0.0)
+def _playing_seconds(t: float, half_time: float | None, second_half: float | None) -> float:
+    """Feed time with only the actual half-time interval removed."""
+    if half_time is None or second_half is None:
+        return t
+    return t - min(max(0.0, t - half_time), max(0.0, second_half - half_time))
 
 
 def evaluate(seeds: list[int], home: str = "NOR", away: str = "CAL", scenario: str = "derby") -> dict[str, Any]:
@@ -84,19 +87,30 @@ def evaluate(seeds: list[int], home: str = "NOR", away: str = "CAL", scenario: s
         st, _, moments = replay(res, contexts)
         truth = _press_truth(res)
         detections = [m for m in moments if m.kind == "press_shift"]
+        half_time = next((e.t for e in res.events if e.type == "half_time"), None)
+        second_half = next((e.t for e in res.events if e.type == "second_half"), None)
+
+        def delay(detection_t: float, truth_t: float, half_time: float | None = half_time,
+                  second_half: float | None = second_half) -> float:
+            return (_playing_seconds(detection_t, half_time, second_half)
+                    - _playing_seconds(truth_t, half_time, second_half))
+
         matched: set[str] = set()
         for tr in truth:
             cand = [d for d in detections if d.team == tr["team"] and d.facts["direction"] == tr["direction"]
-                    and -5 * 60 <= d.t - tr["t"] <= 20 * 60 and d.id not in matched]
+                    and -5 * 60 <= delay(d.t, tr["t"]) <= 20 * 60 and d.id not in matched]
             if cand:
                 d = min(cand, key=lambda m: m.t)
                 matched.add(d.id)
                 hits += 1
-                gap = d.t - tr["t"]
-                if gap > 15 * 60:  # straddles half-time: remove the 15 minute break
-                    gap -= 15 * 60
+                gap = delay(d.t, tr["t"])
                 delays.append(gap / 60)
-                onset_err.append(abs(_clock_minutes(d.facts["onset_clock"]) - _clock_minutes(tr["clock"])))
+                # The detector uses continuous minute bins: 45+3 and 46' are
+                # consecutive periods, not the decreasing numbers 48 and 46.
+                truth_minute = int(tr["t"] // 60)
+                if second_half is not None and tr["t"] >= second_half:
+                    truth_minute = st._p1_bins + int((tr["t"] - second_half) // 60)
+                onset_err.append(abs(d.facts["onset_index"] - truth_minute))
             else:
                 misses += 1
         fa = [d for d in detections if d.id not in matched]
@@ -130,7 +144,7 @@ def evaluate(seeds: list[int], home: str = "NOR", away: str = "CAL", scenario: s
         "press_shift": {
             "truth_events": n_truth,
             "recall": round(hits / n_truth, 2) if n_truth else None,
-            "false_alarms_per_match": round(false_alarms / len(seeds), 2),
+            "false_alarms_per_match": round(false_alarms / len(seeds), 2) if seeds else None,
             "median_delay_min": round(median(delays), 1) if delays else None,
             "mean_delay_min": round(mean(delays), 1) if delays else None,
             "median_onset_error_min": round(median(onset_err), 1) if onset_err else None,
