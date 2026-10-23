@@ -28,7 +28,7 @@ It is built on **Microsoft Agent Framework** (agents + workflow), runs models on
 | ![A correction receipt](docs/img/correction-receipt.jpg) | ![Amira's overlay export](docs/img/overlay-amira.jpg) |
 | **Correction receipt**: in a labelled drill a wrong goal count planted in the Arabic draft is rejected with the Verifier's exact findings and never airs; only Arabic is rewritten | **Overlay export**: Amira's Arabic browser overlay, right to left, from the Control room's export links; external switcher use requires validation |
 
-The screenshots were refreshed on 22 October from the corrected local build with Microsoft Foundry and synthetic data. [Capture provenance](docs/img/capture-manifest.json) records the displayed goal, model sources and actual correction verdicts. Publishing this build and recording the required video remain release tasks.
+The screenshots were captured on 23 October from the live site (Microsoft Foundry, synthetic data). [Capture provenance](docs/img/capture-manifest.json) records the displayed goal, model sources and actual correction verdicts. Recording the required video remains a release task.
 
 ---
 

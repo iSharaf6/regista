@@ -57,7 +57,7 @@ All teams, players, venues and fan personas are fictional. All match data is syn
 - Open for others to join: **No**, unless team preferences change.
 
 ## Media preparation
-The ten images listed in [capture-manifest.json](img/capture-manifest.json) were refreshed on 22 October from the corrected local build using Microsoft Foundry and synthetic data. They include a real rejected Arabic drill draft, its rewrite and live goal output. This records local capture, not publication of the updated demo. Do not upload old 74′/ten-men/2–1 Northbridge cards as current evidence.
+The ten images listed in [capture-manifest.json](img/capture-manifest.json) were captured on 23 October from the live site (Azure Container Apps, Microsoft Foundry gpt-4.1-mini, synthetic data). They include a real rejected Arabic drill draft and its rewrite, and the 63′ goal on air with its checked story. The cover, `docs/media/cover.png`, is composed from the same live capture. Do not upload old 74′/ten-men/2–1 Northbridge cards as current evidence.
 
 | Refreshed image | Caption |
 |---|---|

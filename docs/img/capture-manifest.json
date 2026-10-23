@@ -1,6 +1,7 @@
 {
-  "captured": "2026-10-22",
-  "source": "local corrected build; Microsoft Foundry gpt-4.1-mini; synthetic data; not a production-deployment check",
+  "captured": "2026-10-23",
+  "source": "live site (Azure Container Apps revision 0000018, commit bfcb014); Microsoft Foundry gpt-4.1-mini; synthetic data",
+  "method": "headless Chrome at 1440x1100; the shared replay was moved to just before the 63' goal, paused once the goal's checked story had aired, then restored",
   "images": [
     "explore.jpg",
     "explore-checks.jpg",
@@ -13,37 +14,40 @@
     "lab.jpg",
     "recap.jpg"
   ],
+  "also": {
+    "../media/cover.png": "composed from a live capture of Explore's three fans at the 63' goal"
+  },
   "errors": [],
   "highlight": {
     "id": "m034",
     "clock": "63'",
     "models": {
-      "Analyst": "foundry:gpt-4.1-mini",
-      "Localizer": "foundry:gpt-4.1-mini",
-      "Narrator": "foundry:gpt-4.1-mini"
-    },
-    "verdict": {
-      "ok": true,
-      "issues": [],
-      "numbers_checked": 59,
-      "numbers_supported": 59,
-      "names_checked": 22,
-      "failed_langs": []
-    },
-    "fallback_langs": []
-  },
-  "drill": {
-    "models": {
-      "Analyst": "foundry:gpt-4.1-mini",
+      "Analyst": "deterministic (the model's insight failed the fact check)",
       "Narrator": "foundry:gpt-4.1-mini",
       "Localizer": "foundry:gpt-4.1-mini"
     },
     "verdict": {
       "ok": true,
       "issues": [],
-      "numbers_checked": 59,
-      "numbers_supported": 59,
-      "names_checked": 21,
+      "numbers_checked": 50,
+      "numbers_supported": 50,
+      "names_checked": 30,
+      "failed_langs": []
+    },
+    "fallback_langs": []
+  },
+  "drill": {
+    "models": {
+      "Analyst": "deterministic (the model's insight failed the fact check)",
+      "Narrator": "foundry:gpt-4.1-mini",
+      "Localizer": "foundry:gpt-4.1-mini"
+    },
+    "verdict": {
+      "ok": true,
+      "issues": [],
+      "numbers_checked": 62,
+      "numbers_supported": 62,
+      "names_checked": 30,
       "failed_langs": []
     },
     "fallback_langs": [],
@@ -62,19 +66,14 @@
     ]
   },
   "live_story": {
+    "moment": "m034",
     "models": {
       "Analyst": "foundry:gpt-4.1-mini",
       "Narrator": "foundry:gpt-4.1-mini",
       "Localizer": "foundry:gpt-4.1-mini"
     },
     "verdict": {
-      "ok": true,
-      "issues": [],
-      "numbers_checked": 33,
-      "numbers_supported": 33,
-      "names_checked": 8,
-      "failed_langs": []
-    },
-    "fallback_langs": []
+      "ok": true
+    }
   }
 }
