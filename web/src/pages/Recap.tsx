@@ -50,20 +50,23 @@ export function Recap({ lang: initial }: { lang: Lang }) {
       {updating && <div className="muted" role="status" style={{ margin: "10px 0" }}>Updating…</div>}
       {r && (
         <article className={`${rtl ? "rtl" : ""} ${updating ? "updating" : ""}`} dir={rtl ? "rtl" : "ltr"} lang={shown}>
-          <div className="section-title">{data.period === "live" ? `Live report as of ${data.as_of?.clock ?? ""}${phase ? ` · ${phase}` : ""}` : data.period.replace("_", " ")} · automated by the Recap agent · {data.source}</div>
+          {/* English labels, minutes and figures stay left-to-right inside an Arabic report; the article keeps its RTL alignment */}
+          <div className="section-title"><bdi dir="ltr">{data.period === "live"
+            ? <>Live report as of {data.as_of?.clock ?? ""}{phase ? <> · <bdi>{phase}</bdi></> : null}</>
+            : data.period.replace("_", " ")} · automated by the Recap agent · {data.source}</bdi></div>
           <h1>{r.headline}</h1>
           <p className="lede">{r.summary}</p>
           <div className="receipt" style={{ fontSize: 12 }}>
-            <span className={data.verdict.ok ? "ok" : "fb"}>{data.verdict.ok ? "✓ VERIFIED" : "✗ CHECK"} {data.verdict.numbers_supported}/{data.verdict.numbers_checked} figures</span>
-            <span>{data.ms} ms</span>
+            <span dir="ltr" className={data.verdict.ok ? "ok" : "fb"}>{data.verdict.ok ? "✓ VERIFIED" : "✗ CHECK"} {data.verdict.numbers_supported}/{data.verdict.numbers_checked} figures</span>
+            <span dir="ltr">{data.ms} ms</span>
           </div>
-          <p className="trust">{TRUST} {data.verdict.numbers_supported}/{data.verdict.numbers_checked}: the figures in this report matched to
-            the match data.</p>
+          <p className="trust"><bdi dir="ltr">{TRUST} {data.verdict.numbers_supported}/{data.verdict.numbers_checked}: the figures in this report matched to
+            the match data.</bdi></p>
           {series && <WpChart series={series.wp_series} match={match} />}
           <div className="section-title">Turning points</div>
           {r.turning_points.map((tp: any, i: number) => (
             <div className="tp" key={i}>
-              <span className="clk">{tp.clock}</span>
+              <span className="clk" dir="ltr">{tp.clock}</span>
               <div>
                 <div>{tp.text}</div>
                 <div>{(tp.evidence ?? []).map((e: string) => <span className="ev" key={e}>{e}</span>)}</div>
@@ -105,7 +108,8 @@ function WpChart({ series, match }: { series: any[]; match: MatchInfo | null }) 
   const line = (k: string) => series.map((s) => `${x(s.t)},${y(s[k])}`).join(" ");
   const events = series.filter((s) => !String(s.label).endsWith("'") && s.label !== "kick-off");
   return (
-    <div className="card" style={{ marginTop: 16, padding: 12 }}>
+    // a time axis reads left to right in every language: in RTL the minute labels would show as "'63"
+    <div className="card" dir="ltr" style={{ marginTop: 16, padding: 12 }}>
       <div className="row" style={{ justifyContent: "space-between" }}>
         <div className="section-title" style={{ margin: 0 }}>Win probability path</div>
         <div className="legend" aria-hidden>
@@ -119,13 +123,14 @@ function WpChart({ series, match }: { series: any[]; match: MatchInfo | null }) 
         {[0, 0.25, 0.5, 0.75, 1].map((p) => (
           <g key={p}>
             <line x1={x0} x2={w} y1={y(p)} y2={y(p)} stroke="rgba(31,0,36,0.14)" strokeDasharray={p === 0.5 ? "6 4" : "2 4"} />
-            <text x={x0 - 8} y={y(p) + 4} textAnchor="end" fill="#5f3a64" fontSize="13" fontFamily="'Lilita One', sans-serif">{Math.round(p * 100)}%</text>
+            <text x={x0 - 8} y={Math.max(12, y(p) + 4)} textAnchor="end" fill="#5f3a64" fontSize="13" fontFamily="'Lilita One', sans-serif">{Math.round(p * 100)}%</text>
           </g>
         ))}
         {events.map((e, i) => (
           <g key={i}>
             <line x1={x(e.t)} x2={x(e.t)} y1="0" y2={h} stroke="#e90052" strokeWidth="3" />
-            <text x={x(e.t) + 4} y={h + 16} fill="#1f0024" fontSize="13" fontFamily="'Lilita One', sans-serif">{e.clock}</text>
+            {/* a label near the right edge sits left of its line, so the latest minute is never cut off */}
+            <text x={x(e.t) > w - 40 ? x(e.t) - 4 : x(e.t) + 4} textAnchor={x(e.t) > w - 40 ? "end" : "start"} y={h + 16} fill="#1f0024" fontSize="13" fontFamily="'Lilita One', sans-serif">{e.clock}</text>
           </g>
         ))}
         <polyline points={line("draw")} fill="none" stroke="#9a968a" strokeWidth="2" strokeDasharray="5 4" />
