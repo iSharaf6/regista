@@ -60,7 +60,8 @@ Write in the requested LANGUAGE with that market's natural football idiom, for t
 casual (warm, at most one number), analyst (precise, two or three numbers), new_fan (plain words, explain jargon).
 For each give caption (<= 48 characters), line (<= 200 characters) and explainer (<= 320 characters).
 Use only the numbers in FIGURES (already formatted for this LANGUAGE) and only names in ALLOWED_PLAYERS and TEAMS.
-Keep player and team names unchanged; do not transliterate them. {UNITS}
+Write player and team names exactly as given in ALLOWED_PLAYERS and TEAMS (in Arabic these are the official Arabic
+spellings): never respell, transliterate or translate them. {UNITS}
 Describe only what FACTS and INSIGHT show: never invent what happened before or after the moment, and never call a
 shot a header, penalty or free kick unless FACTS say so.
 If FEEDBACK is present it lists problems a fact-checker found: fix every one of them.
@@ -78,6 +79,7 @@ PERIOD says what kind of report this is, and the tense must match it:
 Tell the story: what is deciding the match and why, not a list of events.
 Rules: numbers only from the payload; players only from the payload; cite the evidence ids of each turning point.
 Keep player and team names exactly as given in the payload, in every language: never transliterate or translate them.
+If NAMES_AR is present, write every name in Arabic with exactly the spelling NAMES_AR gives.
 Write in the requested LANGUAGE for the requested PERSONA (casual, analyst or new_fan). {SAFETY} {STYLE}
 Return ONLY JSON: {{"headline": str, "summary": str, "turning_points": [{{"clock": str, "text": str, "evidence": [str]}}],
 "player_of_the_match": {{"player_id": str, "name": str, "reason": str}}, "tactical_story": str, "closing_line": str}}"""

@@ -93,27 +93,28 @@ The simulator and model-response handling were corrected on **22 October 2026**.
 |---|---|
 | [Current synthetic evaluation](docs/evaluation.json) | **12/30 press shifts detected (40% recall)**; 0.5 false alarms per match, 5-minute median detection delay and 1-minute median onset error. xG MAE **0.0082** and bias **−0.0062** across 560 shots, measured against engine probabilities. **3,350/3,350 language bundles** accepted by the checker (670 moments × 5 languages, containing **10,050 persona copies**). These are synthetic-ground-truth and checker-acceptance measures, not independent factual or real-football accuracy. |
 | [Current realism report](docs/realism.json) | **12/14 aggregate metrics inside their configured ranges** over 20 matches. Fouls average **16.525 per team per match** against an upper bound of 16; tackles average **26** against 25. These misses are retained. Range checks are separate from physical/event invariants and do not establish real-match validity. |
-| [Current Foundry run](docs/llm-eval.json) | `gpt-4.1-mini`, **24 moments** (4 of each of six kinds) from six never-used seeds **2026102301–2026102306**, all five languages, on the frozen final build. Checked copy aired for **24/24 moments**; **20/24** were model-written in every language and **110/120** language outputs were model-written (the other 10 used checked templates). |
-| Fault probes and auxiliary checks | **220/220** hand-written believable mistakes and **724/724** constructed probes caught; both are regression tests built around the checker, not independent accuracy. **0/120** templates wrongly rejected. **4/4** Pundit questions used tools. Of 3 model recaps, 1 was rejected for a wrong score (the app then shows the checked deterministic report), 1 model call failed over to that report, and 1 passed but misspelled Port Calder in Arabic script, which the checker cannot see. |
+| [Current Foundry run](docs/llm-eval.json) | `gpt-4.1-mini`, **24 moments** (4 of each of six kinds) from six never-used seeds **2026102321–2026102326**, all five languages, on the frozen final build. Checked copy aired for **24/24 moments**; **21/24** were model-written in every language and **117/120** language outputs were model-written (the other 3 used checked templates). |
+| Fault probes and auxiliary checks | **220/220** hand-written believable mistakes and **703/703** constructed probes caught; both are regression tests built around the checker, not independent accuracy. **0/120** templates wrongly rejected. **3/3** model recaps passed, the Arabic one with the official Arabic club spellings. **4/4** Pundit questions used tools. |
 | [Historical fan-out microbenchmark](docs/fanout.json) | In-process Director selection, excluding network traffic and generation. It is not a concurrent-user load test. |
 | [Synthetic stress controls](docs/synthetic-stress-2026-10-22.json) | A separate 12-match run reported no checked invariant failures across **28,337 events and 350,023 tracking frames**, including 4 penalties, 12 red cards and 97 substitutions. It checks event ordering and physical/state consistency, not whether aggregate football distributions fall inside the realism bands. |
-| [Regression checks](docs/verification-2026-10-22.json) | **147 backend tests pass** on the final tree. **40 frontend harness cases and 21 browser checks** passed. Coverage includes actual correction findings, retries, fallback receipts, malformed replies, Unicode/count/unit checks, explicit two-dismissal controls, recap freshness and resets. Deterministic injected clients are not real model-quality measurements. |
+| [Regression checks](docs/verification-2026-10-22.json) | **150 backend tests pass** on the final tree. **40 frontend harness cases and 21 browser checks** passed. Coverage includes actual correction findings, retries, fallback receipts, malformed replies, Unicode/count/unit checks, explicit two-dismissal controls, recap freshness and resets. Deterministic injected clients are not real model-quality measurements. |
 
-The same run compares the workflow with two single-agent baselines on identical facts:
+The same run compares the workflow with two single-agent baselines given the same facts, grounding, rules and draft
+budget:
 
 | System | Moments with every language model-written and checked | Language outputs | p50 / p95 | Generation cost per moment |
 |---|---|---|---|---|
-| Multi-agent workflow | 20/24 (24/24 checked, with templates) | 110/120 | 11.9 / 28.5 s | $0.0082 |
-| Single agent, one shot | 15/24 | 88/120 | 29.2 / 41.2 s | $0.0035 |
-| Single agent with the same checker and up to two drafts | 21/24 | 109/120 | 19.9 / 67.9 s | $0.0043 |
+| Multi-agent workflow | **21/24** (24/24 checked, with templates) | **117/120** | **9.7 / 16.2 s** | $0.0085 |
+| Single agent, one shot | 12/24 | 64/120 | 17.3 / 21.7 s | $0.0037 |
+| Single agent with the same checker and up to two drafts | 18/24 | 94/120 | 17.3 / 35.5 s | $0.0053 |
 
-The checker loop is what lifts checker acceptance (15/24 to 20–21/24). Splitting the writing across agents matches the
-single agent's acceptance, finishes faster with a much shorter slow tail, and confines a failure to one language, at about twice
-the cost. Workflow calls time out at 20 s and single-agent calls at 90 s, so timings are observed under those settings.
-24 moments is a small sample: read it as a direction. Acceptance means the copy passed the checker, not that a person
-judged it accurate. The single-agent prompt did not yet include the agents' new style rule (no feelings or predictions), which the checker enforces, so its acceptance figures are a slight underestimate until the comparison is re-run. Earlier runs are kept in [docs/history](docs/history).
+The checker loop lifts acceptance for any design (12/24 to 18/24 for one agent). Splitting the writing across
+specialised agents lifts it further (21/24, 117/120 outputs), finishes faster, and confines a failure to one language,
+at about 1.6 times the generation cost. Acceptance means passing the checker, not human-rated accuracy; workflow calls
+time out at 20 s and single-agent calls at 90 s (two single-agent calls failed); 24 moments is a small sample. Earlier
+runs, including one where the baseline lacked the style rule, are kept in [docs/history](docs/history).
 
-The Verifier checks supported numeric forms and units, named roster players and selected football claims. It does not establish arbitrary causal explanations, translation quality, tone, unknown names outside the roster or names spelled in Arabic script. It does reject claims about what players feel and predictions of what happens next, in all five languages. The Pundit uses tools but does not pass through the story Verifier. The Producer schedules automatically; there is no human approve/hold/retract console. A producer trial and independent fan usefulness study have not been established by these technical tests.
+The Verifier checks supported numeric forms and units, named roster players and selected football claims. It does not establish arbitrary causal explanations, translation quality, tone, or unknown names outside the roster. It does reject claims about what players feel and predictions of what happens next, in all five languages, and in Arabic it holds every club and player name to one official Arabic spelling. The Pundit uses tools but does not pass through the story Verifier. The Producer schedules automatically; there is no human approve/hold/retract console. A producer trial and independent fan usefulness study have not been established by these technical tests.
 
 Generation cost must state its workload and include retries; hosting, telemetry, delivery, recaps and interactive questions are separate. Shared story generation avoids regenerating identical copy for each viewer, but serving additional viewers is not free. Report first deterministic output separately from time to a checked model upgrade.
 

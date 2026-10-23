@@ -81,6 +81,15 @@ def match_phase(state: MatchState) -> str:
     return "second_half" if state.period >= 2 else "first_half"
 
 
+def _names_ar(names: dict[str, dict[str, str]], state: MatchState) -> dict[str, str]:
+    """The official Arabic spelling of every club and player an Arabic recap might name."""
+    from .names_ar import ar_name
+
+    latin = set(names["players"].values()) | set(names["teams"].values()) | {t["name"] for t in state.top_players(n=5)}
+    latin |= {state.team_view(t).get("name", "") for t in (state.home, state.away)}
+    return {n: ar_name(n) for n in sorted(latin) if n}
+
+
 def recap_payload(state: MatchState, moments: list[Moment], names: dict[str, dict[str, str]], language: str,
                   persona: str, period: str) -> dict[str, Any]:
     """period: full_time (the match is over), half_time (the break) or live (still being played; phase says which half)."""
@@ -100,6 +109,7 @@ def recap_payload(state: MatchState, moments: list[Moment], names: dict[str, dic
         "top_players": state.top_players(n=5),
         "moments": [m.as_dict() for m in sorted(ranked, key=lambda m: m.t)],
         "wp_path": list(state.wp_series),  # a copy: a stored report must not keep growing
+        **({"NAMES_AR": _names_ar(names, state)} if language == "ar" else {}),
     }
 
 
@@ -255,7 +265,7 @@ def recap_evidence(p: dict[str, Any]) -> list[Any]:
 def offline_recap(p: dict[str, Any]) -> dict[str, Any]:
     lang = p["language"] if p["language"] in R["edge"] else "en"
     persona = p.get("persona", "casual")
-    names = Names(p["names"]["players"], p["names"]["teams"])
+    names = Names(p["names"]["players"], p["names"]["teams"]).for_lang(lang)
     h, a = p["home"], p["away"]
     hn, an = names.t(h), names.t(a)
     sh, sa = p["score"][h], p["score"][a]

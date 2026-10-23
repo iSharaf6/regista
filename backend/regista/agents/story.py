@@ -109,9 +109,10 @@ class StoryJob:
         figures = {k: v for k, v in ctx.items() if isinstance(v, (int, float)) or (isinstance(v, str) and any(c.isdigit() for c in v))}
         figures["clock"] = self.moment.get("clock", "")
         figures["shirt_numbers"] = self.shirt_numbers()
-        players = [self.names["players"].get(p, "") for p in self.moment.get("players", [])]
+        names = self.names_obj.for_lang(lang)  # Arabic: the official Arabic spellings, the only ones the Verifier accepts
+        players = [names.p(p) for p in self.moment.get("players", [])]
         return {"FIGURES": figures, "ALLOWED_PLAYERS": [p for p in players if p],
-                "TEAMS": [self.names["teams"].get(self.home, ""), self.names["teams"].get(self.away, "")]}
+                "TEAMS": [names.t(self.home), names.t(self.away)]}
 
     def payload(self, task: str, **extra: Any) -> str:
         body = {"task": task, "moment": self.moment, "context": self.context, "names": self.names,

@@ -20,9 +20,14 @@ _BIDI_TOKEN = re.compile(r"(?<![\u2066\d])(\d+(?:\s?[-–+/]\s?\d+)+['’′]?)"
 
 
 def rtl_safe(text: Any, lang: str) -> Any:
-    """Keep scores and minutes reading left to right inside right-to-left copy (a Unicode LTR isolate, invisible)."""
+    """Ready right-to-left copy for display: scores and minutes keep reading left to right (an invisible Unicode LTR
+    isolate), and in Arabic any club or player name left in Latin script takes its one official Arabic spelling."""
     if lang not in RTL_LANGS or not isinstance(text, str):
         return text
+    if lang == "ar":
+        from .names_ar import arabize
+
+        text = arabize(text)
     return _BIDI_TOKEN.sub(lambda m: f"\u2066{m.group(1)}\u2069", text)
 
 
@@ -416,6 +421,14 @@ class Names:
     def t(self, tid: str | None) -> str:
         return self.teams.get(tid or "", "")
 
+    def for_lang(self, lang: str) -> Names:
+        """Arabic copy uses each name's one official Arabic spelling; every other language keeps the roster's."""
+        if lang != "ar":
+            return self
+        from .names_ar import ar_name
+
+        return Names({k: ar_name(v) for k, v in self.players.items()}, {k: ar_name(v) for k, v in self.teams.items()})
+
 
 def _ctx(m: dict[str, Any], names: Names, lang: str, home: str, away: str) -> dict[str, Any]:
     f = m.get("facts", {})
@@ -522,6 +535,7 @@ def narrate(m: dict[str, Any], names: Names, lang: str, persona: str, home: str,
     """Return {caption, line, explainer} for one moment, language and persona."""
     lang = lang if lang in LANGS else "en"
     persona = persona if persona in PERSONAS else "casual"
+    names = names.for_lang(lang)
     kind = m["kind"]
     c = _ctx(m, names, lang, home, away)
     if kind in {"half_time", "full_time"}:

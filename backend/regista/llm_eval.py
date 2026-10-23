@@ -32,7 +32,7 @@ from agent_framework import Agent
 
 from .agents.clients import parse_json
 from .agents.config import load_config
-from .agents.prompts import SAFETY, UNITS
+from .agents.prompts import SAFETY, STYLE, UNITS
 from .agents.pundit import Pundit
 from .agents.recap import normalize_recap, offline_recap, recap_evidence, recap_fields, recap_payload
 from .agents.story import AgentFailure, AgentRuntime, StoryJob, _shape, _template, metric_units, run_story
@@ -64,7 +64,8 @@ three numbers), new_fan (plain words, explain jargon). For each give caption (<=
 characters) and explainer (<= 320 characters). GROUNDING gives, per language, FIGURES (the only numbers you may use,
 already formatted), ALLOWED_PLAYERS (the only players you may name) and TEAMS. Keep names unchanged. Describe only what
 FACTS show: never invent what happened before or after, and never call a shot a header, penalty or free kick unless
-FACTS say so. {UNITS}
+FACTS say so. Write player and team names exactly as each language's ALLOWED_PLAYERS and TEAMS give them (in Arabic
+the official Arabic spellings). {UNITS} {STYLE}
 If FEEDBACK is present it lists problems a fact-checker found in your previous draft, per language: return only those
 languages, with every problem fixed. {SAFETY}
 Return ONLY JSON: {{"<language code>": {{"casual": {{"caption","line","explainer"}}, "analyst": {{...}}, "new_fan": {{...}}}}, ...}}"""

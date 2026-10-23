@@ -26,13 +26,15 @@ from collections.abc import Iterable
 from dataclasses import dataclass, field
 from typing import Any
 
+from .names_ar import ar_name, misspelled_names
+
 # digits, optionally with an ordinal suffix (2nd, 63rd, 2º, 63e, 2ème) so ordinals are checked too
 NUM_RE = re.compile(r"(?<![\w])(\d+(?:[.,]\d+)?)(?:st|nd|rd|th|º|ª|°|er|e|ème|eme)?(?![\w])")
 _NUM = r"(\d+(?:[.,]\d+)?)"
 
 # A figure with a unit must match a fact of that kind: (pattern, fact-key hints, unit constants, description).
 UNITS: dict[str, tuple[re.Pattern[str], tuple[str, ...], set[float], str]] = {
-    "speed": (re.compile(_NUM + r"\s?(?:km/h|kph|km/hr|كم/س(?:اعة)?|كلم/س)", re.I), ("kmh", "speed"), {25.0, 33.0, 70.0},
+    "speed": (re.compile(_NUM + r"\s?(?:km/h|kph|km/hr|كم/س(?:اعة)?|كلم/س)", re.I), ("kmh", "speed"), {25.0, 33.0, 70.0, 100.0},
               "a speed"),
     "distance": (re.compile(_NUM + r"\s?(?:m|metres?|meters?|metros?|mètres?|متر[اًا]?|أمتار)(?![\w/])", re.I),
                  ("_m", "distance", "length", "height", "_m."), {8.0}, "a distance"),
@@ -254,15 +256,17 @@ def unit_numbers(*sources: Any) -> dict[str, set[float]]:
     return out
 
 
-def _bound_to(text: str, at: int, name: str, names: set[str]) -> bool:
-    """Whether the figure at `at` belongs to `name`: that name is the closest player named before it in the same sentence."""
+def _bound_to(text: str, at: int, name: str | set[str], names: set[str]) -> bool:
+    """Whether the figure at `at` belongs to `name` (any of its spellings): that name is the closest player named before
+    it in the same sentence."""
+    targets = {name} if isinstance(name, str) else name
     before = re.split(r"[.!?;؟]", text[max(0, at - 90):at])[-1].casefold()
     best, where = "", -1
     for n in names:
         i = before.rfind(n.casefold())
         if i > where:
             best, where = n, i
-    return best == name
+    return best in targets
 
 
 def _normalise_text(text: str) -> str:
@@ -295,6 +299,11 @@ def verify_texts(texts: dict[str, dict[str, dict[str, str]]], facts: list[Any], 
     tally = (claims or {}).get("scorer_goals")
     scorer_name = _normalise_text(roster_names.get(scorer, "")) if isinstance(scorer, str) else ""
     other_names = {_normalise_text(n) for pid, n in roster_names.items() if pid not in allowed_players and len(n) > 3}
+    # Arabic copy names players by their one official Arabic spelling (names_ar): the same checks apply to it
+    allowed_ar = {ar_name(roster_names[p]) for p in allowed_players if p in roster_names}
+    other_ar = {ar_name(n) for pid, n in roster_names.items()
+                if pid not in allowed_players and len(ar_name(n).replace(" ", "")) >= 5} - allowed_ar
+    scorer_ar = ar_name(roster_names.get(scorer, "")) if isinstance(scorer, str) else ""
     v = Verdict(ok=True)
     failed: set[str] = set()
     for lang, personas in texts.items():
@@ -351,8 +360,8 @@ def verify_texts(texts: dict[str, dict[str, dict[str, str]]], facts: list[Any], 
                             continue  # "No. 9" is a shirt number, not a figure of this kind
                         raw = next(g for g in m.groups() if g)
                         n = float(raw.replace(",", "."))
-                        if unit == "goals" and tally is not None and scorer_name and _bound_to(norm, m.start(), scorer_name,
-                                                                                               allowed_names):
+                        if unit == "goals" and tally is not None and scorer_name and _bound_to(
+                                norm, m.start(), {scorer_name, scorer_ar}, allowed_names | allowed_ar):
                             if n != float(tally):
                                 v.issues.append(f"{where} '{m.group(0).strip()}' does not match {scorer_name}'s goals in "
                                                 f"this match ({tally}) - use the scorer's tally")
@@ -370,6 +379,17 @@ def verify_texts(texts: dict[str, dict[str, dict[str, str]]], facts: list[Any], 
                 for name in allowed_names:
                     if name.casefold() in text.casefold():
                         v.names_checked += 1
+                if lang == "ar":
+                    for name in other_ar:
+                        if re.search(rf"(?<!\w)(?:[وفبلك]|ال)?{re.escape(name)}(?!\w)", text):
+                            v.names_checked += 1
+                            v.issues.append(f"{where} mentions {name}, who is not part of this moment")
+                            failed.add(lang)
+                    for written, official in misspelled_names(text):
+                        v.issues.append(f"{where} writes '{written}' for '{official}' - use the official Arabic spelling "
+                                        f"exactly as given in ALLOWED_PLAYERS and TEAMS")
+                        failed.add(lang)
+                    v.names_checked += sum(1 for name in allowed_ar if name in text)
     v.failed_langs = sorted(failed)
     v.ok = not failed
     return v

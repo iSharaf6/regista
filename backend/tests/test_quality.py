@@ -14,7 +14,8 @@ LRI, PDI = "⁦", "⁩"
 
 def test_scores_and_minutes_keep_their_order_inside_arabic():
     # an Arabic word before "2-1" would otherwise display it as "1-2"
-    assert rtl_safe("Northbridge يسجل · 2-1", "ar") == f"Northbridge يسجل · {LRI}2-1{PDI}"
+    # and a club name left in Latin script takes its official Arabic spelling
+    assert rtl_safe("Northbridge يسجل · 2-1", "ar") == f"نورثبريدج يسجل · {LRI}2-1{PDI}"
     assert rtl_safe("في الدقيقة 45+2'", "ar") == f"في الدقيقة {LRI}45+2'{PDI}"
     assert rtl_safe(rtl_safe("2-1", "ar"), "ar") == f"{LRI}2-1{PDI}"  # never wrapped twice
     assert rtl_safe("79.3 كم/س و 14%", "ar") == "79.3 كم/س و 14%"  # decimals and percentages already read correctly
@@ -59,3 +60,43 @@ def test_untimed_steps_do_not_drag_the_latency_figures():
     agents = t.summary()["agents"]
     assert agents["Analyst"]["p50_ms"] == 4000.0 and agents["Analyst"]["calls"] == 13
     assert agents.get("Producer", {}).get("p50_ms") is None
+
+
+def test_arabic_copy_uses_one_official_spelling_per_name():
+    from regista.agents.names_ar import AR, arabize, misspelled_names
+    from regista.agents.templates import narrate
+
+    s = MatchSession(story_workers=0)
+    s.advance(float(s.res.frame_t[-1]) - s.clock_t + 1, live=False)
+    goal = next(m for m in s.moments if m.kind == "goal")
+    scorer = s.names.p(goal.players[0])
+    copy = narrate(goal.as_dict(), s.names, "ar", "casual", s.state.home, s.state.away)
+    text = " ".join(copy.values())
+    assert AR[scorer] in text and scorer not in text  # the template writes the official Arabic spelling
+    assert arabize("هدف من Valdane لـ Port Calder") == "هدف من فالدان لـ بورت كالدر"
+    # the model's own variants are caught; the official spelling, with Arabic's attached prefixes, is not
+    assert misspelled_names("بورتموند كالدير يهيمنون") == [("كالدير", "كالدر")]
+    assert misspelled_names("سجل فالداني") == [("فالداني", "فالدان")]
+    assert misspelled_names("تمريرة لبيليغريني ثم سجل فالدان بين الخطوط في الدقيقة") == []
+
+
+def test_the_verifier_holds_arabic_names_to_the_official_spelling():
+    roster = {"NOR-09": "Valdane", "CAL-09": "Pellegrini", "NOR-11": "Brightwell"}
+    facts = [{"score": {"NOR": 1, "CAL": 2}}]
+
+    def check(line: str):
+        return verify_texts({"ar": {"casual": {"line": line}}}, facts, {"NOR-09"}, roster)
+
+    assert check("سجل فالدان هدفاً").ok
+    misspelt = check("سجل فالداني هدفاً")
+    assert not misspelt.ok and "فالدان" in misspelt.issues[0]
+    outsider = check("سجل فالدان بعد تمريرة من بيليغريني")
+    assert not outsider.ok and any("not part of this moment" in i for i in outsider.issues)
+
+
+def test_the_typical_shot_speed_range_a_template_quotes_is_allowed():
+    # the thunderbolt template tells new fans "most shots travel between 70 and 100 km/h": a reference range, not a fact
+    facts = [{"shot_speed_kmh": 118.4}]
+    for line in ["Most shots travel between 70 and 100 km/h.", "معظم التسديدات بين 70 و100 كم/س."]:
+        assert verify_texts({"en": {"new_fan": {"explainer": line}}}, facts, set(), {}).ok, line
+    assert not verify_texts({"en": {"new_fan": {"explainer": "Struck at 140 km/h."}}}, facts, set(), {}).ok
