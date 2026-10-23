@@ -107,10 +107,11 @@ The same run compares the workflow with two single-agent baselines on identical 
 | Single agent, one shot | 15/24 | 88/120 | 29.2 / 41.2 s | $0.0035 |
 | Single agent with the same checker and up to two drafts | 21/24 | 109/120 | 19.9 / 67.9 s | $0.0043 |
 
-The checker loop is what lifts accuracy (15/24 to 20–21/24). Splitting the writing across agents matches the single
-agent's accuracy, finishes faster with a much shorter slow tail, and confines a failure to one language, at about twice
+The checker loop is what lifts checker acceptance (15/24 to 20–21/24). Splitting the writing across agents matches the
+single agent's acceptance, finishes faster with a much shorter slow tail, and confines a failure to one language, at about twice
 the cost. Workflow calls time out at 20 s and single-agent calls at 90 s, so timings are observed under those settings.
-24 moments is a small sample: read it as a direction. Earlier runs are kept in [docs/history](docs/history).
+24 moments is a small sample: read it as a direction. Acceptance means the copy passed the checker, not that a person
+judged it accurate. The single-agent prompt did not yet include the agents' new style rule (no feelings or predictions), which the checker enforces, so its acceptance figures are a slight underestimate until the comparison is re-run. Earlier runs are kept in [docs/history](docs/history).
 
 The Verifier checks supported numeric forms and units, named roster players and selected football claims. It does not establish arbitrary causal explanations, translation quality, tone, unknown names outside the roster or names spelled in Arabic script. It does reject claims about what players feel and predictions of what happens next, in all five languages. The Pundit uses tools but does not pass through the story Verifier. The Producer schedules automatically; there is no human approve/hold/retract console. A producer trial and independent fan usefulness study have not been established by these technical tests.
 
